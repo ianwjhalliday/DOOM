@@ -658,6 +658,7 @@ S_ChangeMusic
 	 || (musicnum >= NUMMUSIC) )
     {
 	I_Error("Bad music number %d", musicnum);
+	return;
     }
     else
 	music = &S_music[musicnum];

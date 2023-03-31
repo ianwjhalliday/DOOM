@@ -57,7 +57,7 @@ int		midtexture;
 
 angle_t		rw_normalangle;
 // angle to line origin
-int		rw_angle1;	
+angle_t		rw_angle1;	
 
 //
 // regular wall
@@ -399,7 +399,7 @@ R_StoreWallRange
     
     // calculate rw_distance for scale calculation
     rw_normalangle = curline->angle + ANG90;
-    offsetangle = abs(rw_normalangle-rw_angle1);
+    offsetangle = rw_normalangle-rw_angle1;
     
     if (offsetangle > ANG90)
 	offsetangle = ANG90;
