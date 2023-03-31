@@ -21,6 +21,71 @@
 //
 //-----------------------------------------------------------------------------
 
+#include "v_video.h"
+
+// TODO: fill in with OS graphics funcs using agnostic library like raylib or sdl2
+
+void I_ShutdownGraphics(void)
+{
+    // TODO
+}
+
+//
+// I_StartFrame
+//
+void I_StartFrame (void)
+{
+    // er?
+
+}
+
+//
+// I_StartTic
+//
+void I_StartTic (void)
+{
+    // TODO
+}
+
+//
+// I_UpdateNoBlit
+//
+void I_UpdateNoBlit (void)
+{
+    // what is this?
+}
+
+//
+// I_FinishUpdate
+//
+void I_FinishUpdate (void)
+{
+    // TODO
+}
+
+//
+// I_ReadScreen
+//
+void I_ReadScreen (byte* scr)
+{
+    // TODO
+}
+
+//
+// I_SetPalette
+//
+void I_SetPalette (byte* palette)
+{
+    // TODO
+}
+
+void I_InitGraphics(void)
+{
+    // TODO
+}
+
+#if 0
+
 static const char
 rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
@@ -1047,4 +1112,5 @@ Expand4
     } while (y--);
 }
 
+#endif
 
