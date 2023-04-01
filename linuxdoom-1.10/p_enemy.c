@@ -660,6 +660,8 @@ void A_Look (mobj_t* actor)
 	    S_StartSound (actor, sound);
     }
 
+    printf("Actor sees player: %d\n", actor->type);
+
     P_SetMobjState (actor, actor->info->seestate);
 }
 
@@ -815,6 +817,8 @@ void A_PosAttack (mobj_t* actor)
     S_StartSound (actor, sfx_pistol);
     angle += (P_Random()-P_Random())<<20;
     damage = ((P_Random()%5)+1)*3;
+
+    printf("Pos attack: %s damage: %d\n", actor->target->player ? "player" : "mobj", damage);
     P_LineAttack (actor, angle, MISSILERANGE, slope, damage);
 }
 
@@ -838,6 +842,7 @@ void A_SPosAttack (mobj_t* actor)
     {
 	angle = bangle + ((P_Random()-P_Random())<<20);
 	damage = ((P_Random()%5)+1)*3;
+	printf("SPos attack: %s damage %d: %d\n", actor->target->player ? "player" : "mobj", i+1, damage);
 	P_LineAttack (actor, angle, MISSILERANGE, slope, damage);
     }
 }
@@ -922,6 +927,7 @@ void A_TroopAttack (mobj_t* actor)
     {
 	S_StartSound (actor, sfx_claw);
 	damage = (P_Random()%8+1)*3;
+	printf("Troop attack: %s damage: %d\n", actor->target->player ? "player" : "mobj", damage);
 	P_DamageMobj (actor->target, actor, actor, damage);
 	return;
     }
@@ -943,6 +949,7 @@ void A_SargAttack (mobj_t* actor)
     if (P_CheckMeleeRange (actor))
     {
 	damage = ((P_Random()%10)+1)*4;
+	printf("Sarg attack: %s damage: %d\n", actor->target->player ? "player" : "mobj", damage);
 	P_DamageMobj (actor->target, actor, actor, damage);
     }
 }

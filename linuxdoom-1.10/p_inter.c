@@ -882,11 +882,14 @@ P_DamageMobj
 	if (player == &players[consoleplayer])
 	    I_Tactile (40,10,40+temp*2);
     }
+
     
     // do the damage	
     target->health -= damage;	
+    printf("Took damage: %s health: %d\n", player ? "player" : "mobj", target->health);
     if (target->health <= 0)
     {
+        printf("Died: %s\n", player ? "player" : "mobj");
 	P_KillMobj (source, target);
 	return;
     }
