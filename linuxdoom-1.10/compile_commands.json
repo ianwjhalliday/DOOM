@@ -1,0 +1,312 @@
+[
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c doomdef.c -o linux/doomdef.o",
+    "file": "linux/doomdef.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c doomstat.c -o linux/doomstat.o",
+    "file": "linux/doomstat.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c dstrings.c -o linux/dstrings.o",
+    "file": "linux/dstrings.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c i_system.c -o linux/i_system.o",
+    "file": "linux/i_system.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c i_sound.c -o linux/i_sound.o",
+    "file": "linux/i_sound.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c i_video.c -o linux/i_video.o",
+    "file": "linux/i_video.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c i_net.c -o linux/i_net.o",
+    "file": "linux/i_net.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c tables.c -o linux/tables.o",
+    "file": "linux/tables.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c f_finale.c -o linux/f_finale.o",
+    "file": "linux/f_finale.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c f_wipe.c -o linux/f_wipe.o",
+    "file": "linux/f_wipe.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c d_main.c -o linux/d_main.o",
+    "file": "linux/d_main.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c d_net.c -o linux/d_net.o",
+    "file": "linux/d_net.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c d_items.c -o linux/d_items.o",
+    "file": "linux/d_items.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c g_game.c -o linux/g_game.o",
+    "file": "linux/g_game.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c m_menu.c -o linux/m_menu.o",
+    "file": "linux/m_menu.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c m_misc.c -o linux/m_misc.o",
+    "file": "linux/m_misc.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c m_argv.c -o linux/m_argv.o",
+    "file": "linux/m_argv.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c m_bbox.c -o linux/m_bbox.o",
+    "file": "linux/m_bbox.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c m_fixed.c -o linux/m_fixed.o",
+    "file": "linux/m_fixed.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c m_swap.c -o linux/m_swap.o",
+    "file": "linux/m_swap.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c m_cheat.c -o linux/m_cheat.o",
+    "file": "linux/m_cheat.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c m_random.c -o linux/m_random.o",
+    "file": "linux/m_random.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c am_map.c -o linux/am_map.o",
+    "file": "linux/am_map.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_ceilng.c -o linux/p_ceilng.o",
+    "file": "linux/p_ceilng.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_doors.c -o linux/p_doors.o",
+    "file": "linux/p_doors.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_enemy.c -o linux/p_enemy.o",
+    "file": "linux/p_enemy.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_floor.c -o linux/p_floor.o",
+    "file": "linux/p_floor.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_inter.c -o linux/p_inter.o",
+    "file": "linux/p_inter.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_lights.c -o linux/p_lights.o",
+    "file": "linux/p_lights.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_map.c -o linux/p_map.o",
+    "file": "linux/p_map.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_maputl.c -o linux/p_maputl.o",
+    "file": "linux/p_maputl.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_plats.c -o linux/p_plats.o",
+    "file": "linux/p_plats.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_pspr.c -o linux/p_pspr.o",
+    "file": "linux/p_pspr.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_setup.c -o linux/p_setup.o",
+    "file": "linux/p_setup.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_sight.c -o linux/p_sight.o",
+    "file": "linux/p_sight.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_spec.c -o linux/p_spec.o",
+    "file": "linux/p_spec.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_switch.c -o linux/p_switch.o",
+    "file": "linux/p_switch.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_mobj.c -o linux/p_mobj.o",
+    "file": "linux/p_mobj.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_telept.c -o linux/p_telept.o",
+    "file": "linux/p_telept.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_tick.c -o linux/p_tick.o",
+    "file": "linux/p_tick.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_saveg.c -o linux/p_saveg.o",
+    "file": "linux/p_saveg.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c p_user.c -o linux/p_user.o",
+    "file": "linux/p_user.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c r_bsp.c -o linux/r_bsp.o",
+    "file": "linux/r_bsp.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c r_data.c -o linux/r_data.o",
+    "file": "linux/r_data.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c r_draw.c -o linux/r_draw.o",
+    "file": "linux/r_draw.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c r_main.c -o linux/r_main.o",
+    "file": "linux/r_main.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c r_plane.c -o linux/r_plane.o",
+    "file": "linux/r_plane.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c r_segs.c -o linux/r_segs.o",
+    "file": "linux/r_segs.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c r_sky.c -o linux/r_sky.o",
+    "file": "linux/r_sky.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c r_things.c -o linux/r_things.o",
+    "file": "linux/r_things.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c w_wad.c -o linux/w_wad.o",
+    "file": "linux/w_wad.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c wi_stuff.c -o linux/wi_stuff.o",
+    "file": "linux/wi_stuff.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c v_video.c -o linux/v_video.o",
+    "file": "linux/v_video.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c st_lib.c -o linux/st_lib.o",
+    "file": "linux/st_lib.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c st_stuff.c -o linux/st_stuff.o",
+    "file": "linux/st_stuff.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c hu_stuff.c -o linux/hu_stuff.o",
+    "file": "linux/hu_stuff.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c hu_lib.c -o linux/hu_lib.o",
+    "file": "linux/hu_lib.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c s_sound.c -o linux/s_sound.o",
+    "file": "linux/s_sound.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c z_zone.c -o linux/z_zone.o",
+    "file": "linux/z_zone.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c info.c -o linux/info.o",
+    "file": "linux/info.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c sounds.c -o linux/sounds.o",
+    "file": "linux/sounds.o"
+  },
+  {
+    "directory": ".",
+    "command": "gcc   -g -Wall  -DNORMALUNIX -DLINUX  -c i_main.c -o linux/i_main.o",
+    "file": "linux/i_main.o"
+  }
+]
