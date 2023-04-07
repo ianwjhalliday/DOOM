@@ -6,7 +6,8 @@
 #
 CC=  gcc  # gcc or g++
 
-CFLAGS=-g -Wall -DNORMALUNIX -DLINUX # -DUSEASM 
+CWARNINGS=-Wall # -Wextra -Wmissing-prototypes -Wmissing-declarations -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -Wredundant-decls -Wnested-externs -Winline -Wno-long-long -Wconversion -Wstrict-prototypes
+CFLAGS=-g $(CWARNINGS) -DNORMALUNIX -DLINUX # -DUSEASM 
 LDFLAGS=
 LIBS=-lm
 
