@@ -21,7 +21,9 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <signal.h>
 #include "v_video.h"
+#include "i_system.h"
 
 // TODO: fill in with OS graphics funcs using agnostic library like raylib or sdl2
 
@@ -82,6 +84,7 @@ void I_SetPalette (byte* palette)
 void I_InitGraphics(void)
 {
     // TODO
+    signal(SIGINT, (void (*)(int)) I_Quit);
 }
 
 #if 0
