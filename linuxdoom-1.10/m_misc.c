@@ -226,7 +226,7 @@ typedef struct
 {
     char*	name;
     int*	location;
-    long long		defaultvalue;
+    intptr_t	defaultvalue;
     int		scantranslate;		// PC scan code hack
     int		untranslated;		// lousy hack
 } default_t;
@@ -311,6 +311,7 @@ void M_SaveDefaults (void)
     int		v;
     FILE*	f;
 	
+    fprintf(stderr, "M_SaveDefaults: Saving to '%s'\n", defaultfile);
     f = fopen (defaultfile, "w");
     if (!f)
 	return; // can't write the file, but don't complain
@@ -324,7 +325,7 @@ void M_SaveDefaults (void)
 	    fprintf (f,"%s\t\t%i\n",defaults[i].name,v);
 	} else {
 	    fprintf (f,"%s\t\t\"%s\"\n",defaults[i].name,
-		     * (char **) (defaults[i].location));
+		     * (const char **) (defaults[i].location));
 	}
     }
 	
@@ -351,8 +352,14 @@ void M_LoadDefaults (void)
     // set everything to base values
     numdefaults = sizeof(defaults)/sizeof(defaults[0]);
     for (i=0 ; i<numdefaults ; i++)
-	*defaults[i].location = defaults[i].defaultvalue;
-    
+        if (defaults[i].defaultvalue > -0xfff
+            && defaults[i].defaultvalue < 0xfff)
+            // int value default
+            *defaults[i].location = defaults[i].defaultvalue;
+        else
+            // string pointer value default
+            *(const char**)defaults[i].location = (const char*)defaults[i].defaultvalue;
+
     // check for a custom default file
     i = M_CheckParm ("-config");
     if (i && i<myargc-1)
@@ -391,8 +398,7 @@ void M_LoadDefaults (void)
 			if (!isstring)
 			    *defaults[i].location = parm;
 			else
-			    *defaults[i].location =
-				(long long int) newstring;
+			    *(const char**)defaults[i].location = newstring;
 			break;
 		    }
 	    }
