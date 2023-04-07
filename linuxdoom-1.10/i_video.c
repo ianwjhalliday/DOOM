@@ -22,14 +22,44 @@
 //-----------------------------------------------------------------------------
 
 #include <signal.h>
+#include <GLFW/glfw3.h>
+
 #include "v_video.h"
 #include "i_system.h"
 
 // TODO: fill in with OS graphics funcs using agnostic library like raylib or sdl2
 
+GLFWwindow* window = 0;
+
+void I_GLFWErrorCallback(int error, const char* description)
+{
+    fprintf(stderr, "I_GLFWErrorCallback: %s\n", description);
+}
+
+void I_InitGraphics(void)
+{
+    fprintf(stderr, "I_InitGraphics: Setting up GLFW Window\n");
+
+    signal(SIGINT, (void (*)(int)) I_Quit);
+
+    if (!glfwInit()) {
+        // TODO: What to do if we fail?
+        fprintf(stderr, "I_InitGraphics: Could not initialize GLFW\n");
+        return;
+    }
+
+    glfwSetErrorCallback(I_GLFWErrorCallback);
+
+    window = glfwCreateWindow(SCREENWIDTH, SCREENHEIGHT, "Doom", 0, 0);
+    if (!window) {
+        fprintf(stderr, "I_InitGraphics: Could not create window");
+        return;
+    }
+}
+
 void I_ShutdownGraphics(void)
 {
-    // TODO
+    glfwTerminate();
 }
 
 //
@@ -47,6 +77,15 @@ void I_StartFrame (void)
 void I_StartTic (void)
 {
     // TODO
+    if (!window) {
+        return;
+    }
+
+    if (glfwWindowShouldClose(window)) {
+        I_Quit();
+    }
+
+    glfwPollEvents();
 }
 
 //
@@ -79,12 +118,6 @@ void I_ReadScreen (byte* scr)
 void I_SetPalette (byte* palette)
 {
     // TODO
-}
-
-void I_InitGraphics(void)
-{
-    // TODO
-    signal(SIGINT, (void (*)(int)) I_Quit);
 }
 
 #if 0

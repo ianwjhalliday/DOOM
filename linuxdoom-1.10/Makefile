@@ -7,9 +7,9 @@
 CC=  gcc  # gcc or g++
 
 CWARNINGS=-Wall # -Wextra -Wmissing-prototypes -Wshadow -Wcast-align -Wwrite-strings -Wconversion
-CFLAGS=-g $(CWARNINGS) -DNORMALUNIX -DLINUX # -DUSEASM 
+CFLAGS=-g $(CWARNINGS) $(shell pkg-config --cflags glfw3) -DNORMALUNIX -DLINUX # -DUSEASM 
 LDFLAGS=
-LIBS=-lm
+LIBS=-lm $(shell pkg-config --static --libs glfw3)
 
 # subdirectory for objects
 O=linux
