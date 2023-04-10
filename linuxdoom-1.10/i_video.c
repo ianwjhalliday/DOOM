@@ -22,12 +22,54 @@
 //-----------------------------------------------------------------------------
 
 #include <signal.h>
+
+#define GLFW_INCLUDE_GLCOREARB
+#ifdef __APPLE__
+#define GL_SILENCE_DEPRECATION
+#endif
 #include <GLFW/glfw3.h>
 
 #include "v_video.h"
 #include "i_system.h"
 
-// TODO: fill in with OS graphics funcs using agnostic library like raylib or sdl2
+const char *screenVertexShaderSource ="#version 330 core\n"
+    "layout (location = 0) in vec4 vertex;\n" // <vec2 position, vec2 texCoords>
+    "\n"
+    "out vec2 TexCoords;"
+    "\n"
+    "uniform mat4 projection;"
+    "\n"
+    "void main()\n"
+    "{\n"
+    "   TexCoords = vertex.zw;\n"
+    "   gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);\n"
+    "}\n\0";
+
+const char *screenFragmentShaderSource = "#version 330 core\n"
+    "in vec2 TexCoords;\n"
+    "out vec4 color;\n"
+    "\n"
+    "uniform sampler2D screen;\n"
+    "uniform sampler1D palette;\n"
+    "\n"
+    "void main()\n"
+    "{\n"
+    "   float paletteIndex = texture(screen, TexCoords).r * 255.0;\n"
+    "   color = texture(palette, paletteIndex / 255);\n"
+    "}\n\0";
+
+GLuint shaderProgram;
+
+float projectionMatrix[] = {
+    2.0f, 0.0f, 0.0f, -1.0f,
+    0.0f, -2.0f, 0.0f, 1.0f,
+    0.0f, 0.0f, 0.5f, 0.0f,
+    0.0f, 0.0f, 0.0f, 1.0f,
+};
+
+GLuint screenTexture;
+GLuint paletteTexture;
+GLuint screenQuadVAO;
 
 GLFWwindow* window = 0;
 
@@ -38,23 +80,126 @@ void I_GLFWErrorCallback(int error, const char* description)
 
 void I_InitGraphics(void)
 {
-    fprintf(stderr, "I_InitGraphics: Setting up GLFW Window\n");
+    fprintf(stderr, "I_InitGraphics\n");
 
+    // TODO: SIGINT handler should be somewhere else since not specific to graphics.
     signal(SIGINT, (void (*)(int)) I_Quit);
 
     if (!glfwInit()) {
-        // TODO: What to do if we fail?
         fprintf(stderr, "I_InitGraphics: Could not initialize GLFW\n");
-        return;
+        I_Quit();
     }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
 
     glfwSetErrorCallback(I_GLFWErrorCallback);
 
     window = glfwCreateWindow(SCREENWIDTH, SCREENHEIGHT, "Doom", 0, 0);
     if (!window) {
         fprintf(stderr, "I_InitGraphics: Could not create window");
-        return;
+        glfwTerminate();
+        I_Quit();
     }
+
+    glfwSetWindowSizeLimits(window, SCREENWIDTH, SCREENHEIGHT, GLFW_DONT_CARE, GLFW_DONT_CARE);
+    glfwSetWindowAspectRatio(window, SCREENWIDTH, SCREENHEIGHT);
+
+    glfwMakeContextCurrent(window);
+
+
+    // Load and compile shaders
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &screenVertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+
+    GLint success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        fprintf(stderr, "I_InitGraphics: Failed to compile vertex shader\n\t%s\n", infoLog);
+        glfwTerminate();
+        I_Quit();
+    }
+
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &screenFragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        fprintf(stderr, "I_InitGraphics: Failed to compile fragment shader\n\t%s\n", infoLog);
+        glfwTerminate();
+        I_Quit();
+    }
+
+    shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        fprintf(stderr, "I_InitGraphics: Failed to link shader program\n\t%s\n", infoLog);
+        glfwTerminate();
+        I_Quit();
+    }
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    // Set up screen quad for rendering screen texture to ortho projected quad
+    GLuint VBO;
+    float vertices[] = { 
+        // pos      // tex
+        0.0f, 1.0f, 0.0f, 1.0f,
+        1.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 0.0f, 
+
+        0.0f, 1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 1.0f, 1.0f,
+        1.0f, 0.0f, 1.0f, 0.0f
+    };
+
+    glGenVertexArrays(1, &screenQuadVAO);
+    glGenBuffers(1, &VBO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindVertexArray(screenQuadVAO);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    // Set up screen and palette textures
+    glGenTextures(1, &screenTexture);
+    glBindTexture(GL_TEXTURE_2D, screenTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glGenTextures(1, &paletteTexture);
+    glBindTexture(GL_TEXTURE_1D, paletteTexture);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Shader uses screen as texture 0 and palette as texture 1
+    glUseProgram(shaderProgram);
+    glUniform1i(glGetUniformLocation(shaderProgram, "screen"), 0);
+    glUniform1i(glGetUniformLocation(shaderProgram, "palette"), 1);
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_TRUE, projectionMatrix);
 }
 
 void I_ShutdownGraphics(void)
@@ -76,7 +221,6 @@ void I_StartFrame (void)
 //
 void I_StartTic (void)
 {
-    // TODO
     if (!window) {
         return;
     }
@@ -101,7 +245,19 @@ void I_UpdateNoBlit (void)
 //
 void I_FinishUpdate (void)
 {
-    // TODO
+    glUseProgram(shaderProgram);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, screenTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, SCREENWIDTH, SCREENHEIGHT, 0, GL_RED, GL_UNSIGNED_BYTE, screens[0]);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_1D, paletteTexture);
+
+    glBindVertexArray(screenQuadVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+
+    glfwSwapBuffers(window);
 }
 
 //
@@ -109,7 +265,7 @@ void I_FinishUpdate (void)
 //
 void I_ReadScreen (byte* scr)
 {
-    // TODO
+    memcpy (scr, screens[0], SCREENWIDTH*SCREENHEIGHT);
 }
 
 //
@@ -117,7 +273,10 @@ void I_ReadScreen (byte* scr)
 //
 void I_SetPalette (byte* palette)
 {
-    // TODO
+    glBindTexture(GL_TEXTURE_1D, paletteTexture);
+    glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, palette);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
 #if 0
