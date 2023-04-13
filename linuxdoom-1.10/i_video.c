@@ -21,6 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
+#include <ctype.h>
 #include <signal.h>
 
 #define GLFW_INCLUDE_GLCOREARB
@@ -31,6 +32,9 @@
 
 #include "v_video.h"
 #include "i_system.h"
+#include "d_main.h"
+
+int translateKey(int glfw_key);
 
 const char *screenVertexShaderSource ="#version 330 core\n"
     "layout (location = 0) in vec4 vertex;\n" // <vec2 position, vec2 texCoords>
@@ -78,6 +82,15 @@ void I_GLFWErrorCallback(int error, const char* description)
     fprintf(stderr, "I_GLFWErrorCallback: %s\n", description);
 }
 
+void I_GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    event_t doom_event;
+    doom_event.type = (action == GLFW_PRESS || action == GLFW_REPEAT) ? ev_keydown : ev_keyup;
+    doom_event.data1 = translateKey(key);
+
+    D_PostEvent(&doom_event);
+}
+
 void I_InitGraphics(void)
 {
     fprintf(stderr, "I_InitGraphics\n");
@@ -109,6 +122,8 @@ void I_InitGraphics(void)
 
     glfwSetWindowSizeLimits(window, SCREENWIDTH, SCREENWIDTH * 3 / 4, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetWindowAspectRatio(window, 4, 3);
+
+    glfwSetKeyCallback(window, I_GLFWKeyCallback);
 
     glfwMakeContextCurrent(window);
 
@@ -277,6 +292,139 @@ void I_SetPalette (byte* palette)
     glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, palette);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+}
+
+int translateKey(int glfw_key)
+{
+    switch (glfw_key)
+    {
+        /* Function keys */
+        case GLFW_KEY_ESCAPE: return KEY_ESCAPE;
+        case GLFW_KEY_ENTER: return KEY_ENTER;
+        case GLFW_KEY_TAB: return KEY_TAB;
+        case GLFW_KEY_BACKSPACE: return KEY_BACKSPACE;
+        case GLFW_KEY_INSERT: return 0; // Unsupported key
+        case GLFW_KEY_DELETE: return 0; // Unsupported key
+        case GLFW_KEY_RIGHT: return KEY_RIGHTARROW;
+        case GLFW_KEY_LEFT: return KEY_LEFTARROW;
+        case GLFW_KEY_DOWN: return KEY_DOWNARROW;
+        case GLFW_KEY_UP: return KEY_UPARROW;
+        case GLFW_KEY_PAGE_UP: return 0; // Unsupported key
+        case GLFW_KEY_PAGE_DOWN: return 0; // Unsupported key
+        case GLFW_KEY_HOME: return 0; // Unsupported key
+        case GLFW_KEY_END: return 0; // Unsupported key
+        case GLFW_KEY_CAPS_LOCK: return 0; // Unsupported key
+        case GLFW_KEY_SCROLL_LOCK: return 0; // Unsupported key
+        case GLFW_KEY_NUM_LOCK: return 0; // Unsupported key
+        case GLFW_KEY_PRINT_SCREEN: return 0; // Unsupported key
+        case GLFW_KEY_PAUSE: return KEY_PAUSE;
+        case GLFW_KEY_F1: return KEY_F1;
+        case GLFW_KEY_F2: return KEY_F2;
+        case GLFW_KEY_F3: return KEY_F3;
+        case GLFW_KEY_F4: return KEY_F4;
+        case GLFW_KEY_F5: return KEY_F5;
+        case GLFW_KEY_F6: return KEY_F6;
+        case GLFW_KEY_F7: return KEY_F7;
+        case GLFW_KEY_F8: return KEY_F8;
+        case GLFW_KEY_F9: return KEY_F9;
+        case GLFW_KEY_F10: return KEY_F10;
+        case GLFW_KEY_F11: return KEY_F11;
+        case GLFW_KEY_F12: return KEY_F12;
+        case GLFW_KEY_F13: return 0; // Unsupported key
+        case GLFW_KEY_F14: return 0; // Unsupported key
+        case GLFW_KEY_F15: return 0; // Unsupported key
+        case GLFW_KEY_F16: return 0; // Unsupported key
+        case GLFW_KEY_F17: return 0; // Unsupported key
+        case GLFW_KEY_F18: return 0; // Unsupported key
+        case GLFW_KEY_F19: return 0; // Unsupported key
+        case GLFW_KEY_F20: return 0; // Unsupported key
+        case GLFW_KEY_F21: return 0; // Unsupported key
+        case GLFW_KEY_F22: return 0; // Unsupported key
+        case GLFW_KEY_F23: return 0; // Unsupported key
+        case GLFW_KEY_F24: return 0; // Unsupported key
+        case GLFW_KEY_F25: return 0; // Unsupported key
+        case GLFW_KEY_KP_0: return '0';
+        case GLFW_KEY_KP_1: return '1';
+        case GLFW_KEY_KP_2: return '2';
+        case GLFW_KEY_KP_3: return '3';
+        case GLFW_KEY_KP_4: return '4';
+        case GLFW_KEY_KP_5: return '5';
+        case GLFW_KEY_KP_6: return '6';
+        case GLFW_KEY_KP_7: return '7';
+        case GLFW_KEY_KP_8: return '8';
+        case GLFW_KEY_KP_9: return '9';
+        case GLFW_KEY_KP_DECIMAL: return '.';
+        case GLFW_KEY_KP_DIVIDE: return '/';
+        case GLFW_KEY_KP_MULTIPLY: return '*';
+        case GLFW_KEY_KP_SUBTRACT: return KEY_MINUS;
+        case GLFW_KEY_KP_ADD: return '+';
+        case GLFW_KEY_KP_ENTER: return '\n';
+        case GLFW_KEY_KP_EQUAL: return KEY_EQUALS;
+        case GLFW_KEY_LEFT_SHIFT: return KEY_RSHIFT; // Doom uses right shift key code for both shifts
+        case GLFW_KEY_LEFT_CONTROL: return KEY_RCTRL; // Doom uses right control key code for both controls
+        case GLFW_KEY_LEFT_ALT: return KEY_RALT; // Doom uses right alt key code for both alts
+        case GLFW_KEY_LEFT_SUPER: return 0; // Unsupported key
+        case GLFW_KEY_RIGHT_SHIFT: return KEY_RSHIFT;
+        case GLFW_KEY_RIGHT_CONTROL: return KEY_RCTRL;
+        case GLFW_KEY_RIGHT_ALT: return KEY_LALT;
+        case GLFW_KEY_RIGHT_SUPER: return 0; // Unsupported key
+        case GLFW_KEY_MENU: return 0; // Unsupported key
+
+        // Printable keys -- Doom uses the same value
+        case GLFW_KEY_SPACE:
+        case GLFW_KEY_APOSTROPHE:
+        case GLFW_KEY_COMMA:
+        case GLFW_KEY_MINUS:
+        case GLFW_KEY_PERIOD:
+        case GLFW_KEY_SLASH:
+        case GLFW_KEY_0:
+        case GLFW_KEY_1:
+        case GLFW_KEY_2:
+        case GLFW_KEY_3:
+        case GLFW_KEY_4:
+        case GLFW_KEY_5:
+        case GLFW_KEY_6:
+        case GLFW_KEY_7:
+        case GLFW_KEY_8:
+        case GLFW_KEY_9:
+        case GLFW_KEY_SEMICOLON:
+        case GLFW_KEY_EQUAL:
+        case GLFW_KEY_A:
+        case GLFW_KEY_B:
+        case GLFW_KEY_C:
+        case GLFW_KEY_D:
+        case GLFW_KEY_E:
+        case GLFW_KEY_F:
+        case GLFW_KEY_G:
+        case GLFW_KEY_H:
+        case GLFW_KEY_I:
+        case GLFW_KEY_J:
+        case GLFW_KEY_K:
+        case GLFW_KEY_L:
+        case GLFW_KEY_M:
+        case GLFW_KEY_N:
+        case GLFW_KEY_O:
+        case GLFW_KEY_P:
+        case GLFW_KEY_Q:
+        case GLFW_KEY_R:
+        case GLFW_KEY_S:
+        case GLFW_KEY_T:
+        case GLFW_KEY_U:
+        case GLFW_KEY_V:
+        case GLFW_KEY_W:
+        case GLFW_KEY_X:
+        case GLFW_KEY_Y:
+        case GLFW_KEY_Z:
+        case GLFW_KEY_LEFT_BRACKET:
+        case GLFW_KEY_BACKSLASH:
+        case GLFW_KEY_RIGHT_BRACKET:
+        case GLFW_KEY_GRAVE_ACCENT:
+        case GLFW_KEY_WORLD_1:
+        case GLFW_KEY_WORLD_2:
+            return tolower(glfw_key);
+
+        default: return 0; // Unknown or unsupported key
+    }
 }
 
 #if 0
