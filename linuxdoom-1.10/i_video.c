@@ -91,6 +91,46 @@ void I_GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, in
     D_PostEvent(&doom_event);
 }
 
+void I_GLFWMouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    event_t doom_event;
+    doom_event.type = ev_mouse;
+    doom_event.data1 = 0;
+
+    doom_event.data1 |= glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS ? 1 : 0;
+    doom_event.data1 |= glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS ? 2 : 0;
+    doom_event.data1 |= glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS ? 4 : 0;
+    doom_event.data2 = 0;
+    doom_event.data3 = 0;
+
+    D_PostEvent(&doom_event);
+}
+
+void I_GLFWCursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
+{
+    const double MOUSE_SENSITIVITY_FACTOR = 4.0;
+    static double last_x = 0;
+    static double last_y = 0;
+
+    double dx = xpos - last_x;
+    double dy = ypos - last_y;
+
+    last_x = xpos;
+    last_y = ypos;
+
+    event_t doom_event;
+    doom_event.type = ev_mouse;
+    doom_event.data1 = 0;
+
+    doom_event.data1 |= glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS ? 1 : 0;
+    doom_event.data1 |= glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS ? 2 : 0;
+    doom_event.data1 |= glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS ? 4 : 0;
+    doom_event.data2 = (int)(dx * MOUSE_SENSITIVITY_FACTOR);
+    doom_event.data3 = -(int)(dy * MOUSE_SENSITIVITY_FACTOR);
+
+    D_PostEvent(&doom_event);
+}
+
 void I_InitGraphics(void)
 {
     fprintf(stderr, "I_InitGraphics\n");
@@ -122,8 +162,11 @@ void I_InitGraphics(void)
 
     glfwSetWindowSizeLimits(window, SCREENWIDTH, SCREENWIDTH * 3 / 4, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetWindowAspectRatio(window, 4, 3);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glfwSetKeyCallback(window, I_GLFWKeyCallback);
+    glfwSetMouseButtonCallback(window, I_GLFWMouseButtonCallback);
+    glfwSetCursorPosCallback(window, I_GLFWCursorPositionCallback);
 
     glfwMakeContextCurrent(window);
 
