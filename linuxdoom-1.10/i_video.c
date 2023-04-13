@@ -100,15 +100,15 @@ void I_InitGraphics(void)
 
     glfwSetErrorCallback(I_GLFWErrorCallback);
 
-    window = glfwCreateWindow(SCREENWIDTH, SCREENHEIGHT, "Doom", 0, 0);
+    window = glfwCreateWindow(2*SCREENWIDTH, 2*SCREENWIDTH * 3 / 4, "Doom", 0, 0);
     if (!window) {
         fprintf(stderr, "I_InitGraphics: Could not create window");
         glfwTerminate();
         I_Quit();
     }
 
-    glfwSetWindowSizeLimits(window, SCREENWIDTH, SCREENHEIGHT, GLFW_DONT_CARE, GLFW_DONT_CARE);
-    glfwSetWindowAspectRatio(window, SCREENWIDTH, SCREENHEIGHT);
+    glfwSetWindowSizeLimits(window, SCREENWIDTH, SCREENWIDTH * 3 / 4, GLFW_DONT_CARE, GLFW_DONT_CARE);
+    glfwSetWindowAspectRatio(window, 4, 3);
 
     glfwMakeContextCurrent(window);
 
