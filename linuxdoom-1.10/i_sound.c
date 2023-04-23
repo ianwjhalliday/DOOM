@@ -157,28 +157,6 @@ int I_RegisterSong(void* data)
     return songHandle++;
 }
 
-int I_QrySongPlaying(int handle)
-{
-    fprintf(stderr, "I_QrySongPlaying: handle = %d\n", handle);
-    return 0;
-}
-
-void I_HandleSoundTimer(int ignore)
-{
-    fprintf(stderr, "I_HandleSoundTimer: ignore = %d\n", ignore);
-}
-
-int I_SoundSetTimer(int duration_of_tick)
-{
-    fprintf(stderr, "I_SoundSetTimer: duration_of_ticks = %d\n", duration_of_tick);
-    return 0;
-}
-
-void I_SoundDelTimer()
-{
-    fprintf(stderr, "I_SoundDelTimer\n");
-}
-
 #if 0
 
 #include <stdio.h>
