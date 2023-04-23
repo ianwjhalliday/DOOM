@@ -153,7 +153,7 @@ void I_InitGraphics(void)
 
     glfwSetErrorCallback(I_GLFWErrorCallback);
 
-    window = glfwCreateWindow(2*SCREENWIDTH, 2*SCREENWIDTH * 3 / 4, "Doom", 0, 0);
+    window = glfwCreateWindow(3*SCREENWIDTH, 3*SCREENWIDTH * 3 / 4, "Doom", 0, 0);
     if (!window) {
         fprintf(stderr, "I_InitGraphics: Could not create window");
         glfwTerminate();
