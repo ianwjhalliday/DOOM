@@ -25,6 +25,163 @@
 // rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 
 #include <stdio.h>
+
+#include "sounds.h"
+#include "w_wad.h"
+
+void I_SetChannels()
+{
+    fprintf(stderr, "I_SetChannels\n");
+}	
+
+ 
+void I_SetSfxVolume(int volume)
+{
+    fprintf(stderr, "I_SetSfxVolume: volume = %d\n", volume);
+}
+
+void I_SetMusicVolume(int volume)
+{
+    fprintf(stderr, "I_SetMusicVolume: volume = %d\n", volume);
+}
+
+int I_GetSfxLumpNum(sfxinfo_t* sfx)
+{
+    char namebuf[9];
+    sprintf(namebuf, "ds%s", sfx->name);
+    int num = W_GetNumForName(namebuf);
+
+    fprintf(stderr, "I_GetSfxLumpNum: [ds]%s -> %d\n", sfx->name, num);
+    return num;
+}
+
+int soundHandle = 0;
+int
+I_StartSound
+( int		id,
+  int		vol,
+  int		sep,
+  int		pitch,
+  int		priority )
+{
+    fprintf(stderr, "I_StartSound: id = %d vol = %d sep = %d pitch = %d priority = %d\n", id, vol, sep, pitch, priority);
+    return soundHandle++;
+}
+
+
+
+void I_StopSound (int handle)
+{
+    fprintf(stderr, "I_StopSound: handle = %d\n", handle);
+}
+
+
+int I_SoundIsPlaying(int handle)
+{
+    fprintf(stderr, "I_SoundIsPlaying: handle = %d\n", handle);
+    return 0;
+}
+
+void I_UpdateSound( void )
+{
+    //fprintf(stderr, "I_UpdateSound\n");
+}
+
+void
+I_SubmitSound(void)
+{
+    //fprintf(stderr, "I_SubmitSound\n");
+}
+
+void
+I_UpdateSoundParams
+( int	handle,
+  int	vol,
+  int	sep,
+  int	pitch)
+{
+    fprintf(stderr, "I_UpdateSoundParams: handle = %d vol = %d sep = %d pitch = %d\n", handle, vol, sep, pitch);
+}
+
+void I_ShutdownSound(void)
+{
+    fprintf(stderr, "I_ShutdownSound\n");
+}
+
+void
+I_InitSound()
+{
+    fprintf(stderr, "I_InitSound\n");
+}
+
+void I_InitMusic(void)
+{
+    // TODO: This isn't called
+    fprintf(stderr, "I_InitMusic\n");
+}
+
+void I_ShutdownMusic(void)
+{
+    fprintf(stderr, "I_ShutdownMusic\n");
+}
+
+void I_PlaySong(int handle, int looping)
+{
+    fprintf(stderr, "I_PlaySong: handle = %d looping = %d\n", handle, looping);
+}
+
+void I_PauseSong (int handle)
+{
+    fprintf(stderr, "I_PauseSong: handle = %d\n", handle);
+}
+
+void I_ResumeSong (int handle)
+{
+    fprintf(stderr, "I_ResumeSong: handle = %d\n", handle);
+}
+
+void I_StopSong(int handle)
+{
+    fprintf(stderr, "I_StopSong: handle = %d\n", handle);
+}
+
+void I_UnRegisterSong(int handle)
+{
+    fprintf(stderr, "I_UnRegisterSong: handle = %d\n", handle);
+}
+
+int songHandle = 0;
+int I_RegisterSong(void* data)
+{
+    fprintf(stderr, "I_RegisterSong: data = %p -> %d\n", data, songHandle);
+    return songHandle++;
+}
+
+int I_QrySongPlaying(int handle)
+{
+    fprintf(stderr, "I_QrySongPlaying: handle = %d\n", handle);
+    return 0;
+}
+
+void I_HandleSoundTimer(int ignore)
+{
+    fprintf(stderr, "I_HandleSoundTimer: ignore = %d\n", ignore);
+}
+
+int I_SoundSetTimer(int duration_of_tick)
+{
+    fprintf(stderr, "I_SoundSetTimer: duration_of_ticks = %d\n", duration_of_tick);
+    return 0;
+}
+
+void I_SoundDelTimer()
+{
+    fprintf(stderr, "I_SoundDelTimer\n");
+}
+
+#if 0
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
@@ -983,3 +1140,4 @@ void I_SoundDelTimer()
   if ( I_SoundSetTimer( 0 ) == -1)
     fprintf( stderr, "I_SoundDelTimer: failed to remove interrupt. Doh!\n");
 }
+#endif
