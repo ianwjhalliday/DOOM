@@ -35,9 +35,8 @@
 
 typedef struct {
     int handle;
-    int vol;
-    int sep;
-    int pitch;
+    uint8_t volL;
+    uint8_t volR;
     uint8_t* samples;
     uint16_t sampleRate;
     uint32_t sampleCount;
@@ -63,8 +62,19 @@ uint32_t min(uint32_t a, uint32_t b)
     return a < b ? a : b;
 }
 
+void panVolumeToLR(int sep, int vol, uint8_t* volL, uint8_t* volR)
+{
+    int left = (254 - sep) * vol / 127 / 2;
+    int right = sep * vol / 127 / 2;
+    *volL = (uint8_t)left;
+    *volR = (uint8_t)right;
+}
+
 void I_MADataCallback(ma_device* device, void* output, const void* input, ma_uint32 frameCount)
 {
+    // TODO: Replace this memset with music
+    memset(output, 0, frameCount * 2 * sizeof(int16_t));
+
     for (uint32_t i = 0; i < NUMPLAYINGSOUNDS; i += 1)
     {
         if (playingSounds[i].handle == -1)
@@ -73,7 +83,7 @@ void I_MADataCallback(ma_device* device, void* output, const void* input, ma_uin
         // To avoid issues with multi-threading read/write we use a copy here
         playingsfx_t playingSound = playingSounds[i];
 
-        uint8_t* out = (uint8_t*)output;
+        int16_t* out = (int16_t*)output;
         uint8_t* samples = playingSound.samples;
         uint32_t sampleCount = playingSound.sampleCount;
         uint32_t samplesPlayed = playingSound.samplesPlayed;
@@ -82,11 +92,22 @@ void I_MADataCallback(ma_device* device, void* output, const void* input, ma_uin
         uint8_t* samplesStart = samples + samplesPlayed;
         uint8_t* samplesEnd = samplesStart + framesToCopy;
 
+        uint8_t volL = playingSound.volL;
+        uint8_t volR = playingSound.volR;
+
         for (uint8_t* sample = samplesStart; sample < samplesEnd; sample++)
         {
-            // TODO: Mixing, volume, panning
-            *out++ = *sample;
-            *out++ = *sample;
+            int16_t sample16 = (*sample - 128) << 8;
+            // volumes are values 0 through 15 hence divide by 15
+            // FIX: Clipping can occur with 8 simultaneous sounds
+            // It might be better to mix to a int32 buffer to allow
+            // overlapping sounds the chance to cancel out and then
+            // copy it over to the output buffer with a clip pass.
+            // Alternatively could try scaling down the volume overall.
+            // Chocolate Doom scales sounds by 0.65 to avoid clipping.
+            // Use that here for now albeit it makes the game quieter.
+            *out++ += (int16_t)(sample16 * ((float)volL / 15) * 0.65);
+            *out++ += (int16_t)(sample16 * ((float)volR / 15) * 0.65);
         }
 
         samplesPlayed += framesToCopy;
@@ -107,7 +128,7 @@ void I_InitSound(void)
         playingSounds[i].handle = -1;
 
     deviceConfig = ma_device_config_init(ma_device_type_playback);
-    deviceConfig.playback.format   = ma_format_u8;
+    deviceConfig.playback.format   = ma_format_s16;
     deviceConfig.playback.channels = 2;
     deviceConfig.sampleRate        = 11025;
     deviceConfig.dataCallback      = I_MADataCallback;
@@ -136,13 +157,7 @@ void I_SubmitSound(void) {}
 void I_SetSfxVolume(int volume) {}
 void I_SetMusicVolume(int volume) {}
 
-int
-I_StartSound
-( int		id,
-  int		vol,
-  int		sep,
-  int		pitch,
-  int		priority )
+int I_StartSound(int id, int vol, int sep, int pitch, int priority)
 {
     for (uint32_t i = 0; i < NUMPLAYINGSOUNDS; i += 1)
     {
@@ -157,10 +172,8 @@ I_StartSound
             &playingSound->sampleCount,
             &playingSound->samples);
         playingSound->samplesPlayed = 0;
-        playingSound->vol = vol;
-        playingSound->sep = sep;
-        playingSound->pitch = pitch;
-        // priority ignored
+        panVolumeToLR(sep, vol, &playingSound->volL, &playingSound->volR);
+        // priority is ignored here; it is used in s_sound.c
 
         // Set handle last to avoid callback picking up the new sound before it
         // is fully initialized (because callback is on a separate thread).
@@ -190,20 +203,11 @@ int I_SoundIsPlaying(int handle)
     return 0;
 }
 
-void
-I_UpdateSoundParams
-( int	handle,
-  int	vol,
-  int	sep,
-  int	pitch)
+void I_UpdateSoundParams(int handle, int vol, int sep, int pitch)
 {
     for (uint32_t i = 0; i < NUMPLAYINGSOUNDS; i += 1)
         if (playingSounds[i].handle == handle)
-        {
-            playingSounds[i].vol = vol;
-            playingSounds[i].sep = sep;
-            playingSounds[i].pitch = pitch;
-        }
+            panVolumeToLR(sep, vol, &playingSounds[i].volL, &playingSounds[i].volR);
 }
 
 //
