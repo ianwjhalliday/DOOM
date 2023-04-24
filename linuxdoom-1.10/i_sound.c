@@ -29,12 +29,11 @@
 #include "sounds.h"
 #include "w_wad.h"
 
-void I_SetChannels()
+void I_SetChannels(void)
 {
     fprintf(stderr, "I_SetChannels\n");
-}	
+}
 
- 
 void I_SetSfxVolume(int volume)
 {
     fprintf(stderr, "I_SetSfxVolume: volume = %d\n", volume);
@@ -45,14 +44,19 @@ void I_SetMusicVolume(int volume)
     fprintf(stderr, "I_SetMusicVolume: volume = %d\n", volume);
 }
 
+//
+// Gets the sound lump for digital sounds.
+//
+// The reason this is I_ code is because there are alternatively PC Speaker
+// sound lumps that were for the PC Speaker sound option.
+//
+// The "ds" prefix denotes digital sound lumps. "dp" prefix is PC Speaker.
+//
 int I_GetSfxLumpNum(sfxinfo_t* sfx)
 {
     char namebuf[9];
     sprintf(namebuf, "ds%s", sfx->name);
-    int num = W_GetNumForName(namebuf);
-
-    fprintf(stderr, "I_GetSfxLumpNum: [ds]%s -> %d\n", sfx->name, num);
-    return num;
+    return W_GetNumForName(namebuf);
 }
 
 int soundHandle = 0;
@@ -68,13 +72,10 @@ I_StartSound
     return soundHandle++;
 }
 
-
-
-void I_StopSound (int handle)
+void I_StopSound(int handle)
 {
     fprintf(stderr, "I_StopSound: handle = %d\n", handle);
 }
-
 
 int I_SoundIsPlaying(int handle)
 {
@@ -82,13 +83,12 @@ int I_SoundIsPlaying(int handle)
     return 0;
 }
 
-void I_UpdateSound( void )
+void I_UpdateSound(void)
 {
     //fprintf(stderr, "I_UpdateSound\n");
 }
 
-void
-I_SubmitSound(void)
+void I_SubmitSound(void)
 {
     //fprintf(stderr, "I_SubmitSound\n");
 }
@@ -108,8 +108,7 @@ void I_ShutdownSound(void)
     fprintf(stderr, "I_ShutdownSound\n");
 }
 
-void
-I_InitSound()
+void I_InitSound(void)
 {
     fprintf(stderr, "I_InitSound\n");
 }
@@ -130,12 +129,12 @@ void I_PlaySong(int handle, int looping)
     fprintf(stderr, "I_PlaySong: handle = %d looping = %d\n", handle, looping);
 }
 
-void I_PauseSong (int handle)
+void I_PauseSong(int handle)
 {
     fprintf(stderr, "I_PauseSong: handle = %d\n", handle);
 }
 
-void I_ResumeSong (int handle)
+void I_ResumeSong(int handle)
 {
     fprintf(stderr, "I_ResumeSong: handle = %d\n", handle);
 }
