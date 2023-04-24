@@ -353,33 +353,16 @@ S_StartSoundAtVolume
   
   if (cnum<0)
     return;
-
-  //
-  // This is supposed to handle the loading/caching.
-  // For some odd reason, the caching is done nearly
-  //  each time the sound is needed?
-  //
   
   // get lumpnum if necessary
   if (sfx->lumpnum < 0)
     sfx->lumpnum = I_GetSfxLumpNum(sfx);
 
-#ifndef SNDSRV
   // cache data if necessary
   if (!sfx->data)
   {
-      // TODO: Fix sound
-    // fprintf( stderr,
-	     // "S_StartSoundAtVolume: 16bit and not pre-cached - wtf?\n");
-
-    // DOS remains, 8bit handling
-    //sfx->data = (void *) W_CacheLumpNum(sfx->lumpnum, PU_MUSIC);
-    // fprintf( stderr,
-    //	     "S_StartSoundAtVolume: loading %d (lump %d) : 0x%x\n",
-    //       sfx_id, sfx->lumpnum, (int)sfx->data );
-    
+    sfx->data = W_CacheLumpNum(sfx->lumpnum, PU_MUSIC);
   }
-#endif
   
   // increase the usefulness
   if (sfx->usefulness++ < 0)
