@@ -265,6 +265,21 @@ void I_ShutdownGraphics(void)
     glfwTerminate();
 }
 
+void I_PauseMouseCapture(void)
+{
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetMouseButtonCallback(window, NULL);
+    glfwSetCursorPosCallback(window, NULL);
+}
+
+void I_ResumeMouseCapture(void)
+{
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetMouseButtonCallback(window, I_GLFWMouseButtonCallback);
+    glfwSetCursorPosCallback(window, I_GLFWCursorPositionCallback);
+}
+
+
 //
 // I_StartFrame
 //

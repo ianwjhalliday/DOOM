@@ -1727,6 +1727,7 @@ void M_StartControlPanel (void)
     if (menuactive)
 	return;
     
+    I_PauseMouseCapture();
     menuactive = 1;
     currentMenu = &MainDef;         // JDC
     itemOn = currentMenu->lastOn;   // JDC
@@ -1812,6 +1813,7 @@ void M_Drawer (void)
 void M_ClearMenus (void)
 {
     menuactive = 0;
+    I_ResumeMouseCapture();
     // if (!netgame && usergame && paused)
     //       sendpause = true;
 }

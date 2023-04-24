@@ -49,6 +49,8 @@
 #include "st_stuff.h"
 #include "am_map.h"
 
+#include "i_video.h"
+
 // Needs access to LFB.
 #include "v_video.h"
 
@@ -706,9 +708,15 @@ void G_Ticker (void)
 		  case BTS_PAUSE: 
 		    paused ^= 1; 
 		    if (paused) 
+                    {
+                        I_PauseMouseCapture ();
 			S_PauseSound (); 
+                    }
 		    else 
+                    {
+                        I_ResumeMouseCapture ();
 			S_ResumeSound (); 
+                    }
 		    break; 
 					 
 		  case BTS_SAVEGAME: 
