@@ -1594,6 +1594,7 @@ boolean M_Responder (event_t* ev)
 	    M_QuitDOOM(0);
 	    return true;
 				
+          case 'g':
 	  case KEY_F11:           // gamma toggle
 	    usegamma++;
 	    if (usegamma > 4)

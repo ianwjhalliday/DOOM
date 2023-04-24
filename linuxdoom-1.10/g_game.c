@@ -558,7 +558,7 @@ boolean G_Responder (event_t* ev)
     switch (ev->type) 
     { 
       case ev_keydown: 
-	if (ev->data1 == KEY_PAUSE) 
+	if (ev->data1 == KEY_PAUSE || ev->data1 == 'p') 
 	{ 
 	    sendpause = true; 
 	    return true; 
