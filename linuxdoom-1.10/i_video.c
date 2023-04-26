@@ -53,13 +53,13 @@ const char *screenFragmentShaderSource = "#version 330 core\n"
     "in vec2 TexCoords;\n"
     "out vec4 color;\n"
     "\n"
-    "uniform sampler2D screen;\n"
+    "uniform usampler2D screen;\n"
     "uniform sampler1D palette;\n"
     "\n"
     "void main()\n"
     "{\n"
-    "   float paletteIndex = texture(screen, TexCoords).r * 255.0;\n"
-    "   color = texture(palette, paletteIndex / 255);\n"
+    "   uint paletteIndex = texture(screen, TexCoords).r;\n"
+    "   color = texelFetch(palette, int(paletteIndex), 0);\n"
     "}\n\0";
 
 GLuint shaderProgram;
