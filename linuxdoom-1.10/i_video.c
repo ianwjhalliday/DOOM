@@ -341,18 +341,20 @@ void I_ReadScreen (byte* scr)
     memcpy (scr, screens[0], SCREENWIDTH*SCREENHEIGHT);
 }
 
+byte palette[3*256];
 //
 // I_SetPalette
 //
 void I_SetPalette (byte* pal)
 {
-    static byte palette[3*256];
     for (int i = 0; i < 3*256; i += 3)
     {
         palette[i+0] = gammatable[usegamma][pal[i+0]];
         palette[i+1] = gammatable[usegamma][pal[i+1]];
         palette[i+2] = gammatable[usegamma][pal[i+2]];
     }
+
+    fprintf(stderr, "I_SetPalette: Color 255 = (%d %d %d)\n", palette[255*3+0], palette[255*3+1], palette[255*3+2]);
 
     glBindTexture(GL_TEXTURE_1D, paletteTexture);
     glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, palette);

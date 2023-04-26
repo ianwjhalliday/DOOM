@@ -95,6 +95,8 @@ byte*			dc_source;
 // just for profiling 
 int			dccount;
 
+boolean checkpixels = false;
+
 //
 // A column is a vertical slice/span from a wall texture that,
 //  given the DOOM style restrictions on the view orientation,
@@ -132,6 +134,72 @@ void R_DrawColumn (void)
     fracstep = dc_iscale; 
     frac = dc_texturemid + (dc_yl-centery)*fracstep; 
 
+    extern byte palette[];
+
+    // static boolean checked1 = false;
+    // static boolean checked2 = false;
+    // static boolean checked3 = false;
+    if (checkpixels)// && (!checked1 || !checked2 || !checked3))
+    {
+        static int lastdest16 = 256;
+        static int lastdest17 = 256;
+        do 
+        {
+            // Re-map color indices from wall texture column
+            //  using a lighting/special effects LUT.
+            int source = dc_source[(frac>>FRACBITS)&127];
+            *dest = dc_colormap[source];
+
+            if (source == 16 && lastdest16 != *dest)
+            {
+                lastdest16 = *dest;
+                fprintf(stderr, "16 -> %d (%d %d %d)\n", *dest, palette[*dest*3+0], palette[*dest*3+1], palette[*dest*3+2]);
+            }
+
+            if (source == 17 && lastdest17 != *dest)
+            {
+                lastdest17 = *dest;
+                fprintf(stderr, "17 -> %d (%d %d %d)\t", *dest, palette[*dest*3+0], palette[*dest*3+1], palette[*dest*3+2]);
+            }
+
+#if 0
+            if (!checked1 &&
+                *dest != 0 &&
+                palette[*dest*3+0] == 2 &&
+                palette[*dest*3+1] == 2 &&
+                palette[*dest*3+2] == 2)
+            {
+                checked1 = true;
+                fprintf(stderr, "2 2 2 from %d\n", source);
+            }
+
+            if (!checked2 &&
+                palette[*dest*3+0] == 191 &&
+                palette[*dest*3+1] == 169 &&
+                palette[*dest*3+2] == 147)
+            {
+                checked2 = true;
+                fprintf(stderr, "191 169 147 from %d\n", source);
+            }
+
+            if (!checked3 &&
+                palette[*dest*3+0] == 184 &&
+                palette[*dest*3+1] == 162 &&
+                palette[*dest*3+2] == 139)
+            {
+                checked3 = true;
+                fprintf(stderr, "184 162 139 from %d\n", source);
+            }
+#endif
+
+            dest += SCREENWIDTH; 
+            frac += fracstep;
+
+        } while (count--); 
+    }
+    else
+    {
+
     // Inner loop that does the actual texture mapping,
     //  e.g. a DDA-lile scaling.
     // This is as fast as it gets.
@@ -145,6 +213,7 @@ void R_DrawColumn (void)
 	frac += fracstep;
 	
     } while (count--); 
+    }
 } 
 
 

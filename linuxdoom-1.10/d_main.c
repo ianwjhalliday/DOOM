@@ -153,6 +153,7 @@ void D_PostEvent (event_t* ev)
 }
 
 
+boolean HACK_Responder (event_t* ev);
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
@@ -169,6 +170,8 @@ void D_ProcessEvents (void)
     for ( ; eventtail != eventhead ; eventtail = (1 + eventtail)&(MAXEVENTS-1) )
     {
 	ev = &events[eventtail];
+        if (HACK_Responder (ev))
+            continue;
 	if (M_Responder (ev))
 	    continue;               // menu ate the event
 	G_Responder (ev);

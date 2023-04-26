@@ -387,8 +387,6 @@ void R_DrawMaskedColumn (column_t* column)
     dc_texturemid = basetexturemid;
 }
 
-
-
 //
 // R_DrawVisSprite
 //  mfloorclip and mceilingclip should also be set.
@@ -432,7 +430,7 @@ R_DrawVisSprite
 	texturecolumn = frac>>FRACBITS;
 #ifdef RANGECHECK
 	if (texturecolumn < 0 || texturecolumn >= SHORT(patch->width))
-	    I_Error ("R_DrawSpriteRange: bad texturecolumn");
+	    I_Error ("R_DrawSpriteRange: bad texturecolumn = %d [0 %d] dc_x = %d; x1 = %d x2 = %d", texturecolumn, patch->width, dc_x, vis->x1, vis->x2);
 #endif
 	column = (column_t *) ((byte *)patch +
 			       LONG(patch->columnofs[texturecolumn]));
@@ -561,7 +559,7 @@ void R_ProjectSprite (mobj_t* thing)
 
     if (flip)
     {
-	vis->startfrac = spritewidth[lump]-1;
+	vis->startfrac = spritewidth[lump]-1; // FIX: Should this be `-FRACUNIT` instead of `-1`?
 	vis->xiscale = -iscale;
     }
     else
@@ -700,7 +698,7 @@ void R_DrawPSprite (pspdef_t* psp)
     if (flip)
     {
 	vis->xiscale = -pspriteiscale;
-	vis->startfrac = spritewidth[lump]-1;
+	vis->startfrac = spritewidth[lump]-1; // FIX: Should this be `-FRACUNIT` instead of `-1`?
     }
     else
     {
@@ -740,6 +738,11 @@ void R_DrawPSprite (pspdef_t* psp)
 
 
 
+int showstate = S_SARG_STND;
+int showrotation = 0;
+int lightlevel = MAXLIGHTSCALE-1;
+
+
 //
 // R_DrawPlayerSprites
 //
@@ -773,9 +776,80 @@ void R_DrawPlayerSprites (void)
 	if (psp->state)
 	    R_DrawPSprite (psp);
     }
+
+    state_t* state = &states[showstate];
+    spritedef_t* sprdef = &sprites[state->sprite];
+    spriteframe_t* sprframe = &sprdef->spriteframes[state->frame & FF_FRAMEMASK];
+    short lump = sprframe->lump[showrotation];
+    int flip = sprframe->flip[showrotation] ? -1 : 1;
+
+    vissprite_t vis;
+    vis.mobjflags = 0;
+    vis.texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2 - 64*FRACUNIT;
+    vis.patch = lump;
+    vis.scale = 2*FRACUNIT;
+    vis.xiscale = flip*0.5*FRACUNIT;
+    vis.startfrac = (flip-1)/-2*(spritewidth[lump] - 1);
+    vis.colormap = spritelights[lightlevel];
+    vis.x1 = 112;
+    vis.x2 = 112 + (2*spritewidth[lump]>>FRACBITS) - 1;
+
+    vis.x1 = 160 - (2*spritewidth[lump] >> FRACBITS)/2;
+    vis.x2 = 160 + (2*spritewidth[lump] >> FRACBITS)/2 - 1;
+
+    extern boolean checkpixels;
+    checkpixels = true;
+    R_DrawVisSprite(&vis, vis.x1, vis.x2);
+    checkpixels = false;
 }
 
+//
+// HACK_Responder
+//
+boolean HACK_Responder (event_t* ev)
+{
+    if (ev->type != ev_keydown)
+        return false;
 
+    int ch = ev->data1;
+    switch (ch)
+    {
+        case 'h':
+        case 'l':
+            // change frame left and right
+            showstate += ch == 'h' ? -1 : 1;
+            if (showstate > S_SARG_RAISE6)
+                showstate = S_SARG_STND;
+            else if (showstate < S_SARG_STND)
+                showstate = S_SARG_RAISE6;
+            return true;
+
+        case 'n':
+        case 'p':
+            // rotate (but no flip)
+            showrotation += ch == 'n' ? -1 : 1;
+            if (showrotation < 0)
+                showrotation = 7;
+            else if (showrotation >= 8)
+                showrotation = 0;
+            return true;
+
+        case 'j':
+        case 'k':
+            // change lighting up and down
+            lightlevel += ch == 'j' ? -1 : 1;
+            if (lightlevel < 0)
+                lightlevel = 0;
+            if (lightlevel >= MAXLIGHTSCALE)
+                lightlevel = MAXLIGHTSCALE-1;
+            return true;
+
+        case 'q':
+            // quit immediately
+            I_Quit();
+    }
+    return false;
+}
 
 
 //
