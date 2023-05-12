@@ -92,6 +92,7 @@ void I_MADataCallback(ma_device* device, void* output, const void* input, ma_uin
 
         int16_t* out = (int16_t*)output;
         uint8_t* samples = playingSound.samples;
+        uint16_t sampleRate = playingSound.sampleRate;
         uint32_t sampleCount = playingSound.sampleCount;
         uint32_t samplesPlayed = playingSound.samplesPlayed;
         uint32_t framesToCopy = min(frameCount, sampleCount - samplesPlayed);
@@ -115,6 +116,11 @@ void I_MADataCallback(ma_device* device, void* output, const void* input, ma_uin
             // Use that here for now albeit it makes the game quieter.
             *out++ += (int16_t)(sample16 * ((float)volL / 15) * 0.65);
             *out++ += (int16_t)(sample16 * ((float)volR / 15) * 0.65);
+
+            // HACK: a few sound effects are double sample rate so
+            // drop every other sample to match 11025
+            if (sampleRate == 22050)
+                sample++;
         }
 
         samplesPlayed += framesToCopy;
