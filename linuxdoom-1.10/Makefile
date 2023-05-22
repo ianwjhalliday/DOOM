@@ -4,10 +4,14 @@
 #
 # $Log:$
 #
-CC=  gcc  # gcc or g++
+#CC=  gcc  # gcc or g++
+CC=zig cc
+
+#UBSAN_FLAGS=-fsanitize=undefined -fno-sanitize=alignment
+UBSAN_FLAGS=-fno-sanitize=undefined
 
 CWARNINGS=-Wall # -Wextra -Wmissing-prototypes -Wshadow -Wcast-align -Wwrite-strings -Wconversion
-CFLAGS=-g $(CWARNINGS) $(shell pkg-config --cflags glfw3) -DNORMALUNIX -DLINUX # -DUSEASM 
+CFLAGS=$(UBSAN_FLAGS) -g $(CWARNINGS) $(shell pkg-config --cflags glfw3) -DNORMALUNIX -DLINUX # -DUSEASM 
 LDFLAGS=
 LIBS=-lm $(shell pkg-config --static --libs glfw3) -framework OpenGL
 
