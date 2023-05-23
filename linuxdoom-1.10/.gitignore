@@ -1,3 +1,5 @@
 linux/
 *.[wW][aA][dD]
 doomsav*.dsg
+zig-cache/
+zig-out/
