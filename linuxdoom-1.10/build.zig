@@ -85,7 +85,6 @@ pub fn build(b: *std.Build) void {
         "hu_stuff.c",
         "hu_lib.c",
         "s_sound.c",
-        "z_zone.c",
         "info.c",
         "sounds.c",
     };

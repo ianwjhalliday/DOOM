@@ -267,3 +267,106 @@ export fn Z_FreeTags(lowtag: Z_Tag, hightag: Z_Tag) void {
         }
     }
 }
+
+// Debugging Utilities
+
+// TODO: Zig converted Z_DumpHeap is untested
+export fn Z_DumpHeap(lowtag: Z_Tag, hightag: Z_Tag) void {
+    const print = @import("std").debug.print;
+
+    print("zone size: {}  location: {}\n", .{mainzone.size, mainzone});
+    print("tag range: {} to {}\n", .{lowtag, hightag});
+
+    var block = mainzone.blocklist.next;
+    while (true) : (block = block.next) {
+        if (@enumToInt(block.tag) >= @enumToInt(lowtag)
+            and @enumToInt(block.tag) <= @enumToInt(hightag)) {
+            print("block:{}    size:{:7}    user:{?}    tag:{:3}\n",
+                .{block, block.size, block.user, block.tag});
+        }
+
+        if (block.next == &mainzone.blocklist) {
+            // all blocks have been hit
+            break;
+        }
+
+        if (@ptrToInt(block) + @intCast(usize, block.size) != @ptrToInt(block.next)) {
+            print("ERROR: block size does not touch the next block\n", .{});
+        }
+
+        if (block.next.prev != block) {
+            print("ERROR: next block doesn't have proper back link\n", .{});
+        }
+
+        if (block.user == null and block.next.user == null) {
+            print("ERROR: two consecutive free blocks\n", .{});
+        }
+    }
+}
+
+const FILE = @import("std").c.FILE;
+extern "c" fn fprintf(noalias stream: *FILE, format: [*:0]const u8, ...) c_int;
+
+// TODO: Zig converted Z_FileDumpHeap is untested
+// TODO: Switch from C fprintf to zig file writer
+export fn Z_FileDumpHeap(f: *FILE) void {
+    _ = fprintf(f, "zone size: %i  location: %p\n", mainzone.size, mainzone);
+
+    var block = mainzone.blocklist.next;
+    while (true) : (block = block.next) {
+        _ = fprintf(f, "block:%p    size:%7i    user:%p    tag:%3i\n",
+            block, block.size, block.user, block.tag);
+
+        if (block.next == &mainzone.blocklist) {
+            // all blocks have been hit
+            break;
+        }
+
+        if (@ptrToInt(block) + @intCast(usize, block.size) != @ptrToInt(block.next)) {
+            _ = fprintf(f, "ERROR: block size does not touch the next block\n");
+        }
+
+        if (block.next.prev != block) {
+            _ = fprintf(f, "ERROR: next block doesn't have proper back link\n");
+        }
+
+        if (block.user == null and block.next.user == null) {
+            _ = fprintf(f, "ERROR: two consecutive free blocks\n");
+        }
+    }
+}
+
+export fn Z_CheckHeap() void {
+    var block = mainzone.blocklist.next;
+    while (true) : (block = block.next) {
+        if (block.next == &mainzone.blocklist) {
+            // all blocks have been hit
+            break;
+        }
+
+        if (@ptrToInt(block) + @intCast(usize, block.size) != @ptrToInt(block.next)) {
+            c.I_Error(@constCast("Z_CheckHeap: block size does not touch the next block\n"));
+        }
+
+        if (block.next.prev != block) {
+            c.I_Error(@constCast("Z_CheckHeap: next block doesn't have proper back link\n"));
+        }
+
+        if (block.user == null and block.next.user == null) {
+            c.I_Error(@constCast("Z_CheckHeap: two consecutive free blocks\n"));
+        }
+    }
+}
+
+// TODO: Zig converted Z_FreeMemory is untested
+export fn Z_FreeMemory() c_int {
+    var free: c_int = 0;
+
+    var block = mainzone.blocklist.next;
+    while (block != &mainzone.blocklist) : (block = block.next) {
+        if (block.user == null or @enumToInt(block.tag) >= @enumToInt(Z_Tag.PurgeLevel)) {
+            free += block.size;
+        }
+    }
+    return free;
+}
