@@ -57,63 +57,8 @@ typedef struct
 
 
 
-memzone_t*	mainzone;
+extern memzone_t*	mainzone;
 
-
-
-//
-// Z_ClearZone
-//
-void Z_ClearZone (memzone_t* zone)
-{
-    memblock_t*		block;
-	
-    // set the entire zone to one free block
-    zone->blocklist.next =
-	zone->blocklist.prev =
-	block = (memblock_t *)( (byte *)zone + sizeof(memzone_t) );
-    
-    zone->blocklist.user = (void *)zone;
-    zone->blocklist.tag = PU_STATIC;
-    zone->rover = block;
-	
-    block->prev = block->next = &zone->blocklist;
-    
-    // NULL indicates a free block.
-    block->user = NULL;	
-
-    block->size = zone->size - sizeof(memzone_t);
-}
-
-
-
-//
-// Z_Init
-//
-void Z_Init (void)
-{
-    memblock_t*	block;
-    int		size;
-
-    mainzone = (memzone_t *)I_ZoneBase (&size);
-    mainzone->size = size;
-
-    // set the entire zone to one free block
-    mainzone->blocklist.next =
-	mainzone->blocklist.prev =
-	block = (memblock_t *)( (byte *)mainzone + sizeof(memzone_t) );
-
-    mainzone->blocklist.user = (void *)mainzone;
-    mainzone->blocklist.tag = PU_STATIC;
-    mainzone->rover = block;
-	
-    block->prev = block->next = &mainzone->blocklist;
-
-    // NULL indicates a free block.
-    block->user = NULL;
-    
-    block->size = mainzone->size - sizeof(memzone_t);
-}
 
 
 //

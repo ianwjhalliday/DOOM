@@ -35,12 +35,43 @@ const Z_Tag = enum(c_int) {
 
 const MemBlock = extern struct {
     size: i32,
-    user: **anyopaque, // NULL if a free block (TODO: Is this typed correctly?)
+    user: ?*?*anyopaque, // null if a free block
     tag: Z_Tag,
     id: i32,
     next: ?*MemBlock,
     prev: ?*MemBlock,
 };
+
+const MemZone = extern struct {
+    // total bytes malloced, including header
+    size: i32,
+    // start / end cap for linked list
+    blocklist: MemBlock,
+    rover: *MemBlock,
+};
+
+export var mainzone: *MemZone = undefined;
+
+export fn Z_Init() void {
+    var size: i32 = undefined;
+    const allocation = @alignCast(8, c.I_ZoneBase(&size));
+
+    mainzone = @ptrCast(*MemZone, allocation);
+    mainzone.size = size;
+
+    const block = @ptrCast(*MemBlock, allocation + @sizeOf(MemZone));
+    mainzone.blocklist.next = block;
+    mainzone.blocklist.prev = block;
+
+    mainzone.blocklist.user = @ptrCast(*?*anyopaque, mainzone);
+    mainzone.blocklist.tag = Z_Tag.Static;
+    mainzone.rover = block;
+
+    block.prev = &mainzone.blocklist;
+    block.next = &mainzone.blocklist;
+    block.user = null;
+    block.size = mainzone.size - @sizeOf(MemZone);
+}
 
 export fn Z_ChangeTag(ptr: *anyopaque, tag: Z_Tag) void {
     // TODO: Alignment is off, should be 8, prob results in inefficient access
