@@ -22,6 +22,7 @@ const ZONEID = 0x1d4a11;
 // PU - purge tags.
 // Tags < 100 are not overwritten until freed.
 const Z_Tag = enum(c_int) {
+    Undefined = 0,
     Static = 1,     // static entire execution time
     Sound = 2,      // static while playing
     Music = 3,      // static while playing
@@ -38,8 +39,8 @@ const MemBlock = extern struct {
     user: ?*?*anyopaque, // null if a free block
     tag: Z_Tag,
     id: i32,
-    next: ?*MemBlock,
-    prev: ?*MemBlock,
+    next: *MemBlock,
+    prev: *MemBlock,
 };
 
 const MemZone = extern struct {
@@ -71,6 +72,106 @@ export fn Z_Init() void {
     block.next = &mainzone.blocklist;
     block.user = null;
     block.size = mainzone.size - @sizeOf(MemZone);
+}
+
+/// You can pass `null` user if the tag is < Z_Tag.PurgeLevel
+export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopaque {
+    const MINFRAGMENT = 64;
+
+    // NOTE: Original doom source hardcoded 4 byte alignment. Switching to
+    // correct alignment on the host architecture. However this will increase
+    // block allocation size on modern 64 bit architectures.
+    // TODO: Measure allocation sizes with and without this change.
+    const alignment = @typeInfo(**anyopaque).Pointer.alignment;
+    var size = (requested_size + alignment - 1) & ~@as(i32, alignment - 1);
+
+    // scan through the block list,
+    // looking for the first free block
+    // of sufficient size,
+    // throwing out any purgable blocks along the way.
+
+    // account for size of block header
+    size += @sizeOf(MemBlock);
+
+    // if there is a free block behind the rover,
+    //  back up over them
+    var base = mainzone.rover;
+
+    if (base.prev.user == null)
+        base = base.prev;
+
+    var rover = base;
+    const start = base.prev;
+
+    while (true) {
+        if (rover == start) {
+            // scanned all the way around the list
+            c.I_Error(@constCast("Z_Malloc: failed on allocation of %i bytes"), size);
+        }
+
+        if (rover.user != null) {
+            if (@enumToInt(rover.tag) < @enumToInt(Z_Tag.PurgeLevel)) {
+                // hit a block that can't be purged,
+                // so move base past it
+                base = rover.next;
+                rover = rover.next;
+            } else {
+                // free the rover block (adding the size to base)
+
+                // the rover can be the base block
+                base = base.prev;
+                c.Z_Free(@ptrCast([*]u8, rover) + @sizeOf(MemBlock));
+                base = base.next;
+                rover = base.next;
+            }
+        } else {
+            rover = rover.next;
+        }
+
+        if (!(base.user != null or base.size < size)) break;
+    }
+
+    // found a block big enough
+    const extra = base.size - size;
+
+    if (extra > MINFRAGMENT) {
+        // there will be a free fragment after the allocated block
+        const newblock = @ptrCast(*MemBlock, @alignCast(@alignOf(MemBlock), @ptrCast([*]u8, base) + @intCast(usize, size)));
+        newblock.size = extra;
+
+        // null indicates free block.
+        newblock.user = null;
+        newblock.tag = .Undefined;
+        newblock.prev = base;
+        newblock.next = base.next;
+        newblock.next.prev = newblock;
+
+        base.next = newblock;
+        base.size = size;
+    }
+
+    if (user != null) {
+        // mark as an in-use block
+        base.user = user;
+        @ptrCast(*[*]u8, user).* = @ptrCast([*]u8, base) + @sizeOf(MemBlock);
+    } else {
+        if (@enumToInt(tag) >= @enumToInt(Z_Tag.PurgeLevel)) {
+            c.I_Error(@constCast("Z_Malloc: an owner is required for purgable blocks"));
+        }
+
+        // mark as in-use, but unowned
+        // NOTE: Original doom source uses `2` but that is not aligned. To
+        // avoid zig compiler complaint use the pointer alignment value instead.
+        base.user = @intToPtr(?*?*anyopaque, alignment);
+    }
+    base.tag = tag;
+
+    // next allocation will start looking here
+    mainzone.rover = base.next;
+
+    base.id = ZONEID;
+
+    return @ptrCast(*anyopaque, @ptrCast([*]u8, base) + @sizeOf(MemBlock));
 }
 
 export fn Z_ChangeTag(ptr: *anyopaque, tag: Z_Tag) void {
