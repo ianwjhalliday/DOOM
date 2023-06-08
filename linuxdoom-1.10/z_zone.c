@@ -62,35 +62,6 @@ extern memzone_t*	mainzone;
 
 
 //
-// Z_FreeTags
-//
-void
-Z_FreeTags
-( int		lowtag,
-  int		hightag )
-{
-    memblock_t*	block;
-    memblock_t*	next;
-	
-    for (block = mainzone->blocklist.next ;
-	 block != &mainzone->blocklist ;
-	 block = next)
-    {
-	// get link before freeing
-	next = block->next;
-
-	// free block?
-	if (!block->user)
-	    continue;
-	
-	if (block->tag >= lowtag && block->tag <= hightag)
-	    Z_Free ( (byte *)block+sizeof(memblock_t));
-    }
-}
-
-
-
-//
 // Z_DumpHeap
 // Note: TFileDumpHeap( stdout ) ?
 //

@@ -45,6 +45,10 @@ const MemBlock = extern struct {
     fn fromPtr(ptr: *anyopaque) *MemBlock {
         return &(@ptrCast([*]MemBlock, @alignCast(@alignOf(**anyopaque), ptr)) - 1)[0];
     }
+
+    fn toOpaquePtr(self: *MemBlock) *anyopaque {
+        return @ptrCast([*]u8, self) + @sizeOf(MemBlock);
+    }
 };
 
 const MemZone = extern struct {
@@ -124,7 +128,7 @@ export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopa
 
                 // the rover can be the base block
                 base = base.prev;
-                c.Z_Free(@ptrCast([*]u8, rover) + @sizeOf(MemBlock));
+                Z_Free(rover.toOpaquePtr());
                 base = base.next;
                 rover = base.next;
             }
@@ -242,4 +246,24 @@ export fn Z_ChangeTag(ptr: *anyopaque, tag: Z_Tag) void {
     }
 
     block.tag = tag;
+}
+
+export fn Z_FreeTags(lowtag: Z_Tag, hightag: Z_Tag) void {
+    var block = mainzone.blocklist.next;
+    var next: *MemBlock = undefined;
+
+    while (block != &mainzone.blocklist) : (block = next) {
+        // get link before freeing
+        next = block.next;
+
+        // free block?
+        if (block.user == null) {
+            continue;
+        }
+
+        if (@enumToInt(block.tag) >= @enumToInt(lowtag)
+            and @enumToInt(block.tag) <= @enumToInt(hightag)) {
+            Z_Free(block.toOpaquePtr());
+        }
+    }
 }
