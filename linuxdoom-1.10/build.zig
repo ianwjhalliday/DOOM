@@ -12,11 +12,18 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const exe = b.addExecutable(.{
-        .name = "doomzig",
-        .target = target,
-        .optimize = optimize,
-    });
+    const zig_objects = .{
+        b.addObject(.{
+            .name = "z_zone",
+            .root_source_file = .{ .path = "z_zone.zig" },
+            .optimize = optimize,
+            .target = target,
+        }),
+    };
+
+    inline for (zig_objects) |o| {
+        o.addIncludePath(".");
+    }
 
     const source_files = [_][]const u8{
         "i_main.c",
@@ -89,9 +96,18 @@ pub fn build(b: *std.Build) void {
         "-Wall", // TODO: What is zig's default on C warnings?
     };
 
+    const exe = b.addExecutable(.{
+        .name = "doomzig",
+        .target = target,
+        .optimize = optimize,
+    });
+
     exe.defineCMacro("NORMALUNIX", null);
     exe.defineCMacro("LINUX", null);
     exe.addCSourceFiles(&source_files, &cflags);
+    inline for (zig_objects) |o| {
+        exe.addObject(o);
+    }
     exe.linkLibC();
     exe.linkSystemLibrary("glfw3");
     // TODO: MacOS only frameworks
