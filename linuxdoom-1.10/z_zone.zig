@@ -41,6 +41,10 @@ const MemBlock = extern struct {
     id: i32,
     next: *MemBlock,
     prev: *MemBlock,
+
+    fn fromPtr(ptr: *anyopaque) *MemBlock {
+        return &(@ptrCast([*]MemBlock, @alignCast(@alignOf(**anyopaque), ptr)) - 1)[0];
+    }
 };
 
 const MemZone = extern struct {
@@ -174,14 +178,59 @@ export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopa
     return @ptrCast(*anyopaque, @ptrCast([*]u8, base) + @sizeOf(MemBlock));
 }
 
+export fn Z_Free(ptr: *anyopaque) void {
+    var block = MemBlock.fromPtr(ptr);
+
+    if (block.id != ZONEID) {
+        c.I_Error(@constCast("Z_Free: freed a pointer without ZONEID"));
+    }
+
+    if (@ptrToInt(block.user) > 0x100) {
+        // smaller values are not pointers
+        // Note: OS-dependend?
+
+        // TODO: So this set's the owner's own pointer to null. Investigate if
+        // there is a better way.
+
+        // clear the user's mark
+        block.user.?.* = null;
+    }
+
+    // mark as free
+    block.user = null;
+    block.tag = .Undefined;
+    block.id = 0;
+
+    var other = block.prev;
+
+    if (other.user == null) {
+        // merge with previous free block
+        other.size += block.size;
+        other.next = block.next;
+        other.next.prev = other;
+
+        if (block == mainzone.rover) {
+            mainzone.rover = other;
+        }
+
+        block = other;
+    }
+
+    other = block.next;
+    if (other.user == null) {
+        // merge the next free block onto the end
+        block.size += other.size;
+        block.next = other.next;
+        block.next.prev = block;
+
+        if (other == mainzone.rover) {
+            mainzone.rover = block;
+        }
+    }
+}
+
 export fn Z_ChangeTag(ptr: *anyopaque, tag: Z_Tag) void {
-    // TODO: Alignment is off, should be 8, prob results in inefficient access
-    // to the allocations or their MemBlock headers. Consider fixing allocation
-    // alignment. Might automatically fix itself once all the code is zig.
-    // However then blocks will possibly require double the size? Also why is
-    // `user` a pointer? Consider also maybe the header could be smaller and/or
-    // look at how prboom redid the zone memory allocator.
-    const block = &(@ptrCast([*]align(4) MemBlock, @alignCast(4, ptr)) - 1)[0];
+    const block = MemBlock.fromPtr(ptr);
 
     if (block.id != ZONEID) {
         // TODO: Restore line number display on this I_Error() call (consider stack trace in all I_Error() calls)
