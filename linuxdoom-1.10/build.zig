@@ -12,21 +12,12 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const zig_objects = .{
-        b.addObject(.{
-            .name = "z_zone",
-            .root_source_file = .{ .path = "z_zone.zig" },
-            .optimize = optimize,
-            .target = target,
-        }),
+    const zig_files = [_][]const u8{
+        "i_main",
+        "z_zone",
     };
 
-    inline for (zig_objects) |o| {
-        o.addIncludePath(".");
-    }
-
-    const source_files = [_][]const u8{
-        "i_main.c",
+    const c_files = [_][]const u8{
         "doomdef.c",
         "doomstat.c",
         "dstrings.c",
@@ -103,8 +94,15 @@ pub fn build(b: *std.Build) void {
 
     exe.defineCMacro("NORMALUNIX", null);
     exe.defineCMacro("LINUX", null);
-    exe.addCSourceFiles(&source_files, &cflags);
-    inline for (zig_objects) |o| {
+    exe.addCSourceFiles(&c_files, &cflags);
+    inline for (zig_files) |file| {
+        const o = b.addObject(.{
+            .name = file,
+            .root_source_file = .{ .path = file ++ ".zig" },
+            .optimize = optimize,
+            .target = target,
+        });
+        o.addIncludePath(".");
         exe.addObject(o);
     }
     exe.linkLibC();
