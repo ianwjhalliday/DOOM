@@ -12,6 +12,8 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    // Only files that are not imported directly or indirectly need to be listed
+    // here. Otherwise you may get MultipleSymbolDefinitions compile errors.
     const zig_files = [_][]const u8{
         "i_main",
         "z_zone",
@@ -34,7 +36,6 @@ pub fn build(b: *std.Build) void {
         "g_game.c",
         "m_menu.c",
         "m_misc.c",
-        "m_argv.c",
         "m_bbox.c",
         "m_fixed.c",
         "m_swap.c",

@@ -1,9 +1,7 @@
-extern var myargc: c_int;
-extern var myargv: [*c][*c]const u8;
-
 extern fn D_DoomMain() void;
 
 const std = @import("std");
+const m_argv = @import("m_argv.zig");
 
 pub fn main() void {
     // overkill buffer for args, prob should move to something else
@@ -11,7 +9,6 @@ pub fn main() void {
     var argsfba = std.heap.FixedBufferAllocator.init(&argsbuffer);
     var allocator = argsfba.allocator();
 
-    // TODO: eliminate myarg* and use args directly
     const args = std.process.argsAlloc(allocator) catch {
         std.log.err("Arguments too big for 8kb buffer\n", .{});
         return;
@@ -26,8 +23,10 @@ pub fn main() void {
         cargv[i] = arg.ptr;
     }
 
-    myargc = @intCast(c_int, args.len);
-    myargv = @ptrCast([*c][*c]const u8, cargv);
+    // TODO: eliminate myargc/v and use myargs directly
+    m_argv.myargc = @intCast(c_int, args.len);
+    m_argv.myargv = @ptrCast([*c][*c]const u8, cargv);
+    m_argv.myargs = args;
 
     D_DoomMain();
 }
