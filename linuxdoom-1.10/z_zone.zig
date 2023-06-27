@@ -4,6 +4,8 @@ const c = @cImport({
     @cInclude("doomdef.h");
 });
 
+const I_Error = @import("i_system.zig").I_Error;
+
 //
 // ZONE MEMORY ALLOCATION
 //
@@ -114,7 +116,7 @@ export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopa
     while (true) {
         if (rover == start) {
             // scanned all the way around the list
-            c.I_Error(@constCast("Z_Malloc: failed on allocation of %i bytes"), size);
+            I_Error("Z_Malloc: failed on allocation of %i bytes", size);
         }
 
         if (rover.user != null) {
@@ -164,7 +166,7 @@ export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopa
         @ptrCast(*[*]u8, user).* = @ptrCast([*]u8, base) + @sizeOf(MemBlock);
     } else {
         if (@enumToInt(tag) >= @enumToInt(Z_Tag.PurgeLevel)) {
-            c.I_Error(@constCast("Z_Malloc: an owner is required for purgable blocks"));
+            I_Error("Z_Malloc: an owner is required for purgable blocks");
         }
 
         // mark as in-use, but unowned
@@ -186,7 +188,7 @@ export fn Z_Free(ptr: *anyopaque) void {
     var block = MemBlock.fromPtr(ptr);
 
     if (block.id != ZONEID) {
-        c.I_Error(@constCast("Z_Free: freed a pointer without ZONEID"));
+        I_Error("Z_Free: freed a pointer without ZONEID");
     }
 
     if (@ptrToInt(block.user) > 0x100) {
@@ -238,11 +240,11 @@ export fn Z_ChangeTag(ptr: *anyopaque, tag: Z_Tag) void {
 
     if (block.id != ZONEID) {
         // TODO: Restore line number display on this I_Error() call (consider stack trace in all I_Error() calls)
-        c.I_Error(@constCast("Z_ChangeTag: freed a pointer without ZONEID"));
+        I_Error("Z_ChangeTag: freed a pointer without ZONEID");
     }
 
     if (@enumToInt(tag) >= @enumToInt(Z_Tag.PurgeLevel) and @ptrToInt(block.user) < 0x100) {
-        c.I_Error(@constCast("Z_ChangeTag: an owner is required for purgable blocks"));
+        I_Error("Z_ChangeTag: an owner is required for purgable blocks");
     }
 
     block.tag = tag;
@@ -345,15 +347,15 @@ export fn Z_CheckHeap() void {
         }
 
         if (@ptrToInt(block) + @intCast(usize, block.size) != @ptrToInt(block.next)) {
-            c.I_Error(@constCast("Z_CheckHeap: block size does not touch the next block\n"));
+            I_Error("Z_CheckHeap: block size does not touch the next block\n");
         }
 
         if (block.next.prev != block) {
-            c.I_Error(@constCast("Z_CheckHeap: next block doesn't have proper back link\n"));
+            I_Error("Z_CheckHeap: next block doesn't have proper back link\n");
         }
 
         if (block.user == null and block.next.user == null) {
-            c.I_Error(@constCast("Z_CheckHeap: two consecutive free blocks\n"));
+            I_Error("Z_CheckHeap: two consecutive free blocks\n");
         }
     }
 }

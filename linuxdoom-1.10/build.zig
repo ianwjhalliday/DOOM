@@ -23,7 +23,6 @@ pub fn build(b: *std.Build) void {
         "doomdef.c",
         "doomstat.c",
         "dstrings.c",
-        "i_system.c",
         "i_sound.c",
         "i_video.c",
         "i_net.c",
