@@ -1,9 +1,8 @@
-extern fn D_DoomMain() void;
-
 const std = @import("std");
 const m_argv = @import("m_argv.zig");
+const D_DoomMain = @import("d_main.zig").D_DoomMain;
 
-pub fn main() void {
+pub fn main() noreturn {
     // overkill buffer for args, prob should move to something else
     var argsbuffer: [8192]u8 = undefined;
     var argsfba = std.heap.FixedBufferAllocator.init(&argsbuffer);
@@ -11,13 +10,13 @@ pub fn main() void {
 
     const args = std.process.argsAlloc(allocator) catch {
         std.log.err("Arguments too big for 8kb buffer\n", .{});
-        return;
+        std.process.exit(1);
     };
     defer std.process.argsFree(allocator, args);
 
     const cargv = allocator.alloc([*c]const u8, args.len) catch {
         std.log.err("Arguments too big for 8kb buffer\n", .{});
-        return;
+        std.process.exit(1);
     };
     for (args, 0..) |arg, i| {
         cargv[i] = arg.ptr;

@@ -1,6 +1,6 @@
 const c = @cImport({
-    @cInclude("z_zone.h");
-    @cInclude("i_system.h");
+    @cInclude("z_zone.h"); // TODO: Can remove?
+    @cInclude("i_system.h"); // TODO: Can remove?
     @cInclude("doomdef.h");
 });
 
@@ -23,7 +23,7 @@ const ZONEID = 0x1d4a11;
 // ZONE MEMORY
 // PU - purge tags.
 // Tags < 100 are not overwritten until freed.
-const Z_Tag = enum(c_int) {
+pub const Z_Tag = enum(c_int) {
     Undefined = 0,
     Static = 1,     // static entire execution time
     Sound = 2,      // static while playing
