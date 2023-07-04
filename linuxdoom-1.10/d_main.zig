@@ -5,6 +5,7 @@ const c = @cImport({
     @cInclude("sys/Stat.h");
     @cInclude("doomdef.h");
     @cInclude("doomstat.h");
+    @cInclude("doomtype.h");
     @cInclude("dstrings.h");
     @cInclude("d_event.h");
     @cInclude("d_net.h");
@@ -17,8 +18,8 @@ const c = @cImport({
     @cInclude("v_video.h");
 });
 
-extern fn G_Responder(ev: *c.event_t) bool;
-extern fn M_Responder(ev: *c.event_t) bool;
+extern fn G_Responder(ev: *c.event_t) c.boolean;
+extern fn M_Responder(ev: *c.event_t) c.boolean;
 extern fn W_CheckNumForName(name: [*c]const u8) c_int;
 
 extern fn AM_Drawer() void;
@@ -29,7 +30,7 @@ extern fn I_UpdateNoBlit() void;
 extern fn M_Drawer() void;
 extern fn R_FillBackScreen() void;
 extern fn R_DrawViewBorder() void;
-extern fn ST_Drawer(fullscreen: bool, refresh: bool) void;
+extern fn ST_Drawer(fullscreen: c.boolean, refresh: c.boolean) void;
 extern fn WI_Drawer() void;
 
 extern fn NetUpdate() void;
@@ -64,23 +65,23 @@ const MAXWADFILES = 20;
 
 var wadfiles = [_]?[*:0]const u8{null} ** MAXWADFILES;
 
-export var devparm: bool = false; // started game with -devparm
-export var nomonsters: bool = false; // checkparm of -nomonsters
-export var respawnparm: bool = false; // checkparm of -respawn
-export var fastparm: bool = false; // checkparm of -fast
+export var devparm: c.boolean = c.false; // started game with -devparm
+export var nomonsters: c.boolean = c.false; // checkparm of -nomonsters
+export var respawnparm: c.boolean = c.false; // checkparm of -respawn
+export var fastparm: c.boolean = c.false; // checkparm of -fast
 
-export var singletics: bool = false; // debug flag to cancel adaptiveness
+export var singletics: c.boolean = c.false; // debug flag to cancel adaptiveness
 
-extern var inhelpscreens: bool;
+extern var inhelpscreens: c.boolean;
 
 export var startskill: c.skill_t = 0;
 export var startepisode: c_int = 0;
 export var startmap: c_int = 0;
-export var autostart: bool = false;
+export var autostart: c.boolean = c.false;
 
 export var debugfile: ?*c.FILE = null;
 
-export var advancedemo: bool = false;
+export var advancedemo: c.boolean = c.false;
 
 var wadfile: [1023:0]u8 = undefined; // primary wad file
 export var basedefault: [1023:0]u8 = undefined; // default file
@@ -115,7 +116,7 @@ pub export fn D_ProcessEvents() void {
 
     while (eventtail != eventhead) : (eventtail = (1 + eventtail) % c.MAXEVENTS) {
         const ev = &events[eventtail];
-        if (M_Responder(ev))
+        if (M_Responder(ev) != c.false)
             continue; // menu ate the event
         _ = G_Responder(ev);
     }
@@ -128,13 +129,12 @@ pub export fn D_ProcessEvents() void {
 
 // wipegamestate can be set to -1 to force a wipe on the next draw
 export var wipegamestate: c.gamestate_t = c.GS_DEMOSCREEN;
-extern var setsizeneeded: bool;
-extern var showMessages: c_int;
-extern var nodrawers: bool;
-extern var automapactive: bool;
-extern var menuactive: bool;
-extern var viewactive: bool;
-extern var paused: bool;
+extern var setsizeneeded: c.boolean;
+extern var nodrawers: c.boolean;
+extern var automapactive: c.boolean;
+extern var menuactive: c.boolean;
+extern var viewactive: c.boolean;
+extern var paused: c.boolean;
 extern fn R_ExecuteSetViewSize() void;
 
 fn D_Display() void {
@@ -148,14 +148,14 @@ fn D_Display() void {
         var borderdrawcount: c_int = 0;
     };
 
-    if (nodrawers) {
+    if (nodrawers != c.false) {
         return; // for comparative timing / profiling
     }
 
     var redrawsbar = false;
 
     // change the view size if needed
-    if (setsizeneeded) {
+    if (setsizeneeded != c.false) {
         R_ExecuteSetViewSize();
         S.oldgamestate = std.math.maxInt(c.gamestate_t); // force background redraw
         S.borderdrawcount = 3;
@@ -176,13 +176,13 @@ fn D_Display() void {
         c.GS_LEVEL => blk: {
             if (c.gametic == 0)
                 break :blk;
-            if (automapactive)
+            if (automapactive != c.false)
                 AM_Drawer();
             if (wipe or (c.viewheight != 200 and S.fullscreen))
                 redrawsbar = true;
-            if (S.inhelpscreensstate and !inhelpscreens)
+            if (S.inhelpscreensstate and inhelpscreens != c.true)
                 redrawsbar = true; // just put away the help screen
-            ST_Drawer(c.viewheight == 200, redrawsbar);
+            ST_Drawer(toDoomBoolean(c.viewheight == 200), toDoomBoolean(redrawsbar));
             S.fullscreen = c.viewheight == 200;
         },
 
@@ -205,7 +205,7 @@ fn D_Display() void {
     I_UpdateNoBlit();
 
     // draw the view directly
-    if (c.gamestate == c.GS_LEVEL and !automapactive and c.gametic != 0)
+    if (c.gamestate == c.GS_LEVEL and automapactive == c.false and c.gametic != 0)
         c.R_RenderPlayerView(&c.players[@intCast(usize, c.displayplayer)]);
 
     if (c.gamestate == c.GS_LEVEL and c.gametic != 0)
@@ -222,8 +222,8 @@ fn D_Display() void {
     }
 
     // see if the border needs to be updated to the screen
-    if (c.gamestate == c.GS_LEVEL and !automapactive and c.scaledviewwidth != 320) {
-        if (menuactive or S.menuactivestate or !S.viewactivestate)
+    if (c.gamestate == c.GS_LEVEL and automapactive == c.false and c.scaledviewwidth != 320) {
+        if (menuactive != c.false or S.menuactivestate or !S.viewactivestate)
             S.borderdrawcount = 3;
         if (S.borderdrawcount != 0) {
             R_DrawViewBorder(); // erase old menu stuff
@@ -231,15 +231,15 @@ fn D_Display() void {
         }
     }
 
-    S.menuactivestate = menuactive;
-    S.viewactivestate = viewactive;
-    S.inhelpscreensstate = inhelpscreens;
+    S.menuactivestate = menuactive != c.false;
+    S.viewactivestate = viewactive != c.false;
+    S.inhelpscreensstate = inhelpscreens != c.false;
     wipegamestate = c.gamestate;
     S.oldgamestate = c.gamestate;
 
     // draw pause pic
-    if (paused) {
-        const y = if (automapactive) 4 else c.viewwindowy + 4;
+    if (paused != c.false) {
+        const y = if (automapactive != c.false) 4 else c.viewwindowy + 4;
         c.V_DrawPatchDirect(c.viewwindowx + @divTrunc(c.scaledviewwidth - 68, 2), y, 0, @ptrCast(*c.patch_t, @alignCast(@alignOf(c.patch_t), W_CacheLumpName("M_PAUSE", .Cache))));
     }
 
@@ -277,10 +277,10 @@ fn D_Display() void {
 //
 //  D_DoomLoop
 //
-extern var demorecording: bool;
+extern var demorecording: c.boolean;
 
 fn D_DoomLoop() noreturn {
-    if (demorecording) {
+    if (demorecording != c.false) {
         G_BeginRecording();
     }
 
@@ -299,11 +299,11 @@ fn D_DoomLoop() noreturn {
         I_StartFrame();
 
         // process one or more tics
-        if (singletics) {
+        if (singletics != c.false) {
             I_StartTic();
             D_ProcessEvents();
             G_BuildTiccmd(&c.netcmds[@intCast(usize, c.consoleplayer)][@intCast(usize, c.maketic) % c.BACKUPTICS]);
-            if (advancedemo)
+            if (advancedemo != c.false)
                 D_DoAdvanceDemo();
             M_Ticker();
             G_Ticker();
@@ -353,19 +353,19 @@ fn D_PageDrawer() void {
 // Called after each demo or intro demosequence finishes
 //
 export fn D_AdvanceDemo() void {
-    advancedemo = true;
+    advancedemo = c.true;
 }
 
 //
 // This cycles through the demo sequences.
 // FIXME - version dependend demo numbers?
 //
-extern var usergame: bool;
+extern var usergame: c.boolean;
 export fn D_DoAdvanceDemo() void {
     c.players[@intCast(usize, c.consoleplayer)].playerstate = c.PST_LIVE; // not reborn
-    advancedemo = false;
-    usergame = false; // no save / end game here
-    paused = false;
+    advancedemo = c.false;
+    usergame = c.false; // no save / end game here
+    paused = c.false;
     c.gameaction = c.ga_nothing;
 
     switch (demosequence) {
@@ -491,7 +491,7 @@ fn IdentifyVersion() void {
 
     if (M_CheckParm("-shdev") != 0) {
         c.gamemode = c.shareware;
-        devparm = true;
+        devparm = c.true;
         D_AddFile(c.DEVDATA ++ "doom1.wad");
         D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
         D_AddFile(c.DEVMAPS ++ "data_se/pnames.lmp");
@@ -501,7 +501,7 @@ fn IdentifyVersion() void {
 
     if (M_CheckParm("-regdev") != 0) {
         c.gamemode = c.registered;
-        devparm = true;
+        devparm = c.true;
         D_AddFile(c.DEVDATA ++ "doom.wad");
         D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
         D_AddFile(c.DEVMAPS ++ "data_se/texture2.lmp");
@@ -512,7 +512,7 @@ fn IdentifyVersion() void {
 
     if (M_CheckParm("-comdev") != 0) {
         c.gamemode = c.commercial;
-        devparm = true;
+        devparm = c.true;
         D_AddFile(c.DEVDATA ++ "doom2.wad");
 
         D_AddFile(c.DEVMAPS ++ "cdata/texture1.lmp");
@@ -656,12 +656,12 @@ fn FindResponseFile() void {
 //
 // D_DoomMain
 //
-extern var modifiedgame: bool;
+extern var modifiedgame: c.boolean;
 extern var forwardmove: [2]c_int;
 extern var sidemove: [2]c_int;
 extern var deathmatch: c_short;
 extern var statcopy: *anyopaque;
-extern var singledemo: bool;
+extern var singledemo: c.boolean;
 
 extern fn V_Init() void;
 extern fn M_LoadDefaults() void; // load before initing other systems
@@ -675,6 +675,10 @@ extern fn S_Init(sfxVolume: c_int, musicVolume: c_int) void;
 extern fn HU_Init() void;
 extern fn ST_Init() void;
 
+fn toDoomBoolean(b: bool) c.boolean {
+    return if (b) c.true else c.false;
+}
+
 pub fn D_DoomMain() noreturn {
     FindResponseFile();
 
@@ -685,12 +689,12 @@ pub fn D_DoomMain() noreturn {
     defer _ = c.fclose(stdout);
 
     c.setbuf(stdout, null);
-    modifiedgame = false;
+    modifiedgame = c.false;
 
-    nomonsters = M_CheckParm("-nomonsters") != 0;
-    respawnparm = M_CheckParm("-respawn") != 0;
-    fastparm = M_CheckParm("-fast") != 0;
-    devparm = M_CheckParm("-devparm") != 0;
+    nomonsters = toDoomBoolean(M_CheckParm("-nomonsters") != 0);
+    respawnparm = toDoomBoolean(M_CheckParm("-respawn") != 0);
+    fastparm = toDoomBoolean(M_CheckParm("-fast") != 0);
+    devparm = toDoomBoolean(M_CheckParm("-devparm") != 0);
     if (M_CheckParm("-altdeath") != 0) {
         deathmatch = 2;
     } else if (M_CheckParm("-deathmatch") != 0) {
@@ -717,7 +721,7 @@ pub fn D_DoomMain() noreturn {
 
     _ = c.printf("%s\n", title.ptr);
 
-    if (devparm)
+    if (devparm != c.false)
         _ = c.printf(c.D_DEVSTR);
 
     if (M_CheckParm("-cdrom") != 0) {
@@ -782,7 +786,7 @@ pub fn D_DoomMain() noreturn {
     if (p != 0) {
         // the parms after p are wadfile/lump names,
         // until end of parms or another - preceded parm
-        modifiedgame = true; // homebrew levels
+        modifiedgame = c.true; // homebrew levels
         p += 1;
         while (p != myargc and myargv[p][0] != '-') : (p += 1) {
             D_AddFile(myargv[p]);
@@ -805,19 +809,19 @@ pub fn D_DoomMain() noreturn {
     startskill = c.sk_medium;
     startepisode = 1;
     startmap = 1;
-    autostart = false;
+    autostart = c.false;
 
     p = @intCast(usize, M_CheckParm("-skill"));
     if (p != 0 and p < myargc - 1) {
         startskill = myargv[p + 1][0] - '1';
-        autostart = true;
+        autostart = c.true;
     }
 
     p = @intCast(usize, M_CheckParm("-episode"));
     if (p != 0 and p < myargc - 1) {
         startepisode = myargv[p + 1][0] - '0';
         startmap = 1;
-        autostart = true;
+        autostart = c.true;
     }
 
     p = @intCast(usize, M_CheckParm("-timer"));
@@ -841,7 +845,7 @@ pub fn D_DoomMain() noreturn {
             startepisode = myargv[p + 1][0] - '0';
             startmap = myargv[p + 2][0] - '0';
         }
-        autostart = true;
+        autostart = c.true;
     }
 
     // init subsystems
@@ -858,7 +862,7 @@ pub fn D_DoomMain() noreturn {
     W_InitMultipleFiles(&wadfiles);
 
     // Check for -file in shareware
-    if (modifiedgame) {
+    if (modifiedgame != c.false) {
         // These are the lumps that will be checked in IWAD,
         // if any one is not present, execution will be aborted.
         var names = [_][:0]const u8{ "e2m1", "e2m2", "e2m3", "e2m4", "e2m5", "e2m6", "e2m7", "e2m8", "e2m9", "e3m1", "e3m3", "e3m3", "e3m4", "e3m5", "e3m6", "e3m7", "e3m8", "e3m9", "dphoof", "bfgga0", "heada1", "cybra1", "spida1d1" };
@@ -881,7 +885,7 @@ pub fn D_DoomMain() noreturn {
     }
 
     // Iff additonal PWAD files are used, print modified banner
-    if (modifiedgame) {
+    if (modifiedgame != c.false) {
         _ = c.printf("===========================================================================\n" ++
             "ATTENTION:  This version of DOOM has been modified.  If you would like to\n" ++
             "get a copy of the original game, call 1-800-IDGAMES or see the readme file.\n" ++
@@ -945,12 +949,12 @@ pub fn D_DoomMain() noreturn {
 
     if (p != 0 and p < myargc - 1) {
         c.G_RecordDemo(myargv[p + 1]);
-        autostart = true;
+        autostart = c.true;
     }
 
     p = @intCast(usize, M_CheckParm("-playdemo"));
     if (p != 0 and p < myargc - 1) {
-        singledemo = true; // quit after one demo
+        singledemo = c.true; // quit after one demo
         c.G_DeferedPlayDemo(myargv[p + 1]);
         D_DoomLoop(); // never returns
     }
@@ -972,7 +976,7 @@ pub fn D_DoomMain() noreturn {
     }
 
     if (c.gameaction != c.ga_loadgame) {
-        if (autostart or c.netgame != 0) {
+        if (autostart != c.false or c.netgame != 0) {
             c.G_InitNew(startskill, startepisode, startmap);
         } else {
             D_StartTitle(); // start up intro loop

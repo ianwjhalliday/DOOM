@@ -3,6 +3,7 @@ const c = @cImport({
     @cInclude("unistd.h");
     @cInclude("sys/time.h");
     @cInclude("doomdef.h");
+    @cInclude("doomtype.h");
     @cInclude("d_ticcmd.h");
 });
 
@@ -12,7 +13,7 @@ extern fn I_ShutdownSound() void;
 extern fn I_ShutdownMusic() void;
 extern fn M_SaveDefaults() void;
 extern fn I_ShutdownGraphics() void;
-extern fn G_CheckDemoStatus() bool;
+extern fn G_CheckDemoStatus() c.boolean;
 
 const std = @import("std");
 
@@ -90,7 +91,7 @@ pub export fn I_AllocLow(length: c_int) ?[*]u8 {
     }
 }
 
-extern var demorecording: bool;
+extern var demorecording: c.boolean;
 
 pub export fn I_Error(errormsg: [*:0]const u8, ...) noreturn {
     // NOTE: zig translate-c fails to parse stdio.h's `stderr` so
@@ -107,7 +108,7 @@ pub export fn I_Error(errormsg: [*:0]const u8, ...) noreturn {
     _ = c.fclose(stderr);
 
     // Shutdown. Here might be other errors.
-    if (demorecording) {
+    if (demorecording == c.true) {
         _ = G_CheckDemoStatus();
     }
 
