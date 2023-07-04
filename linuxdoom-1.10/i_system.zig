@@ -40,17 +40,12 @@ pub export fn I_BaseTiccmd() *const c.ticcmd_t {
     return &emptycmd;
 }
 
-// DEADCODE: TODO: delete
-pub export fn I_GetHeapSize() c_int {
-    return mb_used*1024*1024;
-}
-
-pub export fn I_ZoneBase(size: *c_int) ?[*]u8 {
+pub fn I_ZoneBase(size: *c_int) [*]u8 {
     size.* = mb_used*1024*1024;
     if (std.heap.raw_c_allocator.alloc(u8, @intCast(usize, size.*))) |p| {
         return p.ptr;
     } else |_| {
-        return null;
+        I_Error("I_ZoneBase: Failed to allocate zone memory\n");
     }
 }
 
@@ -66,7 +61,7 @@ pub export fn I_GetTime() c_int {
     return newtics;
 }
 
-pub export fn I_Init() void {
+pub fn I_Init() void {
     I_InitSound();
 }
 
@@ -84,12 +79,6 @@ pub export fn I_WaitVBL(count: c_int) void {
     _ = c.usleep(@intCast(c_uint, count) * (1000000/70));
 }
 
-// DEADCODE: TODO: delete
-pub export fn I_BeginRead() void {}
-
-// DEADCODE: TODO: delete
-pub export fn I_EndRead() void {}
-
 // Allocates from low memory under dos,
 // just mallocs under unix
 pub export fn I_AllocLow(length: c_int) ?[*]u8 {
@@ -103,7 +92,7 @@ pub export fn I_AllocLow(length: c_int) ?[*]u8 {
 
 extern var demorecording: bool;
 
-pub export fn I_Error(errormsg: [*:0]const u8, ...) void {
+pub export fn I_Error(errormsg: [*:0]const u8, ...) noreturn {
     // NOTE: zig translate-c fails to parse stdio.h's `stderr` so
     // open it manually here (and also can't case `2` to `*FILE`
     // due to debug build alignment checks).

@@ -1,10 +1,5 @@
-const c = @cImport({
-    @cInclude("z_zone.h"); // TODO: Can remove?
-    @cInclude("i_system.h"); // TODO: Can remove?
-    @cInclude("doomdef.h");
-});
-
 const I_Error = @import("i_system.zig").I_Error;
+const I_ZoneBase = @import("i_system.zig").I_ZoneBase;
 
 //
 // ZONE MEMORY ALLOCATION
@@ -65,7 +60,7 @@ export var mainzone: *MemZone = undefined;
 
 export fn Z_Init() void {
     var size: i32 = undefined;
-    const allocation = @alignCast(8, c.I_ZoneBase(&size));
+    const allocation = @alignCast(8, I_ZoneBase(&size));
 
     mainzone = @ptrCast(*MemZone, allocation);
     mainzone.size = size;

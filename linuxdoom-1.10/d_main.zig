@@ -55,8 +55,10 @@ extern fn M_CheckParm(check: [*:0]const u8) c_int;
 
 const std = @import("std");
 const Z_Tag = @import("z_zone.zig").Z_Tag;
-const I_GetTime = @import("i_system.zig").I_GetTime;
-const I_Error = @import("i_system.zig").I_Error;
+const i_system = @import("i_system.zig");
+const I_Init = i_system.I_Init;
+const I_GetTime = i_system.I_GetTime;
+const I_Error = i_system.I_Error;
 
 const MAXWADFILES = 20;
 
@@ -668,7 +670,6 @@ extern fn W_InitMultipleFiles(filenames: [*c][*c]const u8) void;
 extern fn M_Init() void;
 extern fn R_Init() void;
 extern fn P_Init() void;
-extern fn I_Init() void;
 extern fn D_CheckNetGame() void;
 extern fn S_Init(sfxVolume: c_int, musicVolume: c_int) void;
 extern fn HU_Init() void;
