@@ -80,7 +80,7 @@ export fn Z_Init() void {
 }
 
 /// You can pass `null` user if the tag is < Z_Tag.PurgeLevel
-export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopaque {
+pub export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopaque {
     const MINFRAGMENT = 64;
 
     // NOTE: Original doom source hardcoded 4 byte alignment. Switching to
@@ -179,7 +179,7 @@ export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopa
     return @ptrCast(*anyopaque, @ptrCast([*]u8, base) + @sizeOf(MemBlock));
 }
 
-export fn Z_Free(ptr: *anyopaque) void {
+pub export fn Z_Free(ptr: *anyopaque) void {
     var block = MemBlock.fromPtr(ptr);
 
     if (block.id != ZONEID) {
@@ -230,7 +230,7 @@ export fn Z_Free(ptr: *anyopaque) void {
     }
 }
 
-export fn Z_ChangeTag(ptr: *anyopaque, tag: Z_Tag) void {
+pub export fn Z_ChangeTag(ptr: *anyopaque, tag: Z_Tag) void {
     const block = MemBlock.fromPtr(ptr);
 
     if (block.id != ZONEID) {

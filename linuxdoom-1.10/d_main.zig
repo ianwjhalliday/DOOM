@@ -60,10 +60,12 @@ const i_system = @import("i_system.zig");
 const I_Init = i_system.I_Init;
 const I_GetTime = i_system.I_GetTime;
 const I_Error = i_system.I_Error;
+const W_InitMultipleFiles = @import("w_wad.zig").W_InitMultipleFiles;
 
 const MAXWADFILES = 20;
 
-var wadfiles = [_]?[*:0]const u8{null} ** MAXWADFILES;
+var wadfiles = [_][:0]const u8{undefined} ** MAXWADFILES;
+var numwadfiles: usize = 0;
 
 export var devparm: c.boolean = c.false; // started game with -devparm
 export var nomonsters: c.boolean = c.false; // checkparm of -nomonsters
@@ -424,16 +426,17 @@ export fn D_StartTitle() void {
 // D_AddFile
 //
 fn D_AddFile(file: [*:0]const u8) void {
-    var numwadfiles: usize = 0;
-    while (wadfiles[numwadfiles] != null) {
-        numwadfiles += 1;
+    numwadfiles += 1;
+
+    if (numwadfiles == wadfiles.len) {
+        I_Error("Too many wadfiles\n");
     }
 
     const len = c.strlen(file);
     var newfile = std.heap.raw_c_allocator.alloc(u8, len + 1) catch unreachable;
     _ = c.strcpy(newfile.ptr, file);
 
-    wadfiles[numwadfiles] = newfile[0..len :0];
+    wadfiles[numwadfiles - 1] = newfile[0..len :0];
 }
 
 //
@@ -666,7 +669,6 @@ extern var singledemo: c.boolean;
 extern fn V_Init() void;
 extern fn M_LoadDefaults() void; // load before initing other systems
 extern fn Z_Init() void;
-extern fn W_InitMultipleFiles(filenames: [*c][*c]const u8) void;
 extern fn M_Init() void;
 extern fn R_Init() void;
 extern fn P_Init() void;
@@ -859,7 +861,7 @@ pub fn D_DoomMain() noreturn {
     Z_Init();
 
     _ = c.printf("W_Init: Init WADfiles.\n");
-    W_InitMultipleFiles(&wadfiles);
+    W_InitMultipleFiles(wadfiles[0..numwadfiles]);
 
     // Check for -file in shareware
     if (modifiedgame != c.false) {

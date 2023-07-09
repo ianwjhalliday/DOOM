@@ -66,7 +66,6 @@ pub fn build(b: *std.Build) void {
         "r_segs.c",
         "r_sky.c",
         "r_things.c",
-        "w_wad.c",
         "wi_stuff.c",
         "v_video.c",
         "st_lib.c",
