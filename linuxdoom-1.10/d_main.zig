@@ -1,8 +1,4 @@
 const c = @cImport({
-    @cInclude("stdio.h");
-    @cInclude("stdlib.h");
-    @cInclude("unistd.h");
-    @cInclude("sys/Stat.h");
     @cInclude("doomdef.h");
     @cInclude("doomstat.h");
     @cInclude("doomtype.h");
@@ -51,10 +47,10 @@ extern fn I_SubmitSound() void;
 
 extern fn G_BuildTiccmd(*c.ticcmd_t) void;
 
-// TODO: import M_CheckParm when this will no longer cause a double export
-extern fn M_CheckParm(check: [*:0]const u8) c_int;
-
 const std = @import("std");
+const fmt = std.fmt;
+const os = std.os;
+const M_CheckParm = @import("m_argv.zig").M_CheckParm;
 const Z_Tag = @import("z_zone.zig").Z_Tag;
 const i_system = @import("i_system.zig");
 const I_Init = i_system.I_Init;
@@ -64,7 +60,7 @@ const W_InitMultipleFiles = @import("w_wad.zig").W_InitMultipleFiles;
 
 const MAXWADFILES = 20;
 
-var wadfiles = [_][:0]const u8{undefined} ** MAXWADFILES;
+var wadfiles = [_][]const u8{undefined} ** MAXWADFILES;
 var numwadfiles: usize = 0;
 
 export var devparm: c.boolean = c.false; // started game with -devparm
@@ -85,7 +81,6 @@ export var debugfile: ?*c.FILE = null;
 
 export var advancedemo: c.boolean = c.false;
 
-var wadfile: [1023:0]u8 = undefined; // primary wad file
 export var basedefault: [1023:0]u8 = undefined; // default file
 
 //
@@ -289,8 +284,9 @@ fn D_DoomLoop() noreturn {
     // TODO: This parm check should be in `D_DoomMain()`
     if (M_CheckParm("-debugfile") != 0) {
         var buffer: [20]u8 = undefined;
-        const filename = std.fmt.bufPrintZ(&buffer, "debug{}.txt", .{c.consoleplayer}) catch unreachable;
-        _ = c.printf("debug output to: %s\n", filename.ptr);
+        const filename = fmt.bufPrintZ(&buffer, "debug{}.txt", .{c.consoleplayer}) catch unreachable;
+        const stdout = std.io.getStdOut().writer();
+        stdout.print("debug output to: {s}\n", .{filename}) catch unreachable;
         debugfile = c.fopen(filename, "w");
     }
 
@@ -425,18 +421,15 @@ export fn D_StartTitle() void {
 //
 // D_AddFile
 //
-fn D_AddFile(file: [*:0]const u8) void {
+fn D_AddFile(file: []const u8) void {
     numwadfiles += 1;
 
     if (numwadfiles == wadfiles.len) {
         I_Error("Too many wadfiles\n");
     }
 
-    const len = c.strlen(file);
-    var newfile = std.heap.raw_c_allocator.alloc(u8, len + 1) catch unreachable;
-    _ = c.strcpy(newfile.ptr, file);
-
-    wadfiles[numwadfiles - 1] = newfile[0..len :0];
+    const newfile = std.heap.raw_c_allocator.dupe(u8, file) catch unreachable;
+    wadfiles[numwadfiles - 1] = newfile;
 }
 
 //
@@ -446,51 +439,35 @@ fn D_AddFile(file: [*:0]const u8) void {
 // should be executed (notably loading PWAD's).
 //
 fn IdentifyVersion() void {
-    // TODO: Use fmt to build these strings and make them const instead of var
-    // Use raw_c_allocator as well.
-    var doom1wad: [*c]u8 = undefined;
-    var doomwad: [*c]u8 = undefined;
-    var doomuwad: [*c]u8 = undefined;
-    var doom2wad: [*c]u8 = undefined;
+    var arena = std.heap.ArenaAllocator.init(std.heap.raw_c_allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
-    var doom2fwad: [*c]u8 = undefined;
-    var plutoniawad: [*c]u8 = undefined;
-    var tntwad: [*c]u8 = undefined;
-
-    var home: [*c]u8 = undefined;
-    const doomwaddir = std.mem.span(std.c.getenv("DOOMWADDIR") orelse ".");
+    const doomwaddir = os.getenv("DOOMWADDIR") orelse ".";
 
     // Commercial.
-    doom2wad = @ptrCast([*c]u8, std.c.malloc(doomwaddir.len + 1 + 9 + 1) orelse unreachable);
-    _ = c.sprintf(doom2wad, "%s/doom2.wad", doomwaddir.ptr);
+    const doom2wad = fmt.allocPrint(allocator, "{s}/doom2.wad", .{doomwaddir}) catch unreachable;
 
     // Retail.
-    doomuwad = @ptrCast([*c]u8, std.c.malloc(doomwaddir.len + 1 + 8 + 1) orelse unreachable);
-    _ = c.sprintf(doomuwad, "%s/doomu.wad", doomwaddir.ptr);
+    const doomuwad = fmt.allocPrint(allocator, "{s}/doomu.wad", .{doomwaddir}) catch unreachable;
 
     // Registered.
-    doomwad = @ptrCast([*c]u8, std.c.malloc(doomwaddir.len + 1 + 8 + 1) orelse unreachable);
-    _ = c.sprintf(doomwad, "%s/doom.wad", doomwaddir.ptr);
+    const doomwad = fmt.allocPrint(allocator, "{s}/doom.wad", .{doomwaddir}) catch unreachable;
 
     // Shareware.
-    doom1wad = @ptrCast([*c]u8, std.c.malloc(doomwaddir.len + 1 + 9 + 1) orelse unreachable);
-    _ = c.sprintf(doom1wad, "%s/doom1.wad", doomwaddir.ptr);
+    const doom1wad = fmt.allocPrint(allocator, "{s}/doom1.wad", .{doomwaddir}) catch unreachable;
 
-    plutoniawad = @ptrCast([*c]u8, std.c.malloc(doomwaddir.len + 1 + 12 + 1) orelse unreachable);
-    _ = c.sprintf(plutoniawad, "%s/plutonia.wad", doomwaddir.ptr);
+    const plutoniawad = fmt.allocPrint(allocator, "{s}/plutonia.wad", .{doomwaddir}) catch unreachable;
 
-    tntwad = @ptrCast([*c]u8, std.c.malloc(doomwaddir.len + 1 + 9 + 1) orelse unreachable);
-    _ = c.sprintf(tntwad, "%s/tnt.wad", doomwaddir.ptr);
+    const tntwad = fmt.allocPrint(allocator, "{s}/tnt.wad", .{doomwaddir}) catch unreachable;
 
     // French stuff.
-    doom2fwad = @ptrCast([*c]u8, std.c.malloc(doomwaddir.len + 1 + 10 + 1) orelse unreachable);
-    _ = c.sprintf(doom2fwad, "%s/doom2f.wad", doomwaddir.ptr);
+    const doom2fwad = fmt.allocPrint(allocator, "{s}/doom2f.wad", .{doomwaddir}) catch unreachable;
 
-    home = std.c.getenv("HOME");
-    if (home == null) {
+    const home = os.getenv("HOME") orelse {
         I_Error("Please set $HOME to your home directory");
-    }
-    _ = c.sprintf(&basedefault, "%s/.doomrc", home);
+    };
+    _ = fmt.bufPrintZ(&basedefault, "{s}/.doomrc", .{home}) catch unreachable;
 
     if (M_CheckParm("-shdev") != 0) {
         c.gamemode = c.shareware;
@@ -498,7 +475,7 @@ fn IdentifyVersion() void {
         D_AddFile(c.DEVDATA ++ "doom1.wad");
         D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
         D_AddFile(c.DEVMAPS ++ "data_se/pnames.lmp");
-        _ = c.strcpy(&basedefault, c.DEVDATA ++ "default.cfg");
+        _ = fmt.bufPrintZ(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}) catch unreachable;
         return;
     }
 
@@ -509,7 +486,7 @@ fn IdentifyVersion() void {
         D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
         D_AddFile(c.DEVMAPS ++ "data_se/texture2.lmp");
         D_AddFile(c.DEVMAPS ++ "data_se/pnames.lmp");
-        _ = c.strcpy(&basedefault, c.DEVDATA ++ "default.cfg");
+        _ = fmt.bufPrintZ(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}) catch unreachable;
         return;
     }
 
@@ -520,57 +497,59 @@ fn IdentifyVersion() void {
 
         D_AddFile(c.DEVMAPS ++ "cdata/texture1.lmp");
         D_AddFile(c.DEVMAPS ++ "cdata/pnames.lmp");
-        _ = c.strcpy(&basedefault, c.DEVDATA ++ "default.cfg");
+        _ = fmt.bufPrintZ(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}) catch unreachable;
         return;
     }
 
-    if (0 == c.access(doom2fwad, c.R_OK)) {
+    const stdout = std.io.getStdOut().writer();
+
+    if (os.access(doom2fwad, os.R_OK)) {
         c.gamemode = c.commercial;
         // C'est ridicule!
         // Let's handle languages in config files, okay?
         c.language = c.french;
-        _ = c.printf("French version\n");
+        stdout.print("French version\n", .{}) catch unreachable;
         D_AddFile(doom2fwad);
         return;
-    }
+    } else |_| {}
 
-    if (0 == c.access(doom2wad, c.R_OK)) {
+    if (os.access(doom2wad, os.R_OK)) {
         c.gamemode = c.commercial;
         D_AddFile(doom2wad);
         return;
-    }
+    } else |_| {}
 
-    if (0 == c.access(plutoniawad, c.R_OK)) {
+    if (os.access(plutoniawad, os.R_OK)) {
         c.gamemode = c.commercial;
         D_AddFile(plutoniawad);
         return;
-    }
+    } else |_| {}
 
-    if (0 == c.access(tntwad, c.R_OK)) {
+    if (os.access(tntwad, os.R_OK)) {
         c.gamemode = c.commercial;
         D_AddFile(tntwad);
         return;
-    }
+    } else |_| {}
 
-    if (0 == c.access(doomuwad, c.R_OK)) {
+    if (os.access(doomuwad, os.R_OK)) {
         c.gamemode = c.retail;
         D_AddFile(doomuwad);
         return;
-    }
+    } else |_| {}
 
-    if (0 == c.access(doomwad, c.R_OK)) {
+    if (os.access(doomwad, os.R_OK)) {
         c.gamemode = c.registered;
         D_AddFile(doomwad);
         return;
-    }
+    } else |_| {}
 
-    if (0 == c.access(doom1wad, c.R_OK)) {
+    if (os.access(doom1wad, os.R_OK)) {
         c.gamemode = c.shareware;
         D_AddFile(doom1wad);
         return;
-    }
+    } else |_| {}
 
-    _ = c.printf("Game mode indeterminate.\n");
+    stdout.print("Game mode indeterminate.\n", .{}) catch unreachable;
     c.gamemode = c.indetermined;
 
     // We don't abort. Let's see what the PWAD contains.
@@ -582,12 +561,12 @@ fn IdentifyVersion() void {
 // Find a Response File
 //
 
-// TODO: Import myarg variables instead of extern.
-// Or better yet use `myargs`.
+// TODO: Use `myargs` instead once safe to do so.
 extern var myargc: c_int;
 extern var myargv: [*c][*c]u8;
 
 fn FindResponseFile() void {
+    const stdout = std.io.getStdOut().writer();
     const MAXARGVS = 100;
 
     for (1..@intCast(usize, myargc)) |i| {
@@ -596,22 +575,21 @@ fn FindResponseFile() void {
             // (and, of course, make it more zig idiomatic)
 
             // READ THE RESPONSE FILE INTO MEMORY
-            const handle = c.fopen(@ptrCast([*:0]const u8, &myargv[i][1]), "rb");
-            if (handle == null) {
+            const responsefile = std.mem.span(myargv[i] + 1);
+            const handle = os.open(responsefile, os.O.RDONLY, 0) catch {
                 I_Error("\nNo such response file!");
-            }
-            _ = c.printf("Found response file %s!\n", &myargv[i][1]);
-            _ = c.fseek(handle, 0, c.SEEK_END);
-            const size = c.ftell(handle);
-            _ = c.fseek(handle, 0, c.SEEK_SET);
-            const file = std.c.malloc(@intCast(usize, size));
-            _ = c.fread(file, @intCast(usize, size), 1, handle);
-            _ = c.fclose(handle);
+            };
+            stdout.print("Found response file {s}!\n", .{responsefile}) catch unreachable;
+            const size = (os.fstat(handle) catch unreachable).size;
+            const file = std.heap.raw_c_allocator.alloc(u8, @intCast(usize, size)) catch unreachable;
+            _ = os.read(handle, file) catch unreachable;
+            os.close(handle);
 
             // KEEP ALL CMDLINE ARGS FOLLOWING @RESPONSEFILE ARG
             const originalargv = myargv;
 
-            myargv = @ptrCast([*c][*c]u8, @alignCast(@alignOf([*c][*c]u8), std.c.malloc(@sizeOf([*c]u8) * MAXARGVS) orelse unreachable));
+            // TODO: assign to `myargs`
+            myargv = (std.heap.raw_c_allocator.alloc([*c]u8, MAXARGVS) catch unreachable).ptr;
             @memset(myargv[0 .. MAXARGVS - 1], 0);
 
             const infile = @ptrCast([*]u8, file);
@@ -645,10 +623,10 @@ fn FindResponseFile() void {
             myargc = @intCast(c_int, indexinfile);
 
             // DISPLAY ARGS
-            _ = c.printf("%d command-line args:\n", myargc);
+            stdout.print("{} command-line args:\n", .{myargc - 1}) catch unreachable;
             k = 1;
             while (k < myargc) : (k += 1) {
-                _ = c.printf("%s\n", myargv[k]);
+                stdout.print("{s}\n", .{myargv[k]}) catch unreachable;
             }
 
             break;
@@ -686,11 +664,6 @@ pub fn D_DoomMain() noreturn {
 
     IdentifyVersion();
 
-    const stdout = c.fdopen(2, "w");
-    defer _ = c.fflush(stdout);
-    defer _ = c.fclose(stdout);
-
-    c.setbuf(stdout, null);
     modifiedgame = c.false;
 
     nomonsters = toDoomBoolean(M_CheckParm("-nomonsters") != 0);
@@ -704,32 +677,34 @@ pub fn D_DoomMain() noreturn {
     }
 
     const title = switch (c.gamemode) {
-        c.retail => std.fmt.comptimePrint("                         " ++
+        c.retail => fmt.comptimePrint("                         " ++
             "The Ultimate DOOM Startup v{}.{}" ++
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
-        c.shareware => std.fmt.comptimePrint("                            " ++
+        c.shareware => fmt.comptimePrint("                            " ++
             "DOOM Shareware Startup v{}.{}" ++
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
-        c.registered => std.fmt.comptimePrint("                            " ++
+        c.registered => fmt.comptimePrint("                            " ++
             "DOOM Registered Startup v{}.{}" ++
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
-        c.commercial => std.fmt.comptimePrint("                         " ++
+        c.commercial => fmt.comptimePrint("                         " ++
             "DOOM 2: Hell on Earth v{}.{}" ++
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
-        else => std.fmt.comptimePrint("                     " ++
+        else => fmt.comptimePrint("                     " ++
             "Public DOOM - v{}.{}" ++
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
     };
 
-    _ = c.printf("%s\n", title.ptr);
+    const stdout = std.io.getStdOut().writer();
+    stdout.print("{s}\n", .{title}) catch unreachable;
 
-    if (devparm != c.false)
-        _ = c.printf(c.D_DEVSTR);
+    if (devparm != c.false) {
+        stdout.print("{s}", .{c.D_DEVSTR}) catch unreachable;
+    }
 
     if (M_CheckParm("-cdrom") != 0) {
-        _ = c.printf(c.D_CDROM);
-        _ = c.mkdir("c:\\doomdata", 0);
-        _ = c.strcpy(&basedefault, "c:/doomdata/default.cfg");
+        stdout.print("{s}", .{c.D_CDROM}) catch unreachable;
+        std.fs.makeDirAbsolute("c:\\doomdata") catch unreachable;
+        _ = fmt.bufPrintZ(&basedefault, "{s}", .{"c:/doomdata/default.cfg"}) catch unreachable;
     }
 
     // turbo option
@@ -738,7 +713,7 @@ pub fn D_DoomMain() noreturn {
         var scale: usize = 200;
 
         if (p < myargc - 1) {
-            scale = @intCast(usize, c.atoi(myargv[@intCast(usize, p) + 1]));
+            scale = fmt.parseInt(usize, std.mem.span(myargv[p + 1]), 10) catch 0;
         }
         if (scale < 10) {
             scale = 10;
@@ -746,7 +721,7 @@ pub fn D_DoomMain() noreturn {
         if (scale > 400) {
             scale = 400;
         }
-        _ = c.printf("turbo scale: %i%%\n", scale);
+        stdout.print("turbo scale: {}%\n", .{scale}) catch unreachable;
         forwardmove[0] = forwardmove[0] * @intCast(c_int, scale / 100);
         forwardmove[1] = forwardmove[1] * @intCast(c_int, scale / 100);
         sidemove[0] = sidemove[0] * @intCast(c_int, scale / 100);
@@ -767,17 +742,17 @@ pub fn D_DoomMain() noreturn {
         // Map name handling.
         switch (c.gamemode) {
             c.shareware, c.retail, c.registered => {
-                _ = c.sprintf(&file, "~" ++ c.DEVMAPS ++ "E%cM%c.wad", myargv[p + 1][0], myargv[p + 2][0]);
-                _ = c.printf("Warping to Episode %s, Map %s.\n", myargv[p + 1], myargv[p + 2]);
+                _ = fmt.bufPrintZ(&file, "~" ++ c.DEVMAPS ++ "E{}M{}.wad", .{myargv[p + 1][0], myargv[p + 2][0]}) catch unreachable;
+                stdout.print("Warping to Episode {s}, Map {s}.\n", .{myargv[p + 1], myargv[p + 2]}) catch unreachable;
             },
 
             // c.commercial,
             else => {
-                const num = c.atoi(myargv[p + 1]);
+                const num = fmt.parseInt(usize, std.mem.span(myargv[p + 1]), 10) catch 0;
                 if (num < 10) {
-                    _ = c.sprintf(&file, "~" ++ c.DEVMAPS ++ "cdata/map0%i.wad", num);
+                    _ = fmt.bufPrintZ(&file, "~" ++ c.DEVMAPS ++ "cdata/map0{}.wad", .{num}) catch unreachable;
                 } else {
-                    _ = c.sprintf(&file, "~" ++ c.DEVMAPS ++ "cdata/map%i.wad", num);
+                    _ = fmt.bufPrintZ(&file, "~" ++ c.DEVMAPS ++ "cdata/map{}.wad", .{num}) catch unreachable;
                 }
             },
         }
@@ -791,7 +766,7 @@ pub fn D_DoomMain() noreturn {
         modifiedgame = c.true; // homebrew levels
         p += 1;
         while (p != myargc and myargv[p][0] != '-') : (p += 1) {
-            D_AddFile(myargv[p]);
+            D_AddFile(std.mem.span(myargv[p]));
         }
     }
 
@@ -802,9 +777,9 @@ pub fn D_DoomMain() noreturn {
     }
 
     if (p != 0 and p < myargc - 1) {
-        _ = c.sprintf(&file, "%s.lmp", myargv[p + 1]);
+        _ = fmt.bufPrintZ(&file, "{s}.lmp", .{myargv[p + 1]}) catch unreachable;
         D_AddFile(&file);
-        _ = c.printf("Playing demo %s.lmp.\n", myargv[p + 1]);
+        stdout.print("Playing demo {s}.lmp.\n", .{myargv[p + 1]}) catch unreachable;
     }
 
     // get skill / episode / map from parms
@@ -828,21 +803,22 @@ pub fn D_DoomMain() noreturn {
 
     p = @intCast(usize, M_CheckParm("-timer"));
     if (p != 0 and p < myargc - 1 and deathmatch != 0) {
-        const time = c.atoi(myargv[p + 1]);
-        _ = c.printf("Levels will end after %d minute", time);
+        const time = fmt.parseInt(usize, std.mem.span(myargv[p + 1]), 10) catch 0;
+        stdout.print("Levels will end after {} minute", .{time}) catch unreachable;
         if (time > 1)
-            _ = c.printf("s");
-        _ = c.printf(".\n");
+            stdout.print("s", .{}) catch unreachable;
+        stdout.print(".\n", .{}) catch unreachable;
     }
 
     p = @intCast(usize, M_CheckParm("-avg"));
-    if (p != 0 and p < myargc - 1 and deathmatch != 0)
-        _ = c.printf("Austin Virtual Gaming: Levels will end after 20 minutes\n");
+    if (p != 0 and p < myargc - 1 and deathmatch != 0) {
+        stdout.print("Austin Virtual Gaming: Levels will end after 20 minutes\n", .{}) catch unreachable;
+    }
 
     p = @intCast(usize, M_CheckParm("-warp"));
     if (p != 0 and p < myargc - 1) {
         if (c.gamemode == c.commercial) {
-            startmap = c.atoi(myargv[p + 1]);
+            startmap = fmt.parseInt(c_int, std.mem.span(myargv[p + 1]), 10) catch 0;
         } else {
             startepisode = myargv[p + 1][0] - '0';
             startmap = myargv[p + 2][0] - '0';
@@ -851,16 +827,16 @@ pub fn D_DoomMain() noreturn {
     }
 
     // init subsystems
-    _ = c.printf("V_Init: allocate screens.\n");
+    stdout.print("V_Init: allocate screens.\n", .{}) catch unreachable;
     V_Init();
 
-    _ = c.printf("M_LoadDefaults: Load system defaults.\n");
+    stdout.print("M_LoadDefaults: Load system defaults.\n", .{}) catch unreachable;
     M_LoadDefaults(); // load before initing other systems
 
-    _ = c.printf("Z_Init: Init zone memory allocation daemon. \n");
+    stdout.print("Z_Init: Init zone memory allocation daemon. \n", .{}) catch unreachable;
     Z_Init();
 
-    _ = c.printf("W_Init: Init WADfiles.\n");
+    stdout.print("W_Init: Init WADfiles.\n", .{}) catch unreachable;
     W_InitMultipleFiles(wadfiles[0..numwadfiles]);
 
     // Check for -file in shareware
@@ -888,62 +864,62 @@ pub fn D_DoomMain() noreturn {
 
     // Iff additonal PWAD files are used, print modified banner
     if (modifiedgame != c.false) {
-        _ = c.printf("===========================================================================\n" ++
+        stdout.print("===========================================================================\n" ++
             "ATTENTION:  This version of DOOM has been modified.  If you would like to\n" ++
             "get a copy of the original game, call 1-800-IDGAMES or see the readme file.\n" ++
             "        You will not receive technical support for modified games.\n" ++
             "                      press enter to continue\n" ++
-            "===========================================================================\n");
+            "===========================================================================\n", .{}) catch unreachable;
         _ = c.getchar();
     }
 
     // Check and print which version is executed.
     switch (c.gamemode) {
         c.shareware, c.indetermined => {
-            _ = c.printf("===========================================================================\n" ++
+            stdout.print("===========================================================================\n" ++
                 "                                Shareware!\n" ++
-                "===========================================================================\n");
+                "===========================================================================\n", .{}) catch unreachable;
         },
         c.registered, c.retail, c.commercial => {
-            _ = c.printf("===========================================================================\n" ++
+            stdout.print("===========================================================================\n" ++
                 "                 Commercial product - do not distribute!\n" ++
                 "         Please report software piracy to the SPA: 1-800-388-PIR8\n" ++
-                "===========================================================================\n");
+                "===========================================================================\n", .{}) catch unreachable;
         },
 
         else => unreachable,
     }
 
-    _ = c.printf("M_Init: Init miscellaneous info.\n");
+    stdout.print("M_Init: Init miscellaneous info.\n", .{}) catch unreachable;
     M_Init();
 
-    _ = c.printf("R_Init: Init DOOM refresh daemon - ");
+    stdout.print("R_Init: Init DOOM refresh daemon - ", .{}) catch unreachable;
     R_Init();
 
-    _ = c.printf("\nP_Init: Init Playloop state.\n");
+    stdout.print("\nP_Init: Init Playloop state.\n", .{}) catch unreachable;
     P_Init();
 
-    _ = c.printf("I_Init: Setting up machine state.\n");
+    stdout.print("I_Init: Setting up machine state.\n", .{}) catch unreachable;
     I_Init();
 
-    _ = c.printf("D_CheckNetGame: Checking network game status.\n");
+    stdout.print("D_CheckNetGame: Checking network game status.\n", .{}) catch unreachable;
     D_CheckNetGame();
 
-    _ = c.printf("S_Init: Setting up sound.\n");
+    stdout.print("S_Init: Setting up sound.\n", .{}) catch unreachable;
     S_Init(c.snd_SfxVolume, c.snd_MusicVolume);
 
-    _ = c.printf("HU_Init: Setting up heads up display.\n");
+    stdout.print("HU_Init: Setting up heads up display.\n", .{}) catch unreachable;
     HU_Init();
 
-    _ = c.printf("ST_Init: Init status bar.\n");
+    stdout.print("ST_Init: Init status bar.\n", .{}) catch unreachable;
     ST_Init();
 
     // check for a driver that wants intermission stats
     p = @intCast(usize, M_CheckParm("-statcopy"));
     if (p != 0 and p < myargc - 1) {
         // for statistics driver
-        statcopy = @intToPtr(*anyopaque, @intCast(usize, c.atol(myargv[p + 1])));
-        _ = c.printf("External statistics registered.\n");
+        statcopy = @intToPtr(*anyopaque, fmt.parseInt(usize, std.mem.span(myargv[p + 1]), 0) catch 0);
+        stdout.print("External statistics registered.\n", .{}) catch unreachable;
     }
 
     // start the apropriate game based on parms
@@ -970,9 +946,9 @@ pub fn D_DoomMain() noreturn {
     p = @intCast(usize, M_CheckParm("-loadgame"));
     if (p != 0 and p < myargc - 1) {
         if (M_CheckParm("-cdrom") != 0) {
-            _ = c.sprintf(&file, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "%c.dsg", myargv[p + 1][0]);
+            _ = fmt.bufPrintZ(&file, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}) catch unreachable;
         } else {
-            _ = c.sprintf(&file, c.SAVEGAMENAME ++ "%c.dsg", myargv[p + 1][0]);
+            _ = fmt.bufPrintZ(&file, c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}) catch unreachable;
         }
         c.G_LoadGame(&file);
     }

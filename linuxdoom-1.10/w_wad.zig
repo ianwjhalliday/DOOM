@@ -31,7 +31,7 @@ var numlumps: usize = 0;
 var lumpcache: []?*anyopaque = undefined;
 
 var reloadlump: usize = 0;
-var reloadname: ?[:0]const u8 = null;
+var reloadname: ?[]const u8 = null;
 
 fn filelength(handle: std.os.fd_t) c_int {
     const fileinfo = std.os.fstat(handle) catch {
@@ -41,7 +41,7 @@ fn filelength(handle: std.os.fd_t) c_int {
     return @intCast(c_int, fileinfo.size);
 }
 
-fn ExtractFileBase(path: [:0]const u8, dest: []u8) void {
+fn ExtractFileBase(path: []const u8, dest: []u8) void {
     var i = path.len - 1;
 
     // back up until a \ or / or the start
@@ -53,10 +53,11 @@ fn ExtractFileBase(path: [:0]const u8, dest: []u8) void {
     @memset(dest[0..8], 0);
     var length: usize = 0;
 
-    while (path[i] != 0 and path[i] != '.') {
+    while (i < path.len and path[i] != '.') {
         length += 1;
         if (length == 9) {
-            I_Error("Filename base of %s >8 chars", path.ptr);
+            const pathZ = std.heap.raw_c_allocator.dupeZ(u8, path) catch unreachable;
+            I_Error("Filename base of %s >8 chars", pathZ.ptr);
         }
 
         dest[length - 1] = std.ascii.toUpper(path[i]);
@@ -81,7 +82,7 @@ fn ExtractFileBase(path: [:0]const u8, dest: []u8) void {
 //  specially to allow map reloads.
 // But: the reload feature is a fragile hack...
 
-pub fn W_AddFile(_filename: [:0]const u8) void {
+pub fn W_AddFile(_filename: []const u8) void {
     // open the file and add to directory
 
     const filename = if (_filename[0] == '~') blk: {
@@ -91,15 +92,13 @@ pub fn W_AddFile(_filename: [:0]const u8) void {
         break :blk _filename[1..];
     } else _filename;
 
-    //const stdout = std.io.getStdOut().writer();
+    const stdout = std.io.getStdOut().writer();
     const handle = std.os.open(filename, std.os.O.RDONLY, 0) catch {
-        _ = std.c.printf(" couldn't open %s\n", filename.ptr);
-        //stdout.print(" couldn't open {s}\n", .{filename}) catch {};
+        stdout.print(" couldn't open {s}\n", .{filename}) catch {};
         return;
     };
 
-    _ = std.c.printf(" adding %s\n", filename.ptr);
-    //stdout.print(" adding {s}\n", .{filename}) catch {};
+    stdout.print(" adding {s}\n", .{filename}) catch {};
     const startlump = numlumps;
     var singleinfo: FileLump = undefined;
     var fileinfo: []FileLump = undefined;
@@ -125,7 +124,8 @@ pub fn W_AddFile(_filename: [:0]const u8) void {
         if (!std.mem.eql(u8, &header.identification, "IWAD")) {
             // Homebrew levels?
             if (!std.mem.eql(u8, &header.identification, "PWAD")) {
-                I_Error("Wad file %s doesn't have IWAD or PWAD id", filename.ptr);
+                const filenameZ = std.heap.raw_c_allocator.dupeZ(u8, filename) catch unreachable;
+                I_Error("Wad file %s doesn't have IWAD or PWAD id", filenameZ.ptr);
             }
 
             // ???modifiedgame = true;
@@ -178,7 +178,8 @@ pub export fn W_Reload() void {
     if (reloadname == null) return;
 
     const handle = std.os.open(reloadname.?, std.os.O.RDONLY, 0) catch {
-        I_Error("W_Reload: couldn't open %s", reloadname.?.ptr);
+        const reloadnameZ = std.heap.raw_c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
+        I_Error("W_Reload: couldn't open %s", reloadnameZ.ptr);
     };
 
     var header_bytes: [@sizeOf(WadInfo)]u8 = undefined;
@@ -230,7 +231,7 @@ pub export fn W_Reload() void {
 // The name searcher looks backwards, so a later file
 //  does override all earlier ones.
 //
-pub fn W_InitMultipleFiles(filenames: [][:0]const u8) void {
+pub fn W_InitMultipleFiles(filenames: [][]const u8) void {
     // open all the files, load headers, and count lumps
     numlumps = 0;
 
@@ -320,12 +321,14 @@ pub export fn W_ReadLump(lump: c_int, dest: *anyopaque) void {
     const handle = if (l.handle == -1) blk: {
         // reloadable file, so use open / read / close
         break :blk std.os.open(reloadname.?, std.os.O.RDONLY, 0) catch {
-            I_Error("W_ReadLump: couldn't open %s", reloadname.?.ptr);
+            const reloadnameZ = std.heap.raw_c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
+            I_Error("W_ReadLump: couldn't open %s", reloadnameZ.ptr);
         };
     } else l.handle;
 
     _ = std.os.lseek_SET(handle, @intCast(u64, l.position)) catch {
-        I_Error("W_ReadLump: couldn't lseek %s", reloadname.?.ptr);
+        const reloadnameZ = std.heap.raw_c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
+        I_Error("W_ReadLump: couldn't lseek %s", reloadnameZ.ptr);
     };
     // TODO: Change `dest` to a slice and fix callers to W_ReadLump to pass length of buffer (as slice)
     // const c = std.os.read(handle, dest);
