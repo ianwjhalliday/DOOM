@@ -81,6 +81,8 @@ export fn Z_Init() void {
 
 /// You can pass `null` user if the tag is < Z_Tag.PurgeLevel
 pub export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopaque {
+    // TODO: `requested_size` should be `usize` once all code is zig; consider separate funcs for Zig and C
+    // TODO: `Z_Malloc` ought to take the type of objects being created and return [*] or []
     const MINFRAGMENT = 64;
 
     // NOTE: Original doom source hardcoded 4 byte alignment. Switching to

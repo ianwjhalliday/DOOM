@@ -27,7 +27,6 @@ pub fn build(b: *std.Build) void {
         "i_net.c",
         "tables.c",
         "f_finale.c",
-        "f_wipe.c",
         "d_net.c",
         "d_items.c",
         "g_game.c",

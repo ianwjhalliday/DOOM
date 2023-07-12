@@ -6,7 +6,6 @@ const c = @cImport({
     @cInclude("d_event.h");
     @cInclude("d_net.h");
     @cInclude("d_player.h");
-    @cInclude("f_wipe.h");
     @cInclude("g_game.h");
     @cInclude("r_main.h");
     @cInclude("s_sound.h");
@@ -57,6 +56,7 @@ const I_Init = i_system.I_Init;
 const I_GetTime = i_system.I_GetTime;
 const I_Error = i_system.I_Error;
 const W_InitMultipleFiles = @import("w_wad.zig").W_InitMultipleFiles;
+const wipe = @import("f_wipe.zig");
 
 const MAXWADFILES = 20;
 
@@ -159,10 +159,10 @@ fn D_Display() void {
     }
 
     // save the current screen if about to wipe
-    var wipe = false;
+    var dowipe = false;
     if (c.gamestate != wipegamestate) {
-        wipe = true;
-        _ = c.wipe_StartScreen(0, 0, c.SCREENWIDTH, c.SCREENHEIGHT);
+        dowipe = true;
+        wipe.StartScreen();
     }
 
     if (c.gamestate == c.GS_LEVEL and c.gametic != 0)
@@ -175,7 +175,7 @@ fn D_Display() void {
                 break :blk;
             if (automapactive != c.false)
                 AM_Drawer();
-            if (wipe or (c.viewheight != 200 and S.fullscreen))
+            if (dowipe or (c.viewheight != 200 and S.fullscreen))
                 redrawsbar = true;
             if (S.inhelpscreensstate and inhelpscreens != c.true)
                 redrawsbar = true; // just put away the help screen
@@ -245,13 +245,13 @@ fn D_Display() void {
     NetUpdate(); // send out any new accumulation
 
     // normal update
-    if (!wipe) {
+    if (!dowipe) {
         I_FinishUpdate(); // page flip or blit buffer
         return;
     }
 
     // wipe update
-    _ = c.wipe_EndScreen(0, 0, c.SCREENWIDTH, c.SCREENHEIGHT);
+    wipe.EndScreen(0, 0, c.SCREENWIDTH, c.SCREENHEIGHT);
 
     var wipestart = I_GetTime() - 1;
     var done = false;
@@ -264,7 +264,7 @@ fn D_Display() void {
             tics = nowtime - wipestart;
         }
         wipestart = nowtime;
-        done = 0 != c.wipe_ScreenWipe(c.wipe_Melt, 0, 0, c.SCREENWIDTH, c.SCREENHEIGHT, tics);
+        done = wipe.ScreenWipe(.Melt, c.SCREENWIDTH, c.SCREENHEIGHT, @intCast(usize, tics));
         I_UpdateNoBlit();
         M_Drawer(); // menu is drawn even on top of wipes
         I_FinishUpdate(); // page flip or blit buffer
