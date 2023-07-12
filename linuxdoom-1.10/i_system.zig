@@ -43,7 +43,7 @@ pub export fn I_BaseTiccmd() *const c.ticcmd_t {
 
 pub fn I_ZoneBase(size: *c_int) [*]u8 {
     size.* = mb_used*1024*1024;
-    if (std.heap.raw_c_allocator.alloc(u8, @intCast(usize, size.*))) |p| {
+    if (std.heap.raw_c_allocator.alloc(u8, @intCast(size.*))) |p| {
         return p.ptr;
     } else |_| {
         I_Error("I_ZoneBase: Failed to allocate zone memory\n");
@@ -58,7 +58,7 @@ pub export fn I_GetTime() c_int {
     if (basetime == 0) {
         basetime = tp.tv_sec;
     }
-    const newtics = @truncate(c_int, (tp.tv_sec-basetime)*c.TICRATE + @divTrunc(tp.tv_usec*c.TICRATE, 1000000));
+    const newtics: c_int = @truncate((tp.tv_sec-basetime)*c.TICRATE + @divTrunc(tp.tv_usec*c.TICRATE, 1000000));
     return newtics;
 }
 
@@ -77,13 +77,13 @@ pub export fn I_Quit() void {
 
 /// Wait for vertical retrace or pause a bit.
 pub export fn I_WaitVBL(count: c_int) void {
-    _ = c.usleep(@intCast(c_uint, count) * (1000000/70));
+    _ = c.usleep(@intCast(count * (1000000/70)));
 }
 
 // Allocates from low memory under dos,
 // just mallocs under unix
 pub export fn I_AllocLow(length: c_int) ?[*]u8 {
-    if (std.heap.raw_c_allocator.alloc(u8, @intCast(usize, length))) |p| {
+    if (std.heap.raw_c_allocator.alloc(u8, @intCast(length))) |p| {
         @memset(p, 0);
         return p.ptr;
     } else |_| {
@@ -115,5 +115,5 @@ pub export fn I_Error(errormsg: [*:0]const u8, ...) noreturn {
     D_QuitNetGame();
     I_ShutdownGraphics();
 
-    std.process.exit(@bitCast(u8, @as(i8, -1)));
+    std.process.exit(@bitCast(@as(i8, -1)));
 }

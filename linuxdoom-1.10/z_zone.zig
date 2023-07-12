@@ -40,11 +40,11 @@ const MemBlock = extern struct {
     prev: *MemBlock,
 
     fn fromPtr(ptr: *anyopaque) *MemBlock {
-        return &(@ptrCast([*]MemBlock, @alignCast(@alignOf(**anyopaque), ptr)) - 1)[0];
+        return &(@as([*]MemBlock, @ptrCast(@alignCast(ptr))) - 1)[0];
     }
 
     fn toOpaquePtr(self: *MemBlock) *anyopaque {
-        return @ptrCast([*]u8, self) + @sizeOf(MemBlock);
+        return @as([*]u8, @ptrCast(self)) + @sizeOf(MemBlock);
     }
 };
 
@@ -60,22 +60,22 @@ export var mainzone: *MemZone = undefined;
 
 export fn Z_Init() void {
     var size: i32 = undefined;
-    const allocation = @alignCast(8, I_ZoneBase(&size));
 
-    mainzone = @ptrCast(*MemZone, allocation);
+    mainzone = @ptrCast(@alignCast(I_ZoneBase(&size)));
     mainzone.size = size;
 
-    const block = @ptrCast(*MemBlock, allocation + @sizeOf(MemZone));
+    const block: *MemBlock = @ptrCast(@as([*]MemZone, @as(*[1]MemZone, mainzone)) + 1);
     mainzone.blocklist.next = block;
     mainzone.blocklist.prev = block;
 
-    mainzone.blocklist.user = @ptrCast(*?*anyopaque, mainzone);
+    mainzone.blocklist.user = @ptrCast(mainzone);
     mainzone.blocklist.tag = Z_Tag.Static;
     mainzone.rover = block;
 
     block.prev = &mainzone.blocklist;
     block.next = &mainzone.blocklist;
     block.user = null;
+    block.tag = .Undefined;
     block.size = mainzone.size - @sizeOf(MemZone);
 }
 
@@ -104,8 +104,9 @@ pub export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *an
     //  back up over them
     var base = mainzone.rover;
 
-    if (base.prev.user == null)
+    if (base.prev.user == null) {
         base = base.prev;
+    }
 
     var rover = base;
     const start = base.prev;
@@ -117,7 +118,7 @@ pub export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *an
         }
 
         if (rover.user != null) {
-            if (@enumToInt(rover.tag) < @enumToInt(Z_Tag.PurgeLevel)) {
+            if (@intFromEnum(rover.tag) < @intFromEnum(Z_Tag.PurgeLevel)) {
                 // hit a block that can't be purged,
                 // so move base past it
                 base = rover.next;
@@ -143,7 +144,7 @@ pub export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *an
 
     if (extra > MINFRAGMENT) {
         // there will be a free fragment after the allocated block
-        const newblock = @ptrCast(*MemBlock, @alignCast(@alignOf(MemBlock), @ptrCast([*]u8, base) + @intCast(usize, size)));
+        const newblock: *MemBlock = @ptrFromInt(@intFromPtr(base) + @as(usize, @intCast(size)));
         newblock.size = extra;
 
         // null indicates free block.
@@ -160,16 +161,16 @@ pub export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *an
     if (user != null) {
         // mark as an in-use block
         base.user = user;
-        @ptrCast(*[*]u8, user).* = @ptrCast([*]u8, base) + @sizeOf(MemBlock);
+        @as(*[*]u8, @ptrCast(user)).* = @as([*]u8, @ptrCast(base)) + @sizeOf(MemBlock);
     } else {
-        if (@enumToInt(tag) >= @enumToInt(Z_Tag.PurgeLevel)) {
+        if (@intFromEnum(tag) >= @intFromEnum(Z_Tag.PurgeLevel)) {
             I_Error("Z_Malloc: an owner is required for purgable blocks");
         }
 
         // mark as in-use, but unowned
         // NOTE: Original doom source uses `2` but that is not aligned. To
         // avoid zig compiler complaint use the pointer alignment value instead.
-        base.user = @intToPtr(?*?*anyopaque, alignment);
+        base.user = @ptrFromInt(alignment);
     }
     base.tag = tag;
 
@@ -178,7 +179,7 @@ pub export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *an
 
     base.id = ZONEID;
 
-    return @ptrCast(*anyopaque, @ptrCast([*]u8, base) + @sizeOf(MemBlock));
+    return @ptrCast(@as([*]u8, @ptrCast(base)) + @sizeOf(MemBlock));
 }
 
 pub export fn Z_Free(ptr: *anyopaque) void {
@@ -188,7 +189,7 @@ pub export fn Z_Free(ptr: *anyopaque) void {
         I_Error("Z_Free: freed a pointer without ZONEID");
     }
 
-    if (@ptrToInt(block.user) > 0x100) {
+    if (@intFromPtr(block.user) > 0x100) {
         // smaller values are not pointers
         // Note: OS-dependend?
 
@@ -240,7 +241,7 @@ pub export fn Z_ChangeTag(ptr: *anyopaque, tag: Z_Tag) void {
         I_Error("Z_ChangeTag: freed a pointer without ZONEID");
     }
 
-    if (@enumToInt(tag) >= @enumToInt(Z_Tag.PurgeLevel) and @ptrToInt(block.user) < 0x100) {
+    if (@intFromEnum(tag) >= @intFromEnum(Z_Tag.PurgeLevel) and @intFromPtr(block.user) < 0x100) {
         I_Error("Z_ChangeTag: an owner is required for purgable blocks");
     }
 
@@ -260,8 +261,8 @@ export fn Z_FreeTags(lowtag: Z_Tag, hightag: Z_Tag) void {
             continue;
         }
 
-        if (@enumToInt(block.tag) >= @enumToInt(lowtag)
-            and @enumToInt(block.tag) <= @enumToInt(hightag)) {
+        if (@intFromEnum(block.tag) >= @intFromEnum(lowtag)
+            and @intFromEnum(block.tag) <= @intFromEnum(hightag)) {
             Z_Free(block.toOpaquePtr());
         }
     }
@@ -278,8 +279,8 @@ export fn Z_DumpHeap(lowtag: Z_Tag, hightag: Z_Tag) void {
 
     var block = mainzone.blocklist.next;
     while (true) : (block = block.next) {
-        if (@enumToInt(block.tag) >= @enumToInt(lowtag)
-            and @enumToInt(block.tag) <= @enumToInt(hightag)) {
+        if (@intFromEnum(block.tag) >= @intFromEnum(lowtag)
+            and @intFromEnum(block.tag) <= @intFromEnum(hightag)) {
             print("block:{}    size:{:7}    user:{?}    tag:{:3}\n",
                 .{block, block.size, block.user, block.tag});
         }
@@ -289,7 +290,7 @@ export fn Z_DumpHeap(lowtag: Z_Tag, hightag: Z_Tag) void {
             break;
         }
 
-        if (@ptrToInt(block) + @intCast(usize, block.size) != @ptrToInt(block.next)) {
+        if (@intFromPtr(block) + @as(usize, @intCast(block.size)) != @intFromPtr(block.next)) {
             print("ERROR: block size does not touch the next block\n", .{});
         }
 
@@ -321,7 +322,7 @@ export fn Z_FileDumpHeap(f: *FILE) void {
             break;
         }
 
-        if (@ptrToInt(block) + @intCast(usize, block.size) != @ptrToInt(block.next)) {
+        if (@intFromPtr(block) + @as(usize, @intCast(block.size)) != @intFromPtr(block.next)) {
             _ = fprintf(f, "ERROR: block size does not touch the next block\n");
         }
 
@@ -343,7 +344,7 @@ export fn Z_CheckHeap() void {
             break;
         }
 
-        if (@ptrToInt(block) + @intCast(usize, block.size) != @ptrToInt(block.next)) {
+        if (@intFromPtr(block) + @as(usize, @intCast(block.size)) != @intFromPtr(block.next)) {
             I_Error("Z_CheckHeap: block size does not touch the next block\n");
         }
 
@@ -363,7 +364,7 @@ export fn Z_FreeMemory() c_int {
 
     var block = mainzone.blocklist.next;
     while (block != &mainzone.blocklist) : (block = block.next) {
-        if (block.user == null or @enumToInt(block.tag) >= @enumToInt(Z_Tag.PurgeLevel)) {
+        if (block.user == null or @intFromEnum(block.tag) >= @intFromEnum(Z_Tag.PurgeLevel)) {
             free += block.size;
         }
     }

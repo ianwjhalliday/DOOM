@@ -1,5 +1,3 @@
-const math = @import("std").math;
-
 const Z_Malloc = @import("z_zone.zig").Z_Malloc;
 const Z_Free = @import("z_zone.zig").Z_Free;
 
@@ -25,7 +23,7 @@ var wipe_scr_end: [*]u8 = undefined;
 var wipe_scr: [*]u8 = undefined;
 
 fn wipe_shittyColMajorXform(array: [*]c_short, width: usize, height: usize) void {
-    const dest = @ptrCast([*]c_short, @alignCast(@alignOf(c_short), Z_Malloc(@intCast(i32, width * height * @sizeOf(c_short)), .Static, null)));
+    const dest: [*]c_short = @ptrCast(@alignCast(Z_Malloc(@intCast(width * height * @sizeOf(c_short)), .Static, null)));
     defer Z_Free(dest);
 
     for (0..height) |y| {
@@ -49,10 +47,10 @@ fn wipe_doColorXForm(width: usize, height: usize, ticks: usize) bool {
 
     for (0..width * height) |i| {
         if (w[i] > e[i]) {
-            w[i] = @truncate(u8, math.max(w[i] -| ticks, e[i]));
+            w[i] = @truncate(@max(w[i] -| ticks, e[i]));
             changed = true;
         } else if (w[i] < e[i]) {
-            w[i] = @truncate(u8, math.min(w[i] +| ticks, e[i]));
+            w[i] = @truncate(@min(w[i] +| ticks, e[i]));
             changed = true;
         }
     }
@@ -70,12 +68,12 @@ fn wipe_initMelt(width: usize, height: usize) void {
 
     // makes this wipe faster (in theory)
     // to have stuff in column-major format
-    wipe_shittyColMajorXform(@ptrCast([*]c_short, @alignCast(@alignOf(c_short), wipe_scr_start)), width / 2, height);
-    wipe_shittyColMajorXform(@ptrCast([*]c_short, @alignCast(@alignOf(c_short), wipe_scr_end)), width / 2, height);
+    wipe_shittyColMajorXform(@ptrCast(@alignCast(wipe_scr_start)), width / 2, height);
+    wipe_shittyColMajorXform(@ptrCast(@alignCast(wipe_scr_end)), width / 2, height);
 
     // setup initial column positions
     // (y<0 => not ready to scroll yet)
-    cols = @ptrCast([*]i32, @alignCast(@alignOf(i32), Z_Malloc(@intCast(i32, width) * @sizeOf(i32), .Static, null)));
+    cols = @ptrCast(@alignCast(Z_Malloc(@as(i32, @intCast(width)) * @sizeOf(i32), .Static, null)));
     cols[0] = -@mod(M_Random(), 16);
     for (1..width) |i| {
         const r = @mod(M_Random(), 3) - 1;
@@ -101,23 +99,23 @@ fn wipe_doMelt(width: usize, height: usize, ticks: usize) bool {
                 var dy = if (cols[i] < 16) cols[i] + 1 else 8;
 
                 if (cols[i] + dy >= height) {
-                    dy = @intCast(i32, height) - cols[i];
+                    dy = @as(i32, @intCast(height)) - cols[i];
                 }
 
-                const se = @ptrCast([*]c_short, @alignCast(@alignOf(c_short), wipe_scr_end)) + i * height + @intCast(usize, cols[i]);
-                const de = @ptrCast([*]c_short, @alignCast(@alignOf(c_short), wipe_scr)) + @intCast(usize, cols[i]) * halfwidth + i;
+                const se = @as([*]c_short, @ptrCast(@alignCast(wipe_scr_end))) + i * height + @as(usize, @intCast(cols[i]));
+                const de = @as([*]c_short, @ptrCast(@alignCast(wipe_scr))) + @as(usize, @intCast(cols[i])) * halfwidth + i;
 
                 var idx: usize = 0;
-                for (0..@intCast(usize, dy)) |j| {
+                for (0..@intCast(dy)) |j| {
                     de[idx] = se[j];
                     idx += halfwidth;
                 }
 
                 cols[i] += dy;
-                const ss = @ptrCast([*]c_short, @alignCast(@alignOf(c_short), wipe_scr_start)) + i * height;
-                const ds = @ptrCast([*]c_short, @alignCast(@alignOf(c_short), wipe_scr)) + @intCast(usize, cols[i]) * halfwidth + i;
+                const ss = @as([*]c_short, @ptrCast(@alignCast(wipe_scr_start))) + i * height;
+                const ds = @as([*]c_short, @ptrCast(@alignCast(wipe_scr))) + @as(usize, @intCast(cols[i])) * halfwidth + i;
                 idx = 0;
-                for (0..height - @intCast(usize, cols[i])) |j| {
+                for (0..height - @as(usize, @intCast(cols[i]))) |j| {
                     ds[idx] = ss[j];
                     idx += halfwidth;
                 }
@@ -157,7 +155,7 @@ pub fn ScreenWipe(wipe: WipeStyle, width: usize, height: usize, ticks: usize) bo
     }
 
     // do a piece of wipe-in
-    V_MarkRect(0, 0, @intCast(c_int, width), @intCast(c_int, height));
+    V_MarkRect(0, 0, @intCast(width), @intCast(height));
     const rc = switch (wipe) {
         .ColorXForm => wipe_doColorXForm(width, height, ticks),
         .Melt => wipe_doMelt(width, height, ticks),

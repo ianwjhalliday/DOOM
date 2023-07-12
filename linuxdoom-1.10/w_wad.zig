@@ -38,7 +38,7 @@ fn filelength(handle: std.os.fd_t) c_int {
         I_Error("Error fstating");
     };
 
-    return @intCast(c_int, fileinfo.size);
+    return @intCast(fileinfo.size);
 }
 
 fn ExtractFileBase(path: []const u8, dest: []u8) void {
@@ -133,18 +133,18 @@ pub fn W_AddFile(_filename: []const u8) void {
 
         header.numlumps = std.mem.littleToNative(c_int, header.numlumps);
         header.infotableofs = std.mem.littleToNative(c_int, header.infotableofs);
-        fileinfo = allocator.alloc(FileLump, @intCast(usize, header.numlumps)) catch {
+        fileinfo = allocator.alloc(FileLump, @intCast(header.numlumps)) catch {
             I_Error("W_AddFile: Alloc lumps failed. numlumps = %d", header.numlumps);
         };
 
-        _ = std.os.lseek_SET(handle, @intCast(u64, header.infotableofs)) catch {
+        _ = std.os.lseek_SET(handle, @intCast(header.infotableofs)) catch {
             I_Error("W_AddFile: Failed lseek_SET");
         };
         _ = std.os.read(handle, std.mem.sliceAsBytes(fileinfo)) catch {
             I_Error("Failed to read WAD lump infos");
         };
 
-        numlumps += @intCast(usize, header.numlumps);
+        numlumps += @intCast(header.numlumps);
     }
 
     // Fill in lumpinfo
@@ -194,18 +194,18 @@ pub export fn W_Reload() void {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    const fileinfo = allocator.alloc(FileLump, @intCast(usize, header.numlumps)) catch {
+    const fileinfo = allocator.alloc(FileLump, @intCast(header.numlumps)) catch {
         I_Error("W_Reload: Alloc lumps failed. numlumps = %d", header.numlumps);
     };
 
-    _ = std.os.lseek_SET(handle, @intCast(u64, header.infotableofs)) catch {
+    _ = std.os.lseek_SET(handle, @intCast(header.infotableofs)) catch {
         I_Error("W_Reload: Failed lseek_SET");
     };
     _ = std.os.read(handle, std.mem.sliceAsBytes(fileinfo)) catch {
         I_Error("W_Reload: Failed to read WAD lump infos");
     };
 
-    for (reloadlump..@intCast(usize, header.numlumps)) |i| {
+    for (reloadlump..@intCast(header.numlumps)) |i| {
         if (lumpcache[i] != null) {
             Z_Free(lumpcache[i].?);
         }
@@ -271,7 +271,7 @@ pub export fn W_CheckNumForName(name: [*]const u8) c_int {
     for (0..numlumps) |i| {
         const ir = numlumps - 1 - i;
         if (std.mem.eql(u8, &name_upper, &lumpinfo_slice[ir].name)) {
-            return @intCast(c_int, ir);
+            return @intCast(ir);
         }
     }
 
@@ -303,7 +303,7 @@ pub export fn W_LumpLength(lump: c_int) c_int {
         I_Error("W_LumpLength: %i >= numlumps", lump);
     }
 
-    return lumpinfo_slice[@intCast(usize, lump)].size;
+    return lumpinfo_slice[@intCast(lump)].size;
 }
 
 //
@@ -316,7 +316,7 @@ pub export fn W_ReadLump(lump: c_int, dest: *anyopaque) void {
         I_Error("W_ReadLump: %i >= numlumps", lump);
     }
 
-    const l = lumpinfo_slice[@intCast(usize, lump)];
+    const l = lumpinfo_slice[@intCast(lump)];
 
     const handle = if (l.handle == -1) blk: {
         // reloadable file, so use open / read / close
@@ -326,13 +326,13 @@ pub export fn W_ReadLump(lump: c_int, dest: *anyopaque) void {
         };
     } else l.handle;
 
-    _ = std.os.lseek_SET(handle, @intCast(u64, l.position)) catch {
+    _ = std.os.lseek_SET(handle, @intCast(l.position)) catch {
         const reloadnameZ = std.heap.raw_c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
         I_Error("W_ReadLump: couldn't lseek %s", reloadnameZ.ptr);
     };
     // TODO: Change `dest` to a slice and fix callers to W_ReadLump to pass length of buffer (as slice)
     // const c = std.os.read(handle, dest);
-    const c = std.c.read(handle, @ptrCast([*]u8, dest), @intCast(usize, l.size));
+    const c = std.c.read(handle, @ptrCast(dest), @intCast(l.size));
 
     if (c < l.size) {
         I_Error("W_ReadLump: only read %i of %i bytes of lump %i", c, l.size, lump);
@@ -352,18 +352,18 @@ pub export fn W_CacheLumpNum(lump: c_int, tag: Z_Tag) *anyopaque {
         I_Error("W_CacheLumpNum: %i >= numlumps", lump);
     }
 
-    if (lumpcache[@intCast(usize, lump)] == null) {
+    if (lumpcache[@intCast(lump)] == null) {
         // read the lump in
 
         // std.debug.print("cache miss on lump {}\n", .{lump});
-        _ = Z_Malloc(W_LumpLength(lump), tag, &lumpcache[@intCast(usize, lump)]);
-        W_ReadLump(lump, lumpcache[@intCast(usize, lump)].?);
+        _ = Z_Malloc(W_LumpLength(lump), tag, &lumpcache[@intCast(lump)]);
+        W_ReadLump(lump, lumpcache[@intCast(lump)].?);
     } else {
         //std.debug.print("cache hit on lump {}\n", .{lump});
-        Z_ChangeTag(lumpcache[@intCast(usize, lump)].?, tag);
+        Z_ChangeTag(lumpcache[@intCast(lump)].?, tag);
     }
 
-    return lumpcache[@intCast(usize, lump)].?;
+    return lumpcache[@intCast(lump)].?;
 }
 
 

@@ -23,8 +23,8 @@ pub fn main() noreturn {
     }
 
     // TODO: eliminate myargc/v and use myargs directly
-    m_argv.myargc = @intCast(c_int, args.len);
-    m_argv.myargv = @ptrCast([*c][*c]const u8, cargv);
+    m_argv.myargc = @intCast(args.len);
+    m_argv.myargv = @ptrCast(cargv);
     m_argv.myargs = args;
 
     D_DoomMain();

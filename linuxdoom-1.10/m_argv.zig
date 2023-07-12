@@ -24,7 +24,7 @@ pub export fn M_CheckParm(check: [*:0]const u8) c_int {
         if (std.ascii.eqlIgnoreCase(
                 std.mem.span(check),
                 std.mem.span(myargv[i]))) {
-            return @intCast(c_int, i);
+            return @intCast(i);
         }
     }
 

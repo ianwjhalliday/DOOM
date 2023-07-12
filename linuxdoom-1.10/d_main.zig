@@ -203,7 +203,7 @@ fn D_Display() void {
 
     // draw the view directly
     if (c.gamestate == c.GS_LEVEL and automapactive == c.false and c.gametic != 0)
-        c.R_RenderPlayerView(&c.players[@intCast(usize, c.displayplayer)]);
+        c.R_RenderPlayerView(&c.players[@intCast(c.displayplayer)]);
 
     if (c.gamestate == c.GS_LEVEL and c.gametic != 0)
         HU_Drawer();
@@ -237,7 +237,7 @@ fn D_Display() void {
     // draw pause pic
     if (paused != c.false) {
         const y = if (automapactive != c.false) 4 else c.viewwindowy + 4;
-        c.V_DrawPatchDirect(c.viewwindowx + @divTrunc(c.scaledviewwidth - 68, 2), y, 0, @ptrCast(*c.patch_t, @alignCast(@alignOf(c.patch_t), W_CacheLumpName("M_PAUSE", .Cache))));
+        c.V_DrawPatchDirect(c.viewwindowx + @divTrunc(c.scaledviewwidth - 68, 2), y, 0, @ptrCast(@alignCast(W_CacheLumpName("M_PAUSE", .Cache))));
     }
 
     // menus go directly to the screen
@@ -264,7 +264,7 @@ fn D_Display() void {
             tics = nowtime - wipestart;
         }
         wipestart = nowtime;
-        done = wipe.ScreenWipe(.Melt, c.SCREENWIDTH, c.SCREENHEIGHT, @intCast(usize, tics));
+        done = wipe.ScreenWipe(.Melt, c.SCREENWIDTH, c.SCREENHEIGHT, @intCast(tics));
         I_UpdateNoBlit();
         M_Drawer(); // menu is drawn even on top of wipes
         I_FinishUpdate(); // page flip or blit buffer
@@ -300,7 +300,7 @@ fn D_DoomLoop() noreturn {
         if (singletics != c.false) {
             I_StartTic();
             D_ProcessEvents();
-            G_BuildTiccmd(&c.netcmds[@intCast(usize, c.consoleplayer)][@intCast(usize, c.maketic) % c.BACKUPTICS]);
+            G_BuildTiccmd(&c.netcmds[@intCast(c.consoleplayer)][@as(usize, @intCast(c.maketic)) % c.BACKUPTICS]);
             if (advancedemo != c.false)
                 D_DoAdvanceDemo();
             M_Ticker();
@@ -311,7 +311,7 @@ fn D_DoomLoop() noreturn {
             TryRunTics(); // will run at least one tic
         }
 
-        c.S_UpdateSounds(c.players[@intCast(usize, c.consoleplayer)].mo); // move positional sounds
+        c.S_UpdateSounds(c.players[@intCast(c.consoleplayer)].mo); // move positional sounds
 
         // Update display, next frame, with current state.
         D_Display();
@@ -343,7 +343,7 @@ export fn D_PageTicker() void {
 // D_PageDrawer
 //
 fn D_PageDrawer() void {
-    c.V_DrawPatch(0, 0, 0, @ptrCast(*c.patch_t, @alignCast(@alignOf(c.patch_t), W_CacheLumpName(pagename, .Cache))));
+    c.V_DrawPatch(0, 0, 0, @ptrCast(@alignCast(W_CacheLumpName(pagename, .Cache))));
 }
 
 //
@@ -360,7 +360,7 @@ export fn D_AdvanceDemo() void {
 //
 extern var usergame: c.boolean;
 export fn D_DoAdvanceDemo() void {
-    c.players[@intCast(usize, c.consoleplayer)].playerstate = c.PST_LIVE; // not reborn
+    c.players[@intCast(c.consoleplayer)].playerstate = c.PST_LIVE; // not reborn
     advancedemo = c.false;
     usergame = c.false; // no save / end game here
     paused = c.false;
@@ -569,7 +569,7 @@ fn FindResponseFile() void {
     const stdout = std.io.getStdOut().writer();
     const MAXARGVS = 100;
 
-    for (1..@intCast(usize, myargc)) |i| {
+    for (1..@intCast(myargc)) |i| {
         if (myargv[i][0] == '@') {
             // TODO: Extract this body to a func in m_argv.zig
             // (and, of course, make it more zig idiomatic)
@@ -581,7 +581,7 @@ fn FindResponseFile() void {
             };
             stdout.print("Found response file {s}!\n", .{responsefile}) catch unreachable;
             const size = (os.fstat(handle) catch unreachable).size;
-            const file = std.heap.raw_c_allocator.alloc(u8, @intCast(usize, size)) catch unreachable;
+            const file = std.heap.raw_c_allocator.alloc(u8, @intCast(size)) catch unreachable;
             _ = os.read(handle, file) catch unreachable;
             os.close(handle);
 
@@ -592,7 +592,7 @@ fn FindResponseFile() void {
             myargv = (std.heap.raw_c_allocator.alloc([*c]u8, MAXARGVS) catch unreachable).ptr;
             @memset(myargv[0 .. MAXARGVS - 1], 0);
 
-            const infile = @ptrCast([*]u8, file);
+            const infile = @as([*]u8, @ptrCast(file));
             var indexinfile: usize = 0;
 
             while (indexinfile < i) : (indexinfile += 1) {
@@ -620,7 +620,7 @@ fn FindResponseFile() void {
             }) {
                 myargv[indexinfile] = originalargv[k];
             }
-            myargc = @intCast(c_int, indexinfile);
+            myargc = @intCast(indexinfile);
 
             // DISPLAY ARGS
             stdout.print("{} command-line args:\n", .{myargc - 1}) catch unreachable;
@@ -708,7 +708,7 @@ pub fn D_DoomMain() noreturn {
     }
 
     // turbo option
-    var p = @intCast(usize, M_CheckParm("-turbo"));
+    var p = @as(usize, @intCast(M_CheckParm("-turbo")));
     if (p != 0) {
         var scale: usize = 200;
 
@@ -722,10 +722,10 @@ pub fn D_DoomMain() noreturn {
             scale = 400;
         }
         stdout.print("turbo scale: {}%\n", .{scale}) catch unreachable;
-        forwardmove[0] = forwardmove[0] * @intCast(c_int, scale / 100);
-        forwardmove[1] = forwardmove[1] * @intCast(c_int, scale / 100);
-        sidemove[0] = sidemove[0] * @intCast(c_int, scale / 100);
-        sidemove[1] = sidemove[1] * @intCast(c_int, scale / 100);
+        forwardmove[0] = forwardmove[0] * @as(c_int, @intCast(scale / 100));
+        forwardmove[1] = forwardmove[1] * @as(c_int, @intCast(scale / 100));
+        sidemove[0] = sidemove[0] * @as(c_int, @intCast(scale / 100));
+        sidemove[1] = sidemove[1] * @as(c_int, @intCast(scale / 100));
     }
 
     var file: [255:0]u8 = undefined;
@@ -735,7 +735,7 @@ pub fn D_DoomMain() noreturn {
     //
     // convenience hack to allow -wart e m to add a wad file
     // prepend a tilde to the filename so wadfile will be reloadable
-    p = @intCast(usize, M_CheckParm("-wart"));
+    p = @intCast(M_CheckParm("-wart"));
     if (p != 0) {
         myargv[p][4] = 'p'; // big hack, change to -warp
 
@@ -759,7 +759,7 @@ pub fn D_DoomMain() noreturn {
         D_AddFile(&file);
     }
 
-    p = @intCast(usize, M_CheckParm("-file"));
+    p = @intCast(M_CheckParm("-file"));
     if (p != 0) {
         // the parms after p are wadfile/lump names,
         // until end of parms or another - preceded parm
@@ -770,10 +770,10 @@ pub fn D_DoomMain() noreturn {
         }
     }
 
-    p = @intCast(usize, M_CheckParm("-playdemo"));
+    p = @intCast(M_CheckParm("-playdemo"));
 
     if (p == 0) {
-        p = @intCast(usize, M_CheckParm("-timedemo"));
+        p = @intCast(M_CheckParm("-timedemo"));
     }
 
     if (p != 0 and p < myargc - 1) {
@@ -788,20 +788,20 @@ pub fn D_DoomMain() noreturn {
     startmap = 1;
     autostart = c.false;
 
-    p = @intCast(usize, M_CheckParm("-skill"));
+    p = @intCast(M_CheckParm("-skill"));
     if (p != 0 and p < myargc - 1) {
         startskill = myargv[p + 1][0] - '1';
         autostart = c.true;
     }
 
-    p = @intCast(usize, M_CheckParm("-episode"));
+    p = @intCast(M_CheckParm("-episode"));
     if (p != 0 and p < myargc - 1) {
         startepisode = myargv[p + 1][0] - '0';
         startmap = 1;
         autostart = c.true;
     }
 
-    p = @intCast(usize, M_CheckParm("-timer"));
+    p = @intCast(M_CheckParm("-timer"));
     if (p != 0 and p < myargc - 1 and deathmatch != 0) {
         const time = fmt.parseInt(usize, std.mem.span(myargv[p + 1]), 10) catch 0;
         stdout.print("Levels will end after {} minute", .{time}) catch unreachable;
@@ -810,12 +810,12 @@ pub fn D_DoomMain() noreturn {
         stdout.print(".\n", .{}) catch unreachable;
     }
 
-    p = @intCast(usize, M_CheckParm("-avg"));
+    p = @intCast(M_CheckParm("-avg"));
     if (p != 0 and p < myargc - 1 and deathmatch != 0) {
         stdout.print("Austin Virtual Gaming: Levels will end after 20 minutes\n", .{}) catch unreachable;
     }
 
-    p = @intCast(usize, M_CheckParm("-warp"));
+    p = @intCast(M_CheckParm("-warp"));
     if (p != 0 and p < myargc - 1) {
         if (c.gamemode == c.commercial) {
             startmap = fmt.parseInt(c_int, std.mem.span(myargv[p + 1]), 10) catch 0;
@@ -915,35 +915,35 @@ pub fn D_DoomMain() noreturn {
     ST_Init();
 
     // check for a driver that wants intermission stats
-    p = @intCast(usize, M_CheckParm("-statcopy"));
+    p = @intCast(M_CheckParm("-statcopy"));
     if (p != 0 and p < myargc - 1) {
         // for statistics driver
-        statcopy = @intToPtr(*anyopaque, fmt.parseInt(usize, std.mem.span(myargv[p + 1]), 0) catch 0);
+        statcopy = @ptrFromInt(fmt.parseInt(usize, std.mem.span(myargv[p + 1]), 0) catch 0);
         stdout.print("External statistics registered.\n", .{}) catch unreachable;
     }
 
     // start the apropriate game based on parms
-    p = @intCast(usize, M_CheckParm("-record"));
+    p = @intCast(M_CheckParm("-record"));
 
     if (p != 0 and p < myargc - 1) {
         c.G_RecordDemo(myargv[p + 1]);
         autostart = c.true;
     }
 
-    p = @intCast(usize, M_CheckParm("-playdemo"));
+    p = @intCast(M_CheckParm("-playdemo"));
     if (p != 0 and p < myargc - 1) {
         singledemo = c.true; // quit after one demo
         c.G_DeferedPlayDemo(myargv[p + 1]);
         D_DoomLoop(); // never returns
     }
 
-    p = @intCast(usize, M_CheckParm("-timedemo"));
+    p = @intCast(M_CheckParm("-timedemo"));
     if (p != 0 and p < myargc - 1) {
         c.G_TimeDemo(myargv[p + 1]);
         D_DoomLoop(); // never returns
     }
 
-    p = @intCast(usize, M_CheckParm("-loadgame"));
+    p = @intCast(M_CheckParm("-loadgame"));
     if (p != 0 and p < myargc - 1) {
         if (M_CheckParm("-cdrom") != 0) {
             _ = fmt.bufPrintZ(&file, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}) catch unreachable;
