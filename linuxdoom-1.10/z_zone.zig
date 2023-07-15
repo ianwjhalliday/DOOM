@@ -79,10 +79,24 @@ export fn Z_Init() void {
     block.size = mainzone.size - @sizeOf(MemZone);
 }
 
+pub fn alloc(comptime T: type, n: usize, tag: Z_Tag, user: ?*?*anyopaque) []T {
+    const requested_size = @sizeOf(T) * n;
+    const bytes = Z_Malloc(@intCast(requested_size), tag, user);
+    return @as([*]T, @ptrCast(@alignCast(bytes)))[0..n];
+}
+
+pub fn free(slice: anytype) void {
+    const ArgType = @TypeOf(slice);
+    const info = @typeInfo(ArgType).Pointer;
+    if (info.size != .Slice) {
+        @compileError("expected slice argument, found " ++ @typeName(ArgType));
+    }
+    Z_Free(slice.ptr);
+}
+
 /// You can pass `null` user if the tag is < Z_Tag.PurgeLevel
 pub export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopaque {
-    // TODO: `requested_size` should be `usize` once all code is zig; consider separate funcs for Zig and C
-    // TODO: `Z_Malloc` ought to take the type of objects being created and return [*] or []
+    // TODO: `requested_size` should be `usize` once all code is zig
     const MINFRAGMENT = 64;
 
     // NOTE: Original doom source hardcoded 4 byte alignment. Switching to
@@ -360,13 +374,13 @@ export fn Z_CheckHeap() void {
 
 // TODO: Zig converted Z_FreeMemory is untested
 export fn Z_FreeMemory() c_int {
-    var free: c_int = 0;
+    var free_count: c_int = 0;
 
     var block = mainzone.blocklist.next;
     while (block != &mainzone.blocklist) : (block = block.next) {
         if (block.user == null or @intFromEnum(block.tag) >= @intFromEnum(Z_Tag.PurgeLevel)) {
-            free += block.size;
+            free_count += block.size;
         }
     }
-    return free;
+    return free_count;
 }

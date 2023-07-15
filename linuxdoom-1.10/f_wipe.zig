@@ -1,5 +1,4 @@
-const Z_Malloc = @import("z_zone.zig").Z_Malloc;
-const Z_Free = @import("z_zone.zig").Z_Free;
+const zone = @import("z_zone.zig");
 
 extern fn I_ReadScreen(scr: [*]u8) void;
 extern fn M_Random() c_int;
@@ -23,8 +22,8 @@ var wipe_scr_end: [*]u8 = undefined;
 var wipe_scr: [*]u8 = undefined;
 
 fn wipe_shittyColMajorXform(array: [*]c_short, width: usize, height: usize) void {
-    const dest: [*]c_short = @ptrCast(@alignCast(Z_Malloc(@intCast(width * height * @sizeOf(c_short)), .Static, null)));
-    defer Z_Free(dest);
+    const dest = zone.alloc(c_short, width * height, .Static, null);
+    defer zone.free(dest);
 
     for (0..height) |y| {
         for (0..width) |x| {
@@ -32,7 +31,7 @@ fn wipe_shittyColMajorXform(array: [*]c_short, width: usize, height: usize) void
         }
     }
 
-    @memcpy(array, dest[0 .. width * height]);
+    @memcpy(array, dest);
 }
 
 fn wipe_initColorXForm(width: usize, height: usize) void {
@@ -60,7 +59,7 @@ fn wipe_doColorXForm(width: usize, height: usize, ticks: usize) bool {
 
 fn wipe_exitColorXForm() void {}
 
-var cols: [*]i32 = undefined;
+var cols: []i32 = undefined;
 
 fn wipe_initMelt(width: usize, height: usize) void {
     // copy start screen to main screen
@@ -73,7 +72,7 @@ fn wipe_initMelt(width: usize, height: usize) void {
 
     // setup initial column positions
     // (y<0 => not ready to scroll yet)
-    cols = @ptrCast(@alignCast(Z_Malloc(@as(i32, @intCast(width)) * @sizeOf(i32), .Static, null)));
+    cols = zone.alloc(i32, width, .Static, null);
     cols[0] = -@mod(M_Random(), 16);
     for (1..width) |i| {
         const r = @mod(M_Random(), 3) - 1;
@@ -129,7 +128,7 @@ fn wipe_doMelt(width: usize, height: usize, ticks: usize) bool {
 }
 
 fn wipe_exitMelt() void {
-    Z_Free(cols);
+    zone.free(cols);
 }
 
 pub fn StartScreen() void {
