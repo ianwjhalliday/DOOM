@@ -16,6 +16,7 @@ pub fn build(b: *std.Build) void {
     // here. Otherwise you may get MultipleSymbolDefinitions compile errors.
     const zig_files = [_][]const u8{
         "i_main",
+        "m_fixed",
     };
 
     const c_files = [_][]const u8{
@@ -33,7 +34,6 @@ pub fn build(b: *std.Build) void {
         "m_menu.c",
         "m_misc.c",
         "m_bbox.c",
-        "m_fixed.c",
         "m_swap.c",
         "m_cheat.c",
         "m_random.c",
