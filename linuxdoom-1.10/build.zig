@@ -36,7 +36,6 @@ pub fn build(b: *std.Build) void {
         "m_bbox.c",
         "m_swap.c",
         "m_cheat.c",
-        "m_random.c",
         "am_map.c",
         "p_ceilng.c",
         "p_doors.c",
