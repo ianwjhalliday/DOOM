@@ -17,6 +17,7 @@ pub fn build(b: *std.Build) void {
     const zig_files = [_][]const u8{
         "i_main",
         "m_fixed",
+        "m_cheat",
     };
 
     const c_files = [_][]const u8{
@@ -35,7 +36,6 @@ pub fn build(b: *std.Build) void {
         "m_misc.c",
         "m_bbox.c",
         "m_swap.c",
-        "m_cheat.c",
         "am_map.c",
         "p_ceilng.c",
         "p_doors.c",
