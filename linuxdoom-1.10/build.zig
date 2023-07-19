@@ -18,6 +18,7 @@ pub fn build(b: *std.Build) void {
         "i_main",
         "m_fixed",
         "m_cheat",
+        "d_items",
     };
 
     const c_files = [_][]const u8{
@@ -30,7 +31,6 @@ pub fn build(b: *std.Build) void {
         "tables.c",
         "f_finale.c",
         "d_net.c",
-        "d_items.c",
         "g_game.c",
         "m_menu.c",
         "m_misc.c",
