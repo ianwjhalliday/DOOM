@@ -26,7 +26,6 @@ pub fn build(b: *std.Build) void {
         "doomstat.c",
         "dstrings.c",
         "i_sound.c",
-        "i_video.c",
         "i_net.c",
         "tables.c",
         "f_finale.c",
@@ -98,6 +97,11 @@ pub fn build(b: *std.Build) void {
             .target = target,
         });
         o.addIncludePath(".");
+        o.addSystemIncludePath("/usr/local/include");
+        // TODO: Properly find and setup system include paths per platform
+        o.addSystemIncludePath("/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include");
+        o.addFrameworkPath("/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks");
+
         exe.addObject(o);
     }
     exe.linkLibC();

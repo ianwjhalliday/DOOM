@@ -1,7 +1,7 @@
 const zone = @import("z_zone.zig");
 const M_Random = @import("m_random.zig").M_Random;
+const I_ReadScreen = @import("i_video.zig").I_ReadScreen;
 
-extern fn I_ReadScreen(scr: [*]u8) void;
 extern fn V_DrawBlock(x: c_int, y: c_int, scrn: c_int, width: c_int, height: c_int, src: [*]u8) void;
 extern fn V_MarkRect(c_int, c_int, c_int, c_int) void;
 extern var screens: [5][*]u8;
