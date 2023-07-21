@@ -106,6 +106,7 @@ void I_GLFWMouseButtonCallback(GLFWwindow* window, int button, int action, int m
     D_PostEvent(&doom_event);
 }
 
+static boolean validLastCursorPos = false;
 void I_GLFWCursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
 {
     const double MOUSE_SENSITIVITY_FACTOR = 4.0;
@@ -117,6 +118,12 @@ void I_GLFWCursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
 
     last_x = xpos;
     last_y = ypos;
+
+    if (!validLastCursorPos)
+    {
+        validLastCursorPos = true;
+        return; // skip this dx, dy because it is bogus
+    }
 
     event_t doom_event;
     doom_event.type = ev_mouse;
@@ -274,6 +281,7 @@ void I_PauseMouseCapture(void)
 
 void I_ResumeMouseCapture(void)
 {
+    validLastCursorPos = false;
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetMouseButtonCallback(window, I_GLFWMouseButtonCallback);
     glfwSetCursorPosCallback(window, I_GLFWCursorPositionCallback);
