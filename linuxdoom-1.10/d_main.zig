@@ -28,8 +28,6 @@ extern fn WI_Drawer() void;
 
 extern fn NetUpdate() void;
 
-extern fn W_CacheLumpName(name: [*:0]const u8, tag: Z_Tag) [*]u8;
-
 extern fn G_BeginRecording() void;
 extern fn M_Ticker() void;
 extern fn G_Ticker() void;
@@ -43,6 +41,7 @@ const std = @import("std");
 const fmt = std.fmt;
 const os = std.os;
 const M_CheckParm = @import("m_argv.zig").M_CheckParm;
+const M_LoadDefaults = @import("m_misc.zig").M_LoadDefaults;
 const Z_Tag = @import("z_zone.zig").Z_Tag;
 
 const i_system = @import("i_system.zig");
@@ -58,7 +57,10 @@ const I_UpdateNoBlit = i_video.I_UpdateNoBlit;
 const I_FinishUpdate = i_video.I_FinishUpdate;
 const I_SetPalette = i_video.I_SetPalette;
 
-const W_InitMultipleFiles = @import("w_wad.zig").W_InitMultipleFiles;
+const w_wad = @import("w_wad.zig");
+const W_InitMultipleFiles = w_wad.W_InitMultipleFiles;
+const W_CacheLumpName = w_wad.W_CacheLumpName;
+
 const wipe = @import("f_wipe.zig");
 
 const MAXWADFILES = 20;
@@ -84,6 +86,7 @@ export var debugfile: ?*c.FILE = null;
 
 export var advancedemo: c.boolean = c.false;
 
+// TODO: Convert to zig only pub slice
 export var basedefault: [1023:0]u8 = undefined; // default file
 
 //
@@ -227,7 +230,7 @@ fn D_Display() void {
 
     // clean up border stuff
     if (c.gamestate != S.oldgamestate and c.gamestate != c.GS_LEVEL)
-        I_SetPalette(W_CacheLumpName("PLAYPAL", .Cache));
+        I_SetPalette(@ptrCast(W_CacheLumpName("PLAYPAL", .Cache)));
 
     // see if the border needs to be initially drawn
     if (c.gamestate == c.GS_LEVEL and S.oldgamestate != c.GS_LEVEL) {
@@ -662,7 +665,6 @@ extern var statcopy: *anyopaque;
 extern var singledemo: c.boolean;
 
 extern fn V_Init() void;
-extern fn M_LoadDefaults() void; // load before initing other systems
 extern fn Z_Init() void;
 extern fn M_Init() void;
 extern fn R_Init() void;

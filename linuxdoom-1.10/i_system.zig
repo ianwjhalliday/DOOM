@@ -11,11 +11,11 @@ extern fn I_InitSound() void;
 extern fn D_QuitNetGame() void;
 extern fn I_ShutdownSound() void;
 extern fn I_ShutdownMusic() void;
-extern fn M_SaveDefaults() void;
 extern fn G_CheckDemoStatus() c.boolean;
 
 const std = @import("std");
 const I_ShutdownGraphics = @import("i_video.zig").I_ShutdownGraphics;
+const M_SaveDefaults = @import("m_misc.zig").M_SaveDefaults;
 
 const mb_used: c_int = 6;
 

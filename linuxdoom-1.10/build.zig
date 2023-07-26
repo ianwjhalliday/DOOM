@@ -32,7 +32,6 @@ pub fn build(b: *std.Build) void {
         "d_net.c",
         "g_game.c",
         "m_menu.c",
-        "m_misc.c",
         "m_bbox.c",
         "m_swap.c",
         "am_map.c",
