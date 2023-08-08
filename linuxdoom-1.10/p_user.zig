@@ -9,6 +9,8 @@ const c = @cImport({
     @cInclude("tables.h");
 });
 
+pub const player_t = c.player_t;
+
 // TODO: restore imports once no C files call FixedMul
 // const fixed_t = @import("m_fixed.zig").fixed_t;
 // const FixedMul = @import("m_fixed.zig").FixedMul;

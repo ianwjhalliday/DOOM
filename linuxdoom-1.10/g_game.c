@@ -40,7 +40,6 @@
 
 #include "p_setup.h"
 #include "p_saveg.h"
-#include "p_tick.h"
 
 #include "d_main.h"
 
@@ -77,6 +76,7 @@
 #define SAVESTRINGSIZE	24
 
 
+void P_Ticker (void);
 
 boolean	G_CheckDemoStatus (void); 
 void	G_ReadDemoTiccmd (ticcmd_t* cmd); 
