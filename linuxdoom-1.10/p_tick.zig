@@ -43,7 +43,7 @@ pub const Thinker = extern struct {
 
 
 // Both the head and tail of the thinker list.
-export var thinkercap = Thinker{
+pub export var thinkercap = Thinker{
     .next = null,
     .prev = null,
     .function = ActionFn{.acv = null},
