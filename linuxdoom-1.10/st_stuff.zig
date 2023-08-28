@@ -64,12 +64,6 @@ pub const ST_HEIGHT = 32 * c.SCREEN_MUL;
 pub const ST_WIDTH = c.SCREENWIDTH;
 pub const ST_Y = (c.SCREENHEIGHT - ST_HEIGHT);
 
-// States for status bar code.
-const StState = enum { AutomapState, FirstPersonState };
-
-// States for the chat code.
-const StChatState = enum { StartChatState, WaitDestState, GetChatState };
-
 //
 // STATUS BAR DATA
 //
@@ -78,32 +72,15 @@ const StChatState = enum { StartChatState, WaitDestState, GetChatState };
 // For damage/bonus red-/gold-shifts
 const STARTREDPALS = 1;
 const STARTBONUSPALS = 9;
-const NUMREDPALS = 8;
-const NUMBONUSPALS = 4;
+const NUMREDPALS = 8;   // BUG: There are actually 9 and 5 palettes
+const NUMBONUSPALS = 4; // for red and bonus. Could fix this if desired.
 // Radiation suit, green shift.
 const RADIATIONPAL = 13;
 
-// N/256*100% probability
-//  that the normal face state will change
-const ST_FACEPROBABILITY = 96;
-
-// For Responder
-const ST_TOGGLECHAT = c.KEY_ENTER;
-
 // Location of status bar
 const ST_X = 0;
-const ST_X2 = 104;
 
 const ST_FX = 143;
-const ST_FY = 169;
-
-// Should be set to patch width
-//  for tall numbers later on
-//const ST_TALLNUMWIDTH = (tallnum[0].width);
-// TODO: Reconcile this define constant
-fn ST_TALLNUMWIDTH() c_int {
-    return tallnum[0].width;
-}
 
 // Number of status faces.
 const ST_NUMPAINFACES = 5;
@@ -149,7 +126,6 @@ const ST_AMMOX = 44;
 const ST_AMMOY = 171;
 
 // HEALTH number pos.
-const ST_HEALTHWIDTH = 3;
 const ST_HEALTHX = 90;
 const ST_HEALTHY = 171;
 
@@ -167,25 +143,20 @@ const ST_FRAGSY = 171;
 const ST_FRAGSWIDTH = 2;
 
 // ARMOR number pos.
-const ST_ARMORWIDTH = 3;
 const ST_ARMORX = 221;
 const ST_ARMORY = 171;
 
 // Key icon positions.
 const ST_KEY0WIDTH = 8;
-const ST_KEY0HEIGHT = 5;
 const ST_KEY0X = 239;
 const ST_KEY0Y = 171;
-const ST_KEY1WIDTH = ST_KEY0WIDTH;
 const ST_KEY1X = 239;
 const ST_KEY1Y = 181;
-const ST_KEY2WIDTH = ST_KEY0WIDTH;
 const ST_KEY2X = 239;
 const ST_KEY2Y = 191;
 
 // Ammunition counter.
 const ST_AMMO0WIDTH = 3;
-const ST_AMMO0HEIGHT = 6;
 const ST_AMMO0X = 288;
 const ST_AMMO0Y = 173;
 const ST_AMMO1WIDTH = ST_AMMO0WIDTH;
@@ -201,7 +172,6 @@ const ST_AMMO3Y = 185;
 // Indicate maximum ammunition.
 // Only needed because backpack exists.
 const ST_MAXAMMO0WIDTH = 3;
-const ST_MAXAMMO0HEIGHT = 5;
 const ST_MAXAMMO0X = 314;
 const ST_MAXAMMO0Y = 173;
 const ST_MAXAMMO1WIDTH = ST_MAXAMMO0WIDTH;
@@ -223,42 +193,12 @@ var plyr: *c.player_t = undefined;
 // ST_Start() has just been called
 var st_firsttime = false;
 
-// used to execute ST_Init() only once
-var veryfirsttime: c_int = 1;
-
 // lump number for PLAYPAL
 var lu_palette: c_int = 0;
-
-// used for timing
-// TODO: This state is never read, delete?
-var st_clock: c_uint = 0;
-
-// used for making messages go away
-var st_msgcounter: c_int = 0;
-
-// used when in chat
-// TODO: This state is never read, delete?
-var st_chatstate: StChatState = undefined;
-
-// whether in automap or first-person
-// TODO: This state is never read, delete?
-var st_gamestate: StState = undefined;
 
 // whether left-side main status bar is active
 // TODO: Convert to bool
 var st_statusbaron: c.boolean = c.false;
-
-// whether status bar chat is active
-// TODO: This state is never read, delete?
-var st_chat: c.boolean = c.false;
-
-// value of st_chat before message popped up
-// TODO: This state is never read, delete?
-var st_oldchat: c.boolean = c.false;
-
-// whether chat window has the cursor on
-// TODO: This state is never read, delete?
-var st_cursoron: c.boolean = c.false;
 
 // !deathmatch
 var st_notdeathmatch: c.boolean = c.false;
@@ -445,12 +385,10 @@ pub export fn ST_Responder(ev: *c.event_t) c.boolean {
       and (@as(c_uint, @bitCast(ev.data1)) & 0xffff0000) == c.AM_MSGHEADER) {
     switch (ev.data1) {
       c.AM_MSGENTERED => {
-        st_gamestate = .AutomapState;
         st_firsttime = true;
       },
       c.AM_MSGEXITED => {
         //      fprintf(stderr, "AM exited\n");
-        st_gamestate = .FirstPersonState;
       },
       else => {},
     }
@@ -882,16 +820,9 @@ fn ST_updateWidgets() void {
             st_fragscount -= plyr.frags[i];
         }
     }
-
-    // get rid of chat window if up because of message
-    st_msgcounter -= 1;
-    if (st_msgcounter != 0) {
-        st_chat = st_oldchat;
-    }
 }
 
 pub export fn ST_Ticker() void {
-    st_clock += 1;
     st_randomnumber = M_Random();
     ST_updateWidgets();
     st_oldhealth = plyr.health;
@@ -1125,14 +1056,7 @@ fn ST_initData() void {
     st_firsttime = true;
     plyr = &c.players[@intCast(c.consoleplayer)];
 
-    st_clock = 0;
-    st_chatstate = .StartChatState;
-    st_gamestate = .FirstPersonState;
-
     st_statusbaron = c.true;
-    st_oldchat = c.false;
-    st_chat = c.false;
-    st_cursoron = c.false;
 
     st_faceindex = 0;
     st_palette = -1;
@@ -1330,7 +1254,6 @@ fn ST_Stop() void {
 
 extern var screens: [5][*]u8;
 pub fn ST_Init() void {
-    veryfirsttime = 0;
     ST_loadData();
     screens[4] = @ptrCast(Z_Malloc(ST_WIDTH*ST_HEIGHT, .Static, null));
 }
