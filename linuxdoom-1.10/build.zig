@@ -19,7 +19,6 @@ pub fn build(b: *std.Build) void {
         "m_fixed",
         "d_items",
         "p_telept",
-        "st_lib",
     };
 
     const c_files = [_][]const u8{

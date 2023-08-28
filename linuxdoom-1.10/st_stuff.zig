@@ -28,8 +28,7 @@ const CheatSeq = m_cheat.CheatSeq;
 const cht_CheckCheat = m_cheat.cht_CheckCheat;
 const cht_GetParam = m_cheat.cht_GetParam;
 
-//const M_Random = @import("m_random.zig").M_Random;
-extern fn M_Random() c_int;
+const M_Random = @import("m_random.zig").M_Random;
 
 const st_lib = @import("st_lib.zig");
 const StNumber = st_lib.StNumber;
@@ -48,30 +47,16 @@ const STlib_updatePercent = st_lib.STlib_updatePercent;
 const STlib_updateMultIcon = st_lib.STlib_updateMultIcon;
 const STlib_updateBinIcon = st_lib.STlib_updateBinIcon;
 
-// TODO: Use imports once st_stuff.zig is in the i_main import graph
-//
-//const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpName;
-//const I_SetPalette = @import("i_video.zig").I_SetPalette;
-//const Z_ChangeTag = @import("z_zone.zig").Z_ChangeTag;
+const I_SetPalette = @import("i_video.zig").I_SetPalette;
 
-const Z_Tag = enum(c_int) {
-    Undefined = 0,
-    Static = 1,     // static entire execution time
-    Sound = 2,      // static while playing
-    Music = 3,      // static while playing
-    Dave = 4,       // anything else Dave wants static
-    Level = 50,     // static until level exited
-    LevSpec = 51,   // a special thinker in a level
-    // Tags >= 100 are purgable whenever needed.
-    PurgeLevel = 100,
-    Cache = 101,
-};
-extern fn W_CacheLumpName(name: [*]const u8, tag: Z_Tag) *anyopaque;
-extern fn W_CacheLumpNum(lump: c_int, tag: Z_Tag) *anyopaque;
-extern fn W_GetNumForName(name: [*]const u8) c_int;
-extern fn I_SetPalette(pal: [*]u8) void;
-extern fn Z_ChangeTag(ptr: *anyopaque, tag: Z_Tag) void;
-extern fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopaque;
+const w_wad = @import("w_wad.zig");
+const W_CacheLumpName = w_wad.W_CacheLumpName;
+const W_CacheLumpNum = w_wad.W_CacheLumpNum;
+const W_GetNumForName = w_wad.W_GetNumForName;
+
+const z_zone = @import("z_zone.zig");
+const Z_ChangeTag = z_zone.Z_ChangeTag;
+const Z_Malloc = z_zone.Z_Malloc;
 
 // Size of statusbar.
 // Now sensitive for scaling.
@@ -435,9 +420,6 @@ var cheat_powerup = [7]CheatSeq{
 var cheat_choppers = CheatSeq{ .sequence=&cheat_choppers_seq, .p=null };
 var cheat_clev = CheatSeq{ .sequence=&cheat_clev_seq, .p=null };
 var cheat_mypos = CheatSeq{ .sequence=&cheat_mypos_seq, .p=null };
-
-//
-extern var mapnames: [*]*const u8;
 
 //
 // STATUS BAR CODE
@@ -1007,9 +989,9 @@ fn ST_diffDraw() void {
     ST_drawWidgets(c.false);
 }
 
-export fn ST_Drawer(fullscreen: c.boolean, refresh: c.boolean) void {
-    st_statusbaron = toDoomBoolean(fullscreen == c.false or c.automapactive != c.false);
-    st_firsttime = st_firsttime or refresh != c.false;
+pub fn ST_Drawer(fullscreen: bool, refresh: bool) void {
+    st_statusbaron = toDoomBoolean(!fullscreen or c.automapactive != c.false);
+    st_firsttime = st_firsttime or refresh;
 
     // Do red-/gold-shifts from damage/items
     ST_doPaletteStuff();
@@ -1327,7 +1309,7 @@ fn ST_createWidgets() void {
 
 var st_stopped = true;
 
-export fn ST_Start() void {
+pub export fn ST_Start() void {
     if (!st_stopped) {
         ST_Stop();
     }
@@ -1347,7 +1329,7 @@ fn ST_Stop() void {
 }
 
 extern var screens: [5][*]u8;
-export fn ST_Init() void {
+pub fn ST_Init() void {
     veryfirsttime = 0;
     ST_loadData();
     screens[4] = @ptrCast(Z_Malloc(ST_WIDTH*ST_HEIGHT, .Static, null));

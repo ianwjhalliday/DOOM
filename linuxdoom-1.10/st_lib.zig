@@ -1,24 +1,7 @@
 const mem = @import("std").mem;
 
-// TODO: Use imports once st_lib.zig is in the i_main import graph
-//
-//const I_Error = @import("i_system.zig").I_Error;
-//const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpName;
-
-extern fn I_Error(errormsg: [*:0]const u8, ...) noreturn;
-const Z_Tag = enum(c_int) {
-    Undefined = 0,
-    Static = 1,     // static entire execution time
-    Sound = 2,      // static while playing
-    Music = 3,      // static while playing
-    Dave = 4,       // anything else Dave wants static
-    Level = 50,     // static until level exited
-    LevSpec = 51,   // a special thinker in a level
-    // Tags >= 100 are purgable whenever needed.
-    PurgeLevel = 100,
-    Cache = 101,
-};
-extern fn W_CacheLumpName(name: [*]const u8, tag: Z_Tag) *anyopaque;
+const I_Error = @import("i_system.zig").I_Error;
+const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpName;
 
 extern fn V_CopyRect(srcx: c_int, srcy: c_int, srcscrn: c_int, width: c_int, height: c_int, destx: c_int, desty: c_int, destscr: c_int) void;
 extern fn V_DrawPatch(x: c_int, y: c_int, scrn: c_int, patch: *c.patch_t) void;
@@ -39,7 +22,8 @@ pub const FG = 0;
 
 // Number widget
 
-pub const StNumber = extern struct {
+// TODO: Use zig native types instead of c_ types
+pub const StNumber = struct {
     // upper right-hand corner
     //  of the number (right-justified)
     x: c_int,
@@ -67,7 +51,7 @@ pub const StNumber = extern struct {
 
 // Percent widget ("child" of number widget,
 //  or, more precisely, contains a number widget.)
-pub const StPercent = extern struct {
+pub const StPercent = struct {
     // number information
     n: StNumber,
 
@@ -76,7 +60,8 @@ pub const StPercent = extern struct {
 };
 
 // Multiple Icon widget
-pub const StMultIcon = extern struct {
+// TODO: Use zig native types instead of c_ types
+pub const StMultIcon = struct {
     // center-justified location of icons
     x: c_int,
     y: c_int,
@@ -100,7 +85,8 @@ pub const StMultIcon = extern struct {
 
 // Binary Icon widget
 
-pub const StBinIcon = extern struct {
+// TODO: Use zig native types instead of c_ types
+pub const StBinIcon = struct {
     // center-justified location of icon
     x: c_int,
     y: c_int,
@@ -119,21 +105,19 @@ pub const StBinIcon = extern struct {
     data: c_int, // user data
 };
 
-extern var automapactive: c.boolean;
-
 //
 // Hack display negative frags.
 //  Loads and store the stminus lump.
 //
 var sttminus: *c.patch_t = undefined;
 
-pub export fn STlib_init() void {
+pub fn STlib_init() void {
     sttminus = @ptrCast(@alignCast(W_CacheLumpName("STTMINUS", .Static)));
 }
 
 // TODO: Replace with Zig struct initializer at each callsite, and move these
 // functions into the structs themselves.
-pub export fn STlib_initNum(n: *StNumber, x: c_int, y: c_int, pl: [*]*c.patch_t, num: *c_int, on: *c.boolean, width: c_int) void {
+pub fn STlib_initNum(n: *StNumber, x: c_int, y: c_int, pl: [*]*c.patch_t, num: *c_int, on: *c.boolean, width: c_int) void {
     n.x = x;
     n.y = y;
     n.oldnum = 0;
@@ -148,7 +132,7 @@ pub export fn STlib_initNum(n: *StNumber, x: c_int, y: c_int, pl: [*]*c.patch_t,
 //  based on differences from the old number.
 // Note: worth the trouble?
 //
-pub export fn STlib_drawNum(n: *StNumber, refresh: c.boolean) void {
+pub fn STlib_drawNum(n: *StNumber, refresh: c.boolean) void {
     _ = refresh;
     var numdigits = n.width;
     var num = n.num.*;
@@ -205,18 +189,18 @@ pub export fn STlib_drawNum(n: *StNumber, refresh: c.boolean) void {
     }
 }
 
-pub export fn STlib_updateNum(n: *StNumber, refresh: c.boolean) void {
+pub fn STlib_updateNum(n: *StNumber, refresh: c.boolean) void {
     if (n.on.* != c.false) {
         STlib_drawNum(n, refresh);
     }
 }
 
-pub export fn STlib_initPercent(p: *StPercent, x: c_int, y: c_int, pl: [*]*c.patch_t, num: *c_int, on: *c.boolean, percent: *c.patch_t) void {
+pub fn STlib_initPercent(p: *StPercent, x: c_int, y: c_int, pl: [*]*c.patch_t, num: *c_int, on: *c.boolean, percent: *c.patch_t) void {
     STlib_initNum(&p.n, x, y, pl, num, on, 3);
     p.p = percent;
 }
 
-pub export fn STlib_updatePercent(per: *StPercent, refresh: c.boolean) void {
+pub fn STlib_updatePercent(per: *StPercent, refresh: c.boolean) void {
     if (refresh != c.false and per.n.on.* != c.false) {
         V_DrawPatch(per.n.x, per.n.y, FG, per.p);
     }
@@ -224,7 +208,7 @@ pub export fn STlib_updatePercent(per: *StPercent, refresh: c.boolean) void {
     STlib_updateNum(&per.n, refresh);
 }
 
-pub export fn STlib_initMultIcon(i: *StMultIcon, x: c_int, y: c_int, il: [*]*c.patch_t, inum: *c_int, on: *c.boolean) void {
+pub fn STlib_initMultIcon(i: *StMultIcon, x: c_int, y: c_int, il: [*]*c.patch_t, inum: *c_int, on: *c.boolean) void {
     i.x = x;
     i.y = y;
     i.oldinum = -1;
@@ -233,7 +217,7 @@ pub export fn STlib_initMultIcon(i: *StMultIcon, x: c_int, y: c_int, il: [*]*c.p
     i.p = il;
 }
 
-pub export fn STlib_updateMultIcon(mi: *StMultIcon, refresh: c.boolean) void {
+pub fn STlib_updateMultIcon(mi: *StMultIcon, refresh: c.boolean) void {
     if (mi.on.* != c.false and (mi.oldinum != mi.inum.* or refresh != c.false) and mi.inum.* != -1) {
         if (mi.oldinum != -1) {
             const patch = mi.p[@intCast(mi.oldinum)];
@@ -254,7 +238,7 @@ pub export fn STlib_updateMultIcon(mi: *StMultIcon, refresh: c.boolean) void {
     }
 }
 
-pub export fn STlib_initBinIcon(b: *StBinIcon, x: c_int, y: c_int, i: *c.patch_t, val: *c.boolean, on: *c.boolean) void {
+pub fn STlib_initBinIcon(b: *StBinIcon, x: c_int, y: c_int, i: *c.patch_t, val: *c.boolean, on: *c.boolean) void {
     b.x = x;
     b.y = y;
     b.oldval = 0;
@@ -263,7 +247,7 @@ pub export fn STlib_initBinIcon(b: *StBinIcon, x: c_int, y: c_int, i: *c.patch_t
     b.p = i;
 }
 
-pub export fn STlib_updateBinIcon(bi: *StBinIcon, refresh: c.boolean) void {
+pub fn STlib_updateBinIcon(bi: *StBinIcon, refresh: c.boolean) void {
     if (bi.on.* != c.false and (bi.oldval != bi.val.* or refresh != c.false)) {
         const x = bi.x - mem.nativeToLittle(c_short, bi.p.leftoffset);
         const y = bi.y - mem.nativeToLittle(c_short, bi.p.topoffset);

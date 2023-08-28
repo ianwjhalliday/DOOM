@@ -23,7 +23,7 @@ extern fn HU_Erase() void;
 extern fn M_Drawer() void;
 extern fn R_FillBackScreen() void;
 extern fn R_DrawViewBorder() void;
-extern fn ST_Drawer(fullscreen: c.boolean, refresh: c.boolean) void;
+const ST_Drawer = @import("st_stuff.zig").ST_Drawer;
 extern fn WI_Drawer() void;
 
 extern fn NetUpdate() void;
@@ -199,7 +199,7 @@ fn D_Display() void {
                 redrawsbar = true;
             if (S.inhelpscreensstate and inhelpscreens != c.true)
                 redrawsbar = true; // just put away the help screen
-            ST_Drawer(toDoomBoolean(c.viewheight == 200), toDoomBoolean(redrawsbar));
+            ST_Drawer(c.viewheight == 200, redrawsbar);
             S.fullscreen = c.viewheight == 200;
         },
 
@@ -672,7 +672,7 @@ extern fn P_Init() void;
 extern fn D_CheckNetGame() void;
 extern fn S_Init(sfxVolume: c_int, musicVolume: c_int) void;
 extern fn HU_Init() void;
-extern fn ST_Init() void;
+const ST_Init = @import("st_stuff.zig").ST_Init;
 
 fn toDoomBoolean(b: bool) c.boolean {
     return if (b) c.true else c.false;
