@@ -1,8 +1,3 @@
-const c = @cImport({
-    @cInclude("r_defs.h");
-    @cInclude("st_stuff.h");
-});
-
 const mem = @import("std").mem;
 
 // TODO: Use imports once st_lib.zig is in the i_main import graph
@@ -28,11 +23,15 @@ extern fn W_CacheLumpName(name: [*]const u8, tag: Z_Tag) *anyopaque;
 extern fn V_CopyRect(srcx: c_int, srcy: c_int, srcscrn: c_int, width: c_int, height: c_int, destx: c_int, desty: c_int, destscr: c_int) void;
 extern fn V_DrawPatch(x: c_int, y: c_int, scrn: c_int, patch: *c.patch_t) void;
 
+const st_stuff = @import("st_stuff.zig");
+const c = st_stuff.c;
+const ST_Y = st_stuff.ST_Y;
+
 //
 // Background and foreground screen numbers
 //
-const BG = 4;
-const FG = 0;
+pub const BG = 4;
+pub const FG = 0;
 
 //
 // Widget structs
@@ -174,11 +173,11 @@ pub export fn STlib_drawNum(n: *StNumber, refresh: c.boolean) void {
     // clear the area
     var x = n.x - numdigits * w;
 
-    if (n.y - c.ST_Y < 0) {
+    if (n.y - ST_Y < 0) {
         I_Error("drawNum: n.y - ST_Y < 0");
     }
 
-    V_CopyRect(x, n.y - c.ST_Y, BG, w * numdigits, h, x, n.y, FG);
+    V_CopyRect(x, n.y - ST_Y, BG, w * numdigits, h, x, n.y, FG);
 
     // if non-number, do not draw it
     if (num == 1994) {
@@ -243,11 +242,11 @@ pub export fn STlib_updateMultIcon(mi: *StMultIcon, refresh: c.boolean) void {
             const w = mem.nativeToLittle(c_short, patch.width);
             const h = mem.nativeToLittle(c_short, patch.height);
 
-            if (y - c.ST_Y < 0) {
+            if (y - ST_Y < 0) {
                 I_Error("updateMultIcon: y - ST_Y < 0");
             }
 
-            V_CopyRect(x, y - c.ST_Y, BG, w, h, x, y, FG);
+            V_CopyRect(x, y - ST_Y, BG, w, h, x, y, FG);
         }
 
         V_DrawPatch(mi.x, mi.y, FG, mi.p[@intCast(mi.inum.*)]);
@@ -271,14 +270,14 @@ pub export fn STlib_updateBinIcon(bi: *StBinIcon, refresh: c.boolean) void {
         const w = mem.nativeToLittle(c_short, bi.p.width);
         const h = mem.nativeToLittle(c_short, bi.p.height);
 
-        if (y - c.ST_Y < 0) {
+        if (y - ST_Y < 0) {
             I_Error("updateBinIcon: y - ST_Y < 0");
         }
 
         if (bi.val.* != 0) {
             V_DrawPatch(bi.x, bi.y, FG, bi.p);
         } else {
-            V_CopyRect(x, y - c.ST_Y, BG, w, h, x, y, FG);
+            V_CopyRect(x, y - ST_Y, BG, w, h, x, y, FG);
         }
 
         bi.oldval = bi.val.*;
