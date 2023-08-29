@@ -17,10 +17,6 @@ pub const c = @cImport({
 extern fn V_CopyRect(srcx: c_int, srcy: c_int, srcscrn: c_int, width: c_int, height: c_int, destx: c_int, desty: c_int, destscr: c_int) void;
 extern fn V_DrawPatch(x: c_int, y: c_int, scrn: c_int, patch: *c.patch_t) void;
 
-fn toDoomBoolean(b: bool) c.boolean {
-    return if (b) c.true else c.false;
-}
-
 const fmt = @import("std").fmt;
 
 const m_cheat = @import("m_cheat.zig");
@@ -197,17 +193,16 @@ var st_firsttime = false;
 var lu_palette: c_int = 0;
 
 // whether left-side main status bar is active
-// TODO: Convert to bool
-var st_statusbaron: c.boolean = c.false;
+var st_statusbaron = false;
 
 // !deathmatch
-var st_notdeathmatch: c.boolean = c.false;
+var st_notdeathmatch = false;
 
 // !deathmatch && st_statusbaron
-var st_armson: c.boolean = c.false;
+var st_armson = false;
 
 // !deathmatch
-var st_fragson: c.boolean = c.false;
+var st_fragson = false;
 
 // main bar left
 var sbar: *c.patch_t = undefined;
@@ -273,6 +268,7 @@ var st_fragscount: c_int = 0;
 var st_oldhealth: c_int = -1;
 
 // used for evil grin
+// TODO: Convert to bool when player_t::weaponowned is converted to bool
 var oldweaponsowned = [_]c.boolean{c.false} ** c.NUMWEAPONS;
 
 // count until face changes
@@ -365,7 +361,7 @@ var cheat_mypos = CheatSeq{ .sequence=&cheat_mypos_seq, .p=null };
 // STATUS BAR CODE
 //
 fn ST_refreshBackground() void {
-    if (st_statusbaron != c.false) {
+    if (st_statusbaron) {
         V_DrawPatch(ST_X, 0, BG, sbar);
 
         if (c.netgame != c.false) {
@@ -804,13 +800,13 @@ fn ST_updateWidgets() void {
     ST_updateFaceWidget();
 
     // used by the w_armsbg widget
-    st_notdeathmatch = toDoomBoolean(c.deathmatch == 0);
+    st_notdeathmatch = c.deathmatch == 0;
 
     // used by w_arms[] widgets
-    st_armson = toDoomBoolean(st_statusbaron != c.false and c.deathmatch == 0);
+    st_armson = st_statusbaron and c.deathmatch == 0;
 
     // used by w_frags widget
-    st_fragson = toDoomBoolean(c.deathmatch != 0 and st_statusbaron != c.false);
+    st_fragson = c.deathmatch != 0 and st_statusbaron;
     st_fragscount = 0;
 
     for (0..c.MAXPLAYERS) |i| {
@@ -873,12 +869,12 @@ fn ST_doPaletteStuff() void {
     }
 }
 
-fn ST_drawWidgets(refresh: c.boolean) void {
+fn ST_drawWidgets(refresh: bool) void {
     // used by w_arms[] widgets
-    st_armson = toDoomBoolean(st_statusbaron != c.false and c.deathmatch == 0);
+    st_armson = st_statusbaron and c.deathmatch == 0;
 
     // used by w_frags widget
-    st_fragson = toDoomBoolean(c.deathmatch != 0 and st_statusbaron != c.false);
+    st_fragson = c.deathmatch != 0 and st_statusbaron;
 
     STlib_updateNum(&w_ready, refresh);
 
@@ -912,16 +908,16 @@ fn ST_doRefresh() void {
     ST_refreshBackground();
 
     // and refresh all widgets
-    ST_drawWidgets(c.true);
+    ST_drawWidgets(true);
 }
 
 fn ST_diffDraw() void {
     // update all widgets
-    ST_drawWidgets(c.false);
+    ST_drawWidgets(false);
 }
 
 pub fn ST_Drawer(fullscreen: bool, refresh: bool) void {
-    st_statusbaron = toDoomBoolean(!fullscreen or c.automapactive != c.false);
+    st_statusbaron = !fullscreen or c.automapactive != c.false;
     st_firsttime = st_firsttime or refresh;
 
     // Do red-/gold-shifts from damage/items
@@ -1056,7 +1052,7 @@ fn ST_initData() void {
     st_firsttime = true;
     plyr = &c.players[@intCast(c.consoleplayer)];
 
-    st_statusbaron = c.true;
+    st_statusbaron = true;
 
     st_faceindex = 0;
     st_palette = -1;
@@ -1139,7 +1135,8 @@ fn ST_createWidgets() void {
                       ST_ARMORY,
                       &tallnum,
                       &plyr.armorpoints,
-                      &st_statusbaron, tallpercent);
+                      &st_statusbaron,
+                      tallpercent);
 
     // keyboxes 0-2
     STlib_initMultIcon(&w_keyboxes[0],

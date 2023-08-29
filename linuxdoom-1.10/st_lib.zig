@@ -40,7 +40,7 @@ pub const StNumber = struct {
 
     // pointer to boolean stating
     //  whether to update number
-    on: *c.boolean,
+    on: *bool,
 
     // list of patches for 0-9
     p: [*]*c.patch_t,
@@ -74,7 +74,7 @@ pub const StMultIcon = struct {
 
     // pointer to boolean stating
     //  whether to update icon
-    on: *c.boolean,
+    on: *bool,
 
     // list of icons
     p: [*]*c.patch_t,
@@ -92,14 +92,14 @@ pub const StBinIcon = struct {
     y: c_int,
 
     // last icon value
-    oldval: c.boolean,
+    oldval: bool,
 
     // pointer to current icon status
-    val: *c.boolean,
+    val: *bool,
 
     // pointer to boolean
     //  stating whether to update icon
-    on: *c.boolean,
+    on: *bool,
 
     p: *c.patch_t, // icon
     data: c_int, // user data
@@ -117,7 +117,7 @@ pub fn STlib_init() void {
 
 // TODO: Replace with Zig struct initializer at each callsite, and move these
 // functions into the structs themselves.
-pub fn STlib_initNum(n: *StNumber, x: c_int, y: c_int, pl: [*]*c.patch_t, num: *c_int, on: *c.boolean, width: c_int) void {
+pub fn STlib_initNum(n: *StNumber, x: c_int, y: c_int, pl: [*]*c.patch_t, num: *c_int, on: *bool, width: c_int) void {
     n.x = x;
     n.y = y;
     n.oldnum = 0;
@@ -132,7 +132,7 @@ pub fn STlib_initNum(n: *StNumber, x: c_int, y: c_int, pl: [*]*c.patch_t, num: *
 //  based on differences from the old number.
 // Note: worth the trouble?
 //
-pub fn STlib_drawNum(n: *StNumber, refresh: c.boolean) void {
+pub fn STlib_drawNum(n: *StNumber, refresh: bool) void {
     _ = refresh;
     var numdigits = n.width;
     var num = n.num.*;
@@ -189,26 +189,26 @@ pub fn STlib_drawNum(n: *StNumber, refresh: c.boolean) void {
     }
 }
 
-pub fn STlib_updateNum(n: *StNumber, refresh: c.boolean) void {
-    if (n.on.* != c.false) {
+pub fn STlib_updateNum(n: *StNumber, refresh: bool) void {
+    if (n.on.*) {
         STlib_drawNum(n, refresh);
     }
 }
 
-pub fn STlib_initPercent(p: *StPercent, x: c_int, y: c_int, pl: [*]*c.patch_t, num: *c_int, on: *c.boolean, percent: *c.patch_t) void {
+pub fn STlib_initPercent(p: *StPercent, x: c_int, y: c_int, pl: [*]*c.patch_t, num: *c_int, on: *bool, percent: *c.patch_t) void {
     STlib_initNum(&p.n, x, y, pl, num, on, 3);
     p.p = percent;
 }
 
-pub fn STlib_updatePercent(per: *StPercent, refresh: c.boolean) void {
-    if (refresh != c.false and per.n.on.* != c.false) {
+pub fn STlib_updatePercent(per: *StPercent, refresh: bool) void {
+    if (refresh and per.n.on.*) {
         V_DrawPatch(per.n.x, per.n.y, FG, per.p);
     }
 
     STlib_updateNum(&per.n, refresh);
 }
 
-pub fn STlib_initMultIcon(i: *StMultIcon, x: c_int, y: c_int, il: [*]*c.patch_t, inum: *c_int, on: *c.boolean) void {
+pub fn STlib_initMultIcon(i: *StMultIcon, x: c_int, y: c_int, il: [*]*c.patch_t, inum: *c_int, on: *bool) void {
     i.x = x;
     i.y = y;
     i.oldinum = -1;
@@ -217,8 +217,8 @@ pub fn STlib_initMultIcon(i: *StMultIcon, x: c_int, y: c_int, il: [*]*c.patch_t,
     i.p = il;
 }
 
-pub fn STlib_updateMultIcon(mi: *StMultIcon, refresh: c.boolean) void {
-    if (mi.on.* != c.false and (mi.oldinum != mi.inum.* or refresh != c.false) and mi.inum.* != -1) {
+pub fn STlib_updateMultIcon(mi: *StMultIcon, refresh: bool) void {
+    if (mi.on.* and (mi.oldinum != mi.inum.* or refresh) and mi.inum.* != -1) {
         if (mi.oldinum != -1) {
             const patch = mi.p[@intCast(mi.oldinum)];
             const x = mi.x - mem.nativeToLittle(c_short, patch.leftoffset);
@@ -238,17 +238,17 @@ pub fn STlib_updateMultIcon(mi: *StMultIcon, refresh: c.boolean) void {
     }
 }
 
-pub fn STlib_initBinIcon(b: *StBinIcon, x: c_int, y: c_int, i: *c.patch_t, val: *c.boolean, on: *c.boolean) void {
+pub fn STlib_initBinIcon(b: *StBinIcon, x: c_int, y: c_int, i: *c.patch_t, val: *bool, on: *bool) void {
     b.x = x;
     b.y = y;
-    b.oldval = 0;
+    b.oldval = false;
     b.val = val;
     b.on = on;
     b.p = i;
 }
 
-pub fn STlib_updateBinIcon(bi: *StBinIcon, refresh: c.boolean) void {
-    if (bi.on.* != c.false and (bi.oldval != bi.val.* or refresh != c.false)) {
+pub fn STlib_updateBinIcon(bi: *StBinIcon, refresh: bool) void {
+    if (bi.on.* and (bi.oldval != bi.val.* or refresh)) {
         const x = bi.x - mem.nativeToLittle(c_short, bi.p.leftoffset);
         const y = bi.y - mem.nativeToLittle(c_short, bi.p.topoffset);
         const w = mem.nativeToLittle(c_short, bi.p.width);
@@ -258,7 +258,7 @@ pub fn STlib_updateBinIcon(bi: *StBinIcon, refresh: c.boolean) void {
             I_Error("updateBinIcon: y - ST_Y < 0");
         }
 
-        if (bi.val.* != 0) {
+        if (bi.val.*) {
             V_DrawPatch(bi.x, bi.y, FG, bi.p);
         } else {
             V_CopyRect(x, y - ST_Y, BG, w, h, x, y, FG);
