@@ -23,51 +23,47 @@ extern var screens: [5][*]u8;
 //
 // M_WriteFile
 //
-// TODO: name should be a slice
-// TODO: source and length should combine into a single source slice
-pub export fn M_WriteFile(name: [*:0]const u8, source: [*]const u8, length: c_int) c.boolean {
+pub fn M_WriteFile(name: []const u8, source: []const u8) bool {
     const flags = os.O.WRONLY | os.O.CREAT | os.O.TRUNC;
-    const handle = os.open(mem.span(name), flags, 0o666) catch {
-        return c.false;
+    const handle = os.open(name, flags, 0o666) catch {
+        return false;
     };
     defer os.close(handle);
 
-    const count = os.write(handle, source[0..@intCast(length)]) catch {
-        return c.false;
+    const count = os.write(handle, source) catch {
+        return false;
     };
-    if (count < length) {
-        return c.false;
+    if (count < source.len) {
+        return false;
     }
 
-    return c.true;
+    return true;
 }
 
 
 //
 // M_ReadFile
 //
-// TODO: Return buf slice directly instead of using buffer param and returning length separately
-pub export fn M_ReadFile(name: [*:0]const u8, buffer: *[*]u8) c_int {
-    const handle = os.open(mem.span(name), os.O.RDONLY, 0o666) catch {
-        I_Error("Couldn't read file %s", name);
+pub fn M_ReadFile(name: []const u8) []u8 {
+    const handle = os.open(name, os.O.RDONLY, 0o666) catch {
+        I_Error("Couldn't read file %s", name.ptr);
     };
 
     const fileinfo = os.fstat(handle) catch {
-        I_Error("Couldn't read file %s", name);
+        I_Error("Couldn't read file %s", name.ptr);
     };
 
     const length: c_int = @intCast(fileinfo.size);
     const buf = zone.alloc(u8, @intCast(length), .Static, null);
 
     const count = os.read(handle, buf) catch {
-        I_Error("Couldn't read file %s", name);
+        I_Error("Couldn't read file %s", name.ptr);
     };
     if (count < length) {
-        I_Error("Couldn't read file %s", name);
+        I_Error("Couldn't read file %s", name.ptr);
     }
 
-    buffer.* = buf.ptr;
-    return length;
+    return buf;
 }
 
 
@@ -318,7 +314,7 @@ const PCX = extern struct {
 //
 // WritePCXfile
 //
-fn WritePCXfile(filename: [*:0]const u8, data: [*]const u8, width: c_int, height: c_int, palette: [*]const u8) void {
+fn WritePCXfile(filename: []const u8, data: [*]const u8, width: c_int, height: c_int, palette: [*]const u8) void {
     // PCX has alignment 2 so alloc a u16 buffer rather than a u8 buffer
     var pcx_buffer = zone.alloc(u16, @intCast(width*height+500), .Static, null);
     defer zone.free(pcx_buffer);
@@ -362,22 +358,22 @@ fn WritePCXfile(filename: [*:0]const u8, data: [*]const u8, width: c_int, height
 
     // write output file
     const length = @intFromPtr(pack) - @intFromPtr(pcx_buffer.ptr);
-    _ = M_WriteFile(filename, @ptrCast(pcx_buffer), @intCast(length));
+    _ = M_WriteFile(filename, mem.sliceAsBytes(pcx_buffer)[0..length]);
 }
 
 //
 // M_ScreenShot
 //
-pub export fn M_ScreenShot() void {
+pub fn M_ScreenShot() void {
     // munge planar buffer to linear
     const linear = screens[2];
     I_ReadScreen(linear);
 
     // find a file name to save it to
-    var lbmname: [11:0]u8 = undefined;
+    var lbmname: [12]u8 = undefined;
     var name: []u8 = undefined;
     for (0..100) |i| {
-        name = std.fmt.bufPrintZ(&lbmname, "DOOM{d:0>2}.pcx", .{i}) catch unreachable;
+        name = std.fmt.bufPrint(&lbmname, "DOOM{d:0>2}.pcx", .{i}) catch unreachable;
         os.access(name, 0) catch {
             break;  // file doesn't exist
         };
@@ -385,7 +381,7 @@ pub export fn M_ScreenShot() void {
         I_Error("M_ScreenShot: Couldn't create a PCX");
     }
 
-    WritePCXfile(&lbmname, linear, c.SCREENWIDTH, c.SCREENHEIGHT, @ptrCast(W_CacheLumpName("PLAYPAL", .Cache)));
+    WritePCXfile(name, linear, c.SCREENWIDTH, c.SCREENHEIGHT, @ptrCast(W_CacheLumpName("PLAYPAL", .Cache)));
 
     // TODO: message field should be []const u8, remove @constCast here
     c.players[@intCast(c.consoleplayer)].message = @constCast("screen shot");

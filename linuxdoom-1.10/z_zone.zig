@@ -350,7 +350,7 @@ export fn Z_FileDumpHeap(f: *FILE) void {
     }
 }
 
-export fn Z_CheckHeap() void {
+pub fn Z_CheckHeap() void {
     var block = mainzone.blocklist.next;
     while (true) : (block = block.next) {
         if (block.next == &mainzone.blocklist) {

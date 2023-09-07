@@ -38,6 +38,7 @@ pub export fn M_ClearRandom() void {
 }
 
 // As M_Random, but used only by the play simulation.
+// TODO: Return u8 directly to avoid intcasts?
 pub export fn P_Random() c_int {
     prndindex = (prndindex + 1) & 0xff;
     return rndtable[prndindex];

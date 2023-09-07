@@ -4,18 +4,19 @@ const c = @cImport({
     @cInclude("sys/time.h");
     @cInclude("doomdef.h");
     @cInclude("doomtype.h");
-    @cInclude("d_ticcmd.h");
 });
 
 extern fn I_InitSound() void;
 extern fn D_QuitNetGame() void;
 extern fn I_ShutdownSound() void;
 extern fn I_ShutdownMusic() void;
-extern fn G_CheckDemoStatus() c.boolean;
 
 const std = @import("std");
 const I_ShutdownGraphics = @import("i_video.zig").I_ShutdownGraphics;
 const M_SaveDefaults = @import("m_misc.zig").M_SaveDefaults;
+const G_CheckDemoStatus = @import("g_game.zig").G_CheckDemoStatus;
+
+const TicCmd = @import("d_ticcmd.zig").TicCmd;
 
 const mb_used: c_int = 6;
 
@@ -29,7 +30,7 @@ pub export fn I_Tactile(on: c_int, off: c_int, total: c_int) void {
     _ = on;
 }
 
-const emptycmd = c.ticcmd_t{
+const emptycmd = TicCmd{
     .forwardmove = 0,
     .sidemove = 0,
     .angleturn = 0,
@@ -37,7 +38,7 @@ const emptycmd = c.ticcmd_t{
     .chatchar = 0,
     .buttons = 0,
 };
-pub export fn I_BaseTiccmd() *const c.ticcmd_t {
+pub export fn I_BaseTiccmd() *const TicCmd {
     return &emptycmd;
 }
 

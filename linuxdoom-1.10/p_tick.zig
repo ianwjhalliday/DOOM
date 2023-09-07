@@ -12,6 +12,8 @@ extern var players: [c.MAXPLAYERS]player_t;
 
 // TODO: import free from z_zone
 extern fn Z_Free(ptr: *anyopaque) void;
+// TODO: import g_game to use g_game.paused instead of via extern
+extern var paused: bool;
 
 export var leveltime: c_int = 0;
 
@@ -111,9 +113,9 @@ fn P_RunThinkers() void {
 // can call G_PlayerExited.
 // Carries out all thinking of monsters and players.
 //
-export fn P_Ticker() void {
+pub export fn P_Ticker() void {
     // run the tic
-    if (c.paused != c.false) {
+    if (paused) {
         return;
     }
 

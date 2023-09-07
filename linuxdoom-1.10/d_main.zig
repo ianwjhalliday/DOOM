@@ -12,7 +12,6 @@ const c = @cImport({
     @cInclude("v_video.h");
 });
 
-extern fn G_Responder(ev: *Event) c.boolean;
 extern fn M_Responder(ev: *Event) c.boolean;
 extern fn W_CheckNumForName(name: [*c]const u8) c_int;
 
@@ -28,14 +27,11 @@ extern fn WI_Drawer() void;
 
 extern fn NetUpdate() void;
 
-extern fn G_BeginRecording() void;
 extern fn M_Ticker() void;
 extern fn G_Ticker() void;
 extern fn TryRunTics() void;
 extern fn I_UpdateSound() void;
 extern fn I_SubmitSound() void;
-
-extern fn G_BuildTiccmd(*c.ticcmd_t) void;
 
 const std = @import("std");
 const fmt = std.fmt;
@@ -56,6 +52,16 @@ const I_StartFrame = i_video.I_StartFrame;
 const I_UpdateNoBlit = i_video.I_UpdateNoBlit;
 const I_FinishUpdate = i_video.I_FinishUpdate;
 const I_SetPalette = i_video.I_SetPalette;
+
+const g_game = @import("g_game.zig");
+const G_BeginRecording = g_game.G_BeginRecording;
+const G_BuildTiccmd = g_game.G_BuildTiccmd;
+const G_DeferedPlayDemo = g_game.G_DeferedPlayDemo;
+const G_InitNew = g_game.G_InitNew;
+const G_RecordDemo = g_game.G_RecordDemo;
+const G_Responder = g_game.G_Responder;
+const G_TimeDemo = g_game.G_TimeDemo;
+const TicCmd = @import("d_ticcmd.zig").TicCmd;
 
 const w_wad = @import("w_wad.zig");
 const W_InitMultipleFiles = w_wad.W_InitMultipleFiles;
@@ -145,13 +151,11 @@ pub export fn D_ProcessEvents() void {
 //
 
 // wipegamestate can be set to -1 to force a wipe on the next draw
-export var wipegamestate: c.gamestate_t = c.GS_DEMOSCREEN;
+pub export var wipegamestate: c.gamestate_t = c.GS_DEMOSCREEN;
 extern var setsizeneeded: c.boolean;
-extern var nodrawers: c.boolean;
 extern var automapactive: c.boolean;
 extern var menuactive: c.boolean;
 extern var viewactive: c.boolean;
-extern var paused: c.boolean;
 extern fn R_ExecuteSetViewSize() void;
 
 fn D_Display() void {
@@ -165,7 +169,7 @@ fn D_Display() void {
         var borderdrawcount: c_int = 0;
     };
 
-    if (nodrawers != c.false) {
+    if (g_game.nodrawers) {
         return; // for comparative timing / profiling
     }
 
@@ -255,7 +259,7 @@ fn D_Display() void {
     S.oldgamestate = c.gamestate;
 
     // draw pause pic
-    if (paused != c.false) {
+    if (g_game.paused) {
         const y = if (automapactive != c.false) 4 else c.viewwindowy + 4;
         c.V_DrawPatchDirect(c.viewwindowx + @divTrunc(c.scaledviewwidth - 68, 2), y, 0, @ptrCast(@alignCast(W_CacheLumpName("M_PAUSE", .Cache))));
     }
@@ -279,9 +283,15 @@ fn D_Display() void {
     while (!done) {
         var nowtime: c_int = undefined;
         var tics: c_int = 0;
+        var i: usize = 0;
         while (tics == 0) {
+            i += 1;
             nowtime = I_GetTime();
             tics = nowtime - wipestart;
+
+            if (tics < 0) {
+                @import("std").debug.print("!!! `tics` is negative: i={} nowtime={} wipestart={} tics={}\n", .{i, nowtime, wipestart, tics});
+            }
         }
         wipestart = nowtime;
         done = wipe.ScreenWipe(.Melt, c.SCREENWIDTH, c.SCREENHEIGHT, @intCast(tics));
@@ -295,6 +305,7 @@ fn D_Display() void {
 //  D_DoomLoop
 //
 extern var demorecording: c.boolean;
+extern var netcmds: [c.MAXPLAYERS][c.BACKUPTICS]TicCmd;
 
 fn D_DoomLoop() noreturn {
     if (demorecording != c.false) {
@@ -320,7 +331,7 @@ fn D_DoomLoop() noreturn {
         if (singletics != c.false) {
             I_StartTic();
             D_ProcessEvents();
-            G_BuildTiccmd(&c.netcmds[@intCast(c.consoleplayer)][@as(usize, @intCast(c.maketic)) % c.BACKUPTICS]);
+            G_BuildTiccmd(&netcmds[@intCast(c.consoleplayer)][@as(usize, @intCast(c.maketic)) % c.BACKUPTICS]);
             if (advancedemo != c.false)
                 D_DoAdvanceDemo();
             M_Ticker();
@@ -352,7 +363,7 @@ var pagename: [*:0]const u8 = undefined;
 // D_PageTicker
 // Handles timing for warped projection
 //
-export fn D_PageTicker() void {
+pub fn D_PageTicker() void {
     pagetic -= 1;
     if (pagetic < 0) {
         D_AdvanceDemo();
@@ -370,7 +381,7 @@ fn D_PageDrawer() void {
 // D_AdvanceDemo
 // Called after each demo or intro demosequence finishes
 //
-export fn D_AdvanceDemo() void {
+pub fn D_AdvanceDemo() void {
     advancedemo = c.true;
 }
 
@@ -383,7 +394,7 @@ export fn D_DoAdvanceDemo() void {
     c.players[@intCast(c.consoleplayer)].playerstate = c.PST_LIVE; // not reborn
     advancedemo = c.false;
     usergame = c.false; // no save / end game here
-    paused = c.false;
+    g_game.paused = false;
     c.gameaction = c.ga_nothing;
 
     switch (demosequence) {
@@ -394,7 +405,7 @@ export fn D_DoAdvanceDemo() void {
             c.S_StartMusic(if (c.gamemode == c.commercial) c.mus_dm2ttl else c.mus_intro);
         },
         1 => {
-            c.G_DeferedPlayDemo(@constCast("demo1"));
+            G_DeferedPlayDemo("demo1");
         },
         2 => {
             pagetic = 200;
@@ -402,7 +413,7 @@ export fn D_DoAdvanceDemo() void {
             pagename = "CREDIT";
         },
         3 => {
-            c.G_DeferedPlayDemo(@constCast("demo2"));
+            G_DeferedPlayDemo("demo2");
         },
         4 => {
             c.gamestate = c.GS_DEMOSCREEN;
@@ -416,11 +427,11 @@ export fn D_DoAdvanceDemo() void {
             }
         },
         5 => {
-            c.G_DeferedPlayDemo(@constCast("demo3"));
+            G_DeferedPlayDemo("demo3");
         },
         // THE DEFINITIVE DOOM Special Edition demo
         6 => {
-            c.G_DeferedPlayDemo(@constCast("demo4"));
+            G_DeferedPlayDemo("demo4");
         },
         else => {}, // TODO: Make a zig enum and remove this else arm
     }
@@ -747,7 +758,7 @@ pub fn D_DoomMain() noreturn {
         sidemove[1] = sidemove[1] * @as(c_int, @intCast(scale / 100));
     }
 
-    var file: [255:0]u8 = undefined;
+    var filebuf: [256]u8 = undefined;
 
     // add any files specified on the command line with -file wadfile
     // to the wad list
@@ -758,10 +769,11 @@ pub fn D_DoomMain() noreturn {
     if (p != 0) {
         myargv[p][4] = 'p'; // big hack, change to -warp
 
+        var file: []u8 = undefined;
         // Map name handling.
         switch (c.gamemode) {
             c.shareware, c.retail, c.registered => {
-                _ = fmt.bufPrintZ(&file, "~" ++ c.DEVMAPS ++ "E{}M{}.wad", .{myargv[p + 1][0], myargv[p + 2][0]}) catch unreachable;
+                file = fmt.bufPrint(&filebuf, "~" ++ c.DEVMAPS ++ "E{}M{}.wad", .{myargv[p + 1][0], myargv[p + 2][0]}) catch unreachable;
                 stdout.print("Warping to Episode {s}, Map {s}.\n", .{myargv[p + 1], myargv[p + 2]}) catch unreachable;
             },
 
@@ -769,13 +781,13 @@ pub fn D_DoomMain() noreturn {
             else => {
                 const num = fmt.parseInt(usize, std.mem.span(myargv[p + 1]), 10) catch 0;
                 if (num < 10) {
-                    _ = fmt.bufPrintZ(&file, "~" ++ c.DEVMAPS ++ "cdata/map0{}.wad", .{num}) catch unreachable;
+                    file = fmt.bufPrint(&filebuf, "~" ++ c.DEVMAPS ++ "cdata/map0{}.wad", .{num}) catch unreachable;
                 } else {
-                    _ = fmt.bufPrintZ(&file, "~" ++ c.DEVMAPS ++ "cdata/map{}.wad", .{num}) catch unreachable;
+                    file = fmt.bufPrint(&filebuf, "~" ++ c.DEVMAPS ++ "cdata/map{}.wad", .{num}) catch unreachable;
                 }
             },
         }
-        D_AddFile(&file);
+        D_AddFile(file);
     }
 
     p = @intCast(M_CheckParm("-file"));
@@ -796,8 +808,8 @@ pub fn D_DoomMain() noreturn {
     }
 
     if (p != 0 and p < myargc - 1) {
-        _ = fmt.bufPrintZ(&file, "{s}.lmp", .{myargv[p + 1]}) catch unreachable;
-        D_AddFile(&file);
+        const file = fmt.bufPrint(&filebuf, "{s}.lmp", .{myargv[p + 1]}) catch unreachable;
+        D_AddFile(file);
         stdout.print("Playing demo {s}.lmp.\n", .{myargv[p + 1]}) catch unreachable;
     }
 
@@ -945,36 +957,36 @@ pub fn D_DoomMain() noreturn {
     p = @intCast(M_CheckParm("-record"));
 
     if (p != 0 and p < myargc - 1) {
-        c.G_RecordDemo(myargv[p + 1]);
+        G_RecordDemo(std.mem.span(myargv[p + 1]));
         autostart = c.true;
     }
 
     p = @intCast(M_CheckParm("-playdemo"));
     if (p != 0 and p < myargc - 1) {
         singledemo = c.true; // quit after one demo
-        c.G_DeferedPlayDemo(myargv[p + 1]);
+        G_DeferedPlayDemo(myargv[p + 1]);
         D_DoomLoop(); // never returns
     }
 
     p = @intCast(M_CheckParm("-timedemo"));
     if (p != 0 and p < myargc - 1) {
-        c.G_TimeDemo(myargv[p + 1]);
+        G_TimeDemo(myargv[p + 1]);
         D_DoomLoop(); // never returns
     }
 
     p = @intCast(M_CheckParm("-loadgame"));
     if (p != 0 and p < myargc - 1) {
-        if (M_CheckParm("-cdrom") != 0) {
-            _ = fmt.bufPrintZ(&file, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}) catch unreachable;
-        } else {
-            _ = fmt.bufPrintZ(&file, c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}) catch unreachable;
-        }
-        c.G_LoadGame(&file);
+        const file =
+            if (M_CheckParm("-cdrom") != 0)
+                fmt.bufPrintZ(&filebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}) catch unreachable
+            else
+                fmt.bufPrintZ(&filebuf, c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}) catch unreachable;
+        c.G_LoadGame(file.ptr);
     }
 
     if (c.gameaction != c.ga_loadgame) {
         if (autostart != c.false or c.netgame != 0) {
-            c.G_InitNew(startskill, startepisode, startmap);
+            G_InitNew(startskill, startepisode, startmap);
         } else {
             D_StartTitle(); // start up intro loop
         }

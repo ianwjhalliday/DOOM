@@ -19,6 +19,9 @@ extern fn V_DrawPatch(x: c_int, y: c_int, scrn: c_int, patch: *c.patch_t) void;
 
 const fmt = @import("std").fmt;
 
+const d_main = @import("d_main.zig");
+const Event = d_main.Event;
+
 const m_cheat = @import("m_cheat.zig");
 const CheatSeq = m_cheat.CheatSeq;
 const cht_CheckCheat = m_cheat.cht_CheckCheat;
@@ -375,9 +378,9 @@ fn ST_refreshBackground() void {
 
 // Respond to keyboard input events,
 //  intercept cheats.
-pub export fn ST_Responder(ev: *c.event_t) c.boolean {
+pub export fn ST_Responder(ev: *Event) c.boolean {
   // Filter automap on/off.
-  if (ev.type == c.ev_keyup
+  if (ev.type == .KeyUp
       and (@as(c_uint, @bitCast(ev.data1)) & 0xffff0000) == c.AM_MSGHEADER) {
     switch (ev.data1) {
       c.AM_MSGENTERED => {
@@ -391,7 +394,7 @@ pub export fn ST_Responder(ev: *c.event_t) c.boolean {
   }
 
   // if a user keypress...
-  else if (ev.type == c.ev_keydown) {
+  else if (ev.type == .KeyDown) {
     if (c.netgame == c.false) {
       // b. - enabled for more debug fun.
       // if (gameskill != sk_nightmare)
@@ -1073,6 +1076,13 @@ fn ST_initData() void {
 
 
 fn ST_createWidgets() void {
+    // TODO:
+    // BUG: ammo type will be noammo when fist or chainsaw is the active
+    // weapon from previous level; this results in trying to access
+    // plyr.ammo[5] which is invalid. Looks like this was a bug in the original
+    // source. This would just end up accessing the maxammo[0] entry. In Zig
+    // the array access is checked in debug builds and crashes.
+
     // ready weapon ammo
     STlib_initNum(&w_ready,
                   ST_AMMOX,
