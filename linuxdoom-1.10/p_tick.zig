@@ -7,8 +7,9 @@ extern fn P_RespawnSpecials() void;
 
 const player_t = @import("p_user.zig").player_t;
 const P_PlayerThink = @import("p_user.zig").P_PlayerThink;
+const MAXPLAYERS = @import("doomdef.zig").MAXPLAYERS;
 
-extern var players: [c.MAXPLAYERS]player_t;
+extern var players: [MAXPLAYERS]player_t;
 
 // TODO: import free from z_zone
 extern fn Z_Free(ptr: *anyopaque) void;

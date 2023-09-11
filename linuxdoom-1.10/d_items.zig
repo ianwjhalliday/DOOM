@@ -1,12 +1,11 @@
 const c = @cImport({
     @cInclude("info.h");
-    @cInclude("doomdef.h");
 });
 
-// TODO: Move ammotype_t definition here?
+const AmmoType = @import("doomdef.zig").AmmoType;
 
 pub const WeaponInfo = extern struct {
-    ammo: c.ammotype_t,
+    ammo: AmmoType,
     upstate: c_int,
     downstate: c_int,
     readystate: c_int,
@@ -17,7 +16,7 @@ pub const WeaponInfo = extern struct {
 pub export const weaponinfo = [_]WeaponInfo{
     .{
         // fist
-        .ammo = c.am_noammo,
+        .ammo = .NoAmmo,
         .upstate = c.S_PUNCHUP,
         .downstate = c.S_PUNCHDOWN,
         .readystate = c.S_PUNCH,
@@ -26,7 +25,7 @@ pub export const weaponinfo = [_]WeaponInfo{
     },
     .{
         // pistol
-        .ammo = c.am_clip,
+        .ammo = .Clip,
         .upstate = c.S_PISTOLUP,
         .downstate = c.S_PISTOLDOWN,
         .readystate = c.S_PISTOL,
@@ -35,7 +34,7 @@ pub export const weaponinfo = [_]WeaponInfo{
     },
     .{
         // shotgun
-        .ammo = c.am_shell,
+        .ammo = .Shell,
         .upstate = c.S_SGUNUP,
         .downstate = c.S_SGUNDOWN,
         .readystate = c.S_SGUN,
@@ -44,7 +43,7 @@ pub export const weaponinfo = [_]WeaponInfo{
     },
     .{
         // chaingun
-        .ammo = c.am_clip,
+        .ammo = .Clip,
         .upstate = c.S_CHAINUP,
         .downstate = c.S_CHAINDOWN,
         .readystate = c.S_CHAIN,
@@ -53,7 +52,7 @@ pub export const weaponinfo = [_]WeaponInfo{
     },
     .{
         // missile launcher
-        .ammo = c.am_misl,
+        .ammo = .Missile,
         .upstate = c.S_MISSILEUP,
         .downstate = c.S_MISSILEDOWN,
         .readystate = c.S_MISSILE,
@@ -62,7 +61,7 @@ pub export const weaponinfo = [_]WeaponInfo{
     },
     .{
         // plasma rifle
-        .ammo = c.am_cell,
+        .ammo = .Cell,
         .upstate = c.S_PLASMAUP,
         .downstate = c.S_PLASMADOWN,
         .readystate = c.S_PLASMA,
@@ -71,7 +70,7 @@ pub export const weaponinfo = [_]WeaponInfo{
     },
     .{
         // bfg 9000
-        .ammo = c.am_cell,
+        .ammo = .Cell,
         .upstate = c.S_BFGUP,
         .downstate = c.S_BFGDOWN,
         .readystate = c.S_BFG,
@@ -80,7 +79,7 @@ pub export const weaponinfo = [_]WeaponInfo{
     },
     .{
         // chainsaw
-        .ammo = c.am_noammo,
+        .ammo = .NoAmmo,
         .upstate = c.S_SAWUP,
         .downstate = c.S_SAWDOWN,
         .readystate = c.S_SAW,
@@ -89,7 +88,7 @@ pub export const weaponinfo = [_]WeaponInfo{
     },
     .{
         // super shotgun
-        .ammo = c.am_shell,
+        .ammo = .Shell,
         .upstate = c.S_DSGUNUP,
         .downstate = c.S_DSGUNDOWN,
         .readystate = c.S_DSGUN,

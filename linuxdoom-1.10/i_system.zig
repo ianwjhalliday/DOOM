@@ -2,7 +2,6 @@ const c = @cImport({
     @cInclude("stdio.h");
     @cInclude("unistd.h");
     @cInclude("sys/time.h");
-    @cInclude("doomdef.h");
     @cInclude("doomtype.h");
 });
 
@@ -17,6 +16,8 @@ const M_SaveDefaults = @import("m_misc.zig").M_SaveDefaults;
 const G_CheckDemoStatus = @import("g_game.zig").G_CheckDemoStatus;
 
 const TicCmd = @import("d_ticcmd.zig").TicCmd;
+
+const TICRATE = @import("doomdef.zig").TICRATE;
 
 const mb_used: c_int = 6;
 
@@ -59,7 +60,7 @@ pub export fn I_GetTime() c_int {
     if (basetime == 0) {
         basetime = tp.tv_sec;
     }
-    const newtics: c_int = @truncate((tp.tv_sec-basetime)*c.TICRATE + @divTrunc(tp.tv_usec*c.TICRATE, 1000000));
+    const newtics: c_int = @truncate((tp.tv_sec-basetime)*TICRATE + @divTrunc(tp.tv_usec*TICRATE, 1000000));
     return newtics;
 }
 

@@ -16,13 +16,10 @@ pub fn build(b: *std.Build) void {
     // here. Otherwise you may get MultipleSymbolDefinitions compile errors.
     const zig_files = [_][]const u8{
         "i_main",
-        "m_fixed",
-        "d_items",
         "p_telept",
     };
 
     const c_files = [_][]const u8{
-        "doomdef.c",
         "doomstat.c",
         "dstrings.c",
         "i_sound.c",

@@ -5,7 +5,6 @@ const c = @cImport({
     }
     @cInclude("GLFW/glfw3.h");
     @cInclude("signal.h");
-    @cInclude("doomdef.h");
 });
 
 extern var screens: [5][*]u8;
@@ -17,6 +16,9 @@ const std = @import("std");
 const D_PostEvent = @import("d_main.zig").D_PostEvent;
 const Event = @import("d_main.zig").Event;
 const I_Quit = @import("i_system.zig").I_Quit;
+const doomdef = @import("doomdef.zig");
+const SCREENWIDTH = doomdef.SCREENWIDTH;
+const SCREENHEIGHT = doomdef.SCREENHEIGHT;
 
 const screenVertexShaderSource = [1][*]const u8{
     \\#version 330 core
@@ -163,7 +165,7 @@ pub fn I_InitGraphics() void {
 
     _ = c.glfwSetErrorCallback(&GLFWCallback.Error);
 
-    const window = c.glfwCreateWindow(3 * c.SCREENWIDTH, 3 * c.SCREENWIDTH * 3 / 4, "Doom", null, null);
+    const window = c.glfwCreateWindow(3 * SCREENWIDTH, 3 * SCREENWIDTH * 3 / 4, "Doom", null, null);
     if (window == null) {
         stderr.print("I_InitGraphics: Could not create window\n", .{}) catch {};
         c.glfwTerminate();
@@ -171,7 +173,7 @@ pub fn I_InitGraphics() void {
     }
     mainWindow = window;
 
-    c.glfwSetWindowSizeLimits(window, c.SCREENWIDTH, c.SCREENWIDTH * 3 / 4, c.GLFW_DONT_CARE, c.GLFW_DONT_CARE);
+    c.glfwSetWindowSizeLimits(window, SCREENWIDTH, SCREENWIDTH * 3 / 4, c.GLFW_DONT_CARE, c.GLFW_DONT_CARE);
     c.glfwSetWindowAspectRatio(window, 4, 3);
     c.glfwSetInputMode(window, c.GLFW_CURSOR, c.GLFW_CURSOR_DISABLED);
 
@@ -323,7 +325,7 @@ pub fn I_FinishUpdate() void {
 
     c.glActiveTexture(c.GL_TEXTURE0);
     c.glBindTexture(c.GL_TEXTURE_2D, screenTexture);
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RED, c.SCREENWIDTH, c.SCREENHEIGHT, 0, c.GL_RED, c.GL_UNSIGNED_BYTE, screens[0]);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RED, SCREENWIDTH, SCREENHEIGHT, 0, c.GL_RED, c.GL_UNSIGNED_BYTE, screens[0]);
     c.glActiveTexture(c.GL_TEXTURE1);
     c.glBindTexture(c.GL_TEXTURE_1D, paletteTexture);
 
@@ -338,7 +340,7 @@ pub fn I_FinishUpdate() void {
 // I_ReadScreen
 //
 pub export fn I_ReadScreen(scr: [*]u8) void {
-    @memcpy(scr, screens[0][0..c.SCREENWIDTH*c.SCREENHEIGHT]);
+    @memcpy(scr, screens[0][0..SCREENWIDTH*SCREENHEIGHT]);
 }
 
 //
@@ -362,16 +364,16 @@ pub export fn I_SetPalette(pal: [*]u8) void {
 fn translateKey(glfw_key: c_int) c_int {
     return switch (glfw_key) {
         // Function keys
-        c.GLFW_KEY_ESCAPE => c.KEY_ESCAPE,
-        c.GLFW_KEY_ENTER => c.KEY_ENTER,
-        c.GLFW_KEY_TAB => c.KEY_TAB,
-        c.GLFW_KEY_BACKSPACE => c.KEY_BACKSPACE,
+        c.GLFW_KEY_ESCAPE => doomdef.KEY_ESCAPE,
+        c.GLFW_KEY_ENTER => doomdef.KEY_ENTER,
+        c.GLFW_KEY_TAB => doomdef.KEY_TAB,
+        c.GLFW_KEY_BACKSPACE => doomdef.KEY_BACKSPACE,
         c.GLFW_KEY_INSERT => 0, // Unsupported key
         c.GLFW_KEY_DELETE => 0, // Unsupported key
-        c.GLFW_KEY_RIGHT => c.KEY_RIGHTARROW,
-        c.GLFW_KEY_LEFT => c.KEY_LEFTARROW,
-        c.GLFW_KEY_DOWN => c.KEY_DOWNARROW,
-        c.GLFW_KEY_UP => c.KEY_UPARROW,
+        c.GLFW_KEY_RIGHT => doomdef.KEY_RIGHTARROW,
+        c.GLFW_KEY_LEFT => doomdef.KEY_LEFTARROW,
+        c.GLFW_KEY_DOWN => doomdef.KEY_DOWNARROW,
+        c.GLFW_KEY_UP => doomdef.KEY_UPARROW,
         c.GLFW_KEY_PAGE_UP => 0, // Unsupported key
         c.GLFW_KEY_PAGE_DOWN => 0, // Unsupported key
         c.GLFW_KEY_HOME => 0, // Unsupported key
@@ -380,19 +382,19 @@ fn translateKey(glfw_key: c_int) c_int {
         c.GLFW_KEY_SCROLL_LOCK => 0, // Unsupported key
         c.GLFW_KEY_NUM_LOCK => 0, // Unsupported key
         c.GLFW_KEY_PRINT_SCREEN => 0, // Unsupported key
-        c.GLFW_KEY_PAUSE => c.KEY_PAUSE,
-        c.GLFW_KEY_F1 => c.KEY_F1,
-        c.GLFW_KEY_F2 => c.KEY_F2,
-        c.GLFW_KEY_F3 => c.KEY_F3,
-        c.GLFW_KEY_F4 => c.KEY_F4,
-        c.GLFW_KEY_F5 => c.KEY_F5,
-        c.GLFW_KEY_F6 => c.KEY_F6,
-        c.GLFW_KEY_F7 => c.KEY_F7,
-        c.GLFW_KEY_F8 => c.KEY_F8,
-        c.GLFW_KEY_F9 => c.KEY_F9,
-        c.GLFW_KEY_F10 => c.KEY_F10,
-        c.GLFW_KEY_F11 => c.KEY_F11,
-        c.GLFW_KEY_F12 => c.KEY_F12,
+        c.GLFW_KEY_PAUSE => doomdef.KEY_PAUSE,
+        c.GLFW_KEY_F1 => doomdef.KEY_F1,
+        c.GLFW_KEY_F2 => doomdef.KEY_F2,
+        c.GLFW_KEY_F3 => doomdef.KEY_F3,
+        c.GLFW_KEY_F4 => doomdef.KEY_F4,
+        c.GLFW_KEY_F5 => doomdef.KEY_F5,
+        c.GLFW_KEY_F6 => doomdef.KEY_F6,
+        c.GLFW_KEY_F7 => doomdef.KEY_F7,
+        c.GLFW_KEY_F8 => doomdef.KEY_F8,
+        c.GLFW_KEY_F9 => doomdef.KEY_F9,
+        c.GLFW_KEY_F10 => doomdef.KEY_F10,
+        c.GLFW_KEY_F11 => doomdef.KEY_F11,
+        c.GLFW_KEY_F12 => doomdef.KEY_F12,
         c.GLFW_KEY_F13 => 0, // Unsupported key
         c.GLFW_KEY_F14 => 0, // Unsupported key
         c.GLFW_KEY_F15 => 0, // Unsupported key
@@ -419,17 +421,17 @@ fn translateKey(glfw_key: c_int) c_int {
         c.GLFW_KEY_KP_DECIMAL => '.',
         c.GLFW_KEY_KP_DIVIDE => '/',
         c.GLFW_KEY_KP_MULTIPLY => '*',
-        c.GLFW_KEY_KP_SUBTRACT => c.KEY_MINUS,
+        c.GLFW_KEY_KP_SUBTRACT => doomdef.KEY_MINUS,
         c.GLFW_KEY_KP_ADD => '+',
         c.GLFW_KEY_KP_ENTER => '\n',
-        c.GLFW_KEY_KP_EQUAL => c.KEY_EQUALS,
-        c.GLFW_KEY_LEFT_SHIFT => c.KEY_RSHIFT, // Doom uses right shift key code for both shifts
-        c.GLFW_KEY_LEFT_CONTROL => c.KEY_RCTRL, // Doom uses right control key code for both controls
-        c.GLFW_KEY_LEFT_ALT => c.KEY_RALT, // Doom uses right alt key code for both alts
+        c.GLFW_KEY_KP_EQUAL => doomdef.KEY_EQUALS,
+        c.GLFW_KEY_LEFT_SHIFT => doomdef.KEY_RSHIFT, // Doom uses right shift key code for both shifts
+        c.GLFW_KEY_LEFT_CONTROL => doomdef.KEY_RCTRL, // Doom uses right control key code for both controls
+        c.GLFW_KEY_LEFT_ALT => doomdef.KEY_RALT, // Doom uses right alt key code for both alts
         c.GLFW_KEY_LEFT_SUPER => 0, // Unsupported key
-        c.GLFW_KEY_RIGHT_SHIFT => c.KEY_RSHIFT,
-        c.GLFW_KEY_RIGHT_CONTROL => c.KEY_RCTRL,
-        c.GLFW_KEY_RIGHT_ALT => c.KEY_LALT,
+        c.GLFW_KEY_RIGHT_SHIFT => doomdef.KEY_RSHIFT,
+        c.GLFW_KEY_RIGHT_CONTROL => doomdef.KEY_RCTRL,
+        c.GLFW_KEY_RIGHT_ALT => doomdef.KEY_LALT,
         c.GLFW_KEY_RIGHT_SUPER => 0, // Unsupported key
         c.GLFW_KEY_MENU => 0, // Unsupported key
 

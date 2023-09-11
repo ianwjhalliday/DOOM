@@ -1,6 +1,5 @@
 const c = @cImport({
     @cInclude("doomtype.h");
-    @cInclude("doomdef.h");
     @cInclude("doomstat.h");
     @cInclude("dstrings.h");
 });
@@ -16,6 +15,9 @@ const I_ReadScreen = @import("i_video.zig").I_ReadScreen;
 const M_CheckParm = @import("m_argv.zig").M_CheckParm;
 const m_argv = @import("m_argv.zig");
 const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpName;
+const doomdef = @import("doomdef.zig");
+const SCREENWIDTH = doomdef.SCREENWIDTH;
+const SCREENHEIGHT = doomdef.SCREENHEIGHT;
 
 extern var basedefault: [1023:0]u8;
 extern var screens: [5][*]u8;
@@ -145,17 +147,17 @@ const defaults = [_]Default{
     Default.int("show_messages", &showMessages, 1),
 
     // #ifdef NORMALUNIX
-    Default.int("key_right", &key_right, c.KEY_RIGHTARROW),
-    Default.int("key_left", &key_left, c.KEY_LEFTARROW),
-    Default.int("key_up", &key_up, c.KEY_UPARROW),
-    Default.int("key_down", &key_down, c.KEY_DOWNARROW),
+    Default.int("key_right", &key_right, doomdef.KEY_RIGHTARROW),
+    Default.int("key_left", &key_left, doomdef.KEY_LEFTARROW),
+    Default.int("key_up", &key_up, doomdef.KEY_UPARROW),
+    Default.int("key_down", &key_down, doomdef.KEY_DOWNARROW),
     Default.int("key_strafeleft", &key_strafeleft, ','),
     Default.int("key_straferight", &key_straferight, '.'),
 
-    Default.int("key_fire", &key_fire, c.KEY_RCTRL),
+    Default.int("key_fire", &key_fire, doomdef.KEY_RCTRL),
     Default.int("key_use", &key_use, ' '),
-    Default.int("key_strafe", &key_strafe, c.KEY_RALT),
-    Default.int("key_speed", &key_speed, c.KEY_RSHIFT),
+    Default.int("key_strafe", &key_strafe, doomdef.KEY_RALT),
+    Default.int("key_speed", &key_speed, doomdef.KEY_RSHIFT),
     // #endif
 
     Default.int("use_mouse", &usemouse, 1),
@@ -381,7 +383,7 @@ pub fn M_ScreenShot() void {
         I_Error("M_ScreenShot: Couldn't create a PCX");
     }
 
-    WritePCXfile(name, linear, c.SCREENWIDTH, c.SCREENHEIGHT, @ptrCast(W_CacheLumpName("PLAYPAL", .Cache)));
+    WritePCXfile(name, linear, SCREENWIDTH, SCREENHEIGHT, @ptrCast(W_CacheLumpName("PLAYPAL", .Cache)));
 
     // TODO: message field should be []const u8, remove @constCast here
     c.players[@intCast(c.consoleplayer)].message = @constCast("screen shot");

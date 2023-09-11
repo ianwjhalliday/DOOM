@@ -1,5 +1,4 @@
 const c = @cImport({
-    @cInclude("doomdef.h");
     @cInclude("doomstat.h");
     @cInclude("dstrings.h");
     @cInclude("d_event.h");
@@ -72,13 +71,19 @@ const Z_ChangeTag = z_zone.Z_ChangeTag;
 const Z_CheckHeap = z_zone.Z_CheckHeap;
 const Z_Free = z_zone.Z_Free;
 
+const doomdef = @import("doomdef.zig");
+const MAXPLAYERS = doomdef.MAXPLAYERS;
+const GameState = doomdef.GameState;
+const Skill = doomdef.Skill;
+const WeaponType = doomdef.WeaponType;
+
 const SAVEGAMESIZE = 0x2c000;
 const SAVESTRINGSIZE = 24;
 
 
 export var gameaction: c.gameaction_t = undefined;
-export var gamestate: c.gamestate_t = undefined;
-export var gameskill: c.skill_t = undefined;
+pub export var gamestate: GameState = undefined;
+pub export var gameskill: Skill = undefined;
 export var respawnmonsters: c.boolean = c.false;
 export var gameepisode: c_int = 0;
 export var gamemap: c_int = 0;
@@ -96,8 +101,8 @@ export var viewactive: c.boolean = c.false;
 
 export var deathmatch: c.boolean = c.false;    // only if started as net death
 export var netgame: c.boolean = c.false;       // only true if packets are broadcast
-export var playeringame: [c.MAXPLAYERS]c.boolean = undefined;
-export var players: [c.MAXPLAYERS]c.player_t = undefined;
+export var playeringame: [MAXPLAYERS]c.boolean = undefined;
+export var players: [MAXPLAYERS]c.player_t = undefined;
 
 export var consoleplayer: usize = 0;           // player taking events and displaying
 export var displayplayer: usize = 0;           // view being displayed
@@ -121,7 +126,7 @@ export var precache: c.boolean = c.true;        // if true, load all graphics at
 
 export var wminfo: c.wbstartstruct_t = undefined;  // parms for world map / intermission
 
-export var consistancy: [c.MAXPLAYERS][c.BACKUPTICS]c_short = undefined;
+export var consistancy: [MAXPLAYERS][c.BACKUPTICS]c_short = undefined;
 
 
 //
@@ -304,7 +309,7 @@ pub export fn G_BuildTiccmd(cmd: *TicCmd) void {
     }
 
     // chainsaw overrides
-    for (0..c.NUMWEAPONS-1) |i| {
+    for (0..@intFromEnum(WeaponType.NUMWEAPONS)-1) |i| {
         if (gamekeydown['1'+i]) {
             cmd.buttons |= @intCast(c.BT_CHANGE);
             cmd.buttons |= @intCast(i<<c.BT_WEAPONSHIFT);
@@ -421,11 +426,11 @@ export fn G_DoLoadLevel() void {
         }
     }
 
-    if (d_main.wipegamestate == c.GS_LEVEL) {
-        d_main.wipegamestate = c.GS_FORCEWIPE;
+    if (d_main.wipegamestate == .Level) {
+        d_main.wipegamestate = .ForceWipe;
     }
 
-    gamestate = c.GS_LEVEL;
+    gamestate = .Level;
 
     for (playeringame, &players) |pig, *player| {
         if (pig != c.false and player.*.playerstate == c.PST_DEAD) {
@@ -436,7 +441,7 @@ export fn G_DoLoadLevel() void {
         }
     }
 
-    c.P_SetupLevel(gameepisode, gamemap, 0, gameskill);
+    c.P_SetupLevel(gameepisode, gamemap, 0, @intFromEnum(gameskill));
     displayplayer = consoleplayer;  // view the guy you are playing
     starttime = I_GetTime();
     gameaction = c.ga_nothing;
@@ -471,20 +476,20 @@ extern fn F_Responder(ev: *Event) c.boolean;
 //
 pub fn G_Responder(ev: *Event) bool {
     // allow spy mode changes even during the demo
-    if (gamestate == c.GS_LEVEL and ev.type == .KeyDown
-        and ev.data1 == c.KEY_F12
+    if (gamestate == .Level and ev.type == .KeyDown
+        and ev.data1 == doomdef.KEY_F12
         and (singledemo != c.false or deathmatch == c.false)) {
         // spy mode
-        displayplayer = @mod(displayplayer + 1, c.MAXPLAYERS);
+        displayplayer = @mod(displayplayer + 1, MAXPLAYERS);
         while (playeringame[displayplayer] == c.false and displayplayer != consoleplayer) {
-            displayplayer = @mod(displayplayer + 1, c.MAXPLAYERS);
+            displayplayer = @mod(displayplayer + 1, MAXPLAYERS);
         }
         return true;
     }
 
     // any other key pops up menu if in demos
     if (gameaction == c.ga_nothing and singledemo == c.false and
-        (demoplayback != c.false or gamestate == c.GS_DEMOSCREEN)) {
+        (demoplayback != c.false or gamestate == .DemoScreen)) {
         if (ev.type == .KeyDown or
             (ev.type == .Mouse and ev.data1 != 0) or
             (ev.type == .Joystick and ev.data1 != 0)) {
@@ -494,7 +499,7 @@ pub fn G_Responder(ev: *Event) bool {
         return false;
     }
 
-    if (gamestate == c.GS_LEVEL) {
+    if (gamestate == .Level) {
         if (HU_Responder(ev) != c.false) {
             return true;        // chat ate the event
         }
@@ -506,7 +511,7 @@ pub fn G_Responder(ev: *Event) bool {
         }
     }
 
-    if (gamestate == c.GS_FINALE) {
+    if (gamestate == .Finale) {
         if (F_Responder (ev) != c.false) {
             return true;        // finale ate the event
         }
@@ -514,7 +519,7 @@ pub fn G_Responder(ev: *Event) bool {
 
     switch (ev.type) {
       .KeyDown => {
-        if (ev.data1 == c.KEY_PAUSE or ev.data1 == 'p') {
+        if (ev.data1 == doomdef.KEY_PAUSE or ev.data1 == 'p') {
             sendpause = true;
             return true;
         }
@@ -555,7 +560,7 @@ pub fn G_Responder(ev: *Event) bool {
 }
 
 
-extern var netcmds: [c.MAXPLAYERS][c.BACKUPTICS]c.ticcmd_t;
+extern var netcmds: [MAXPLAYERS][c.BACKUPTICS]c.ticcmd_t;
 extern var player_names: [4][*:0]u8;
 extern var rndindex: c_int;
 
@@ -595,7 +600,7 @@ pub export fn G_Ticker() void {
     // and build new consistancy check
     const buf: usize = @intCast(@mod(@divTrunc(gametic, c.ticdup), c.BACKUPTICS));
 
-    for (0..c.MAXPLAYERS) |i| {
+    for (0..MAXPLAYERS) |i| {
         if (playeringame[i] != c.false) {
             const cmd = &players[i].cmd;
 
@@ -636,7 +641,7 @@ pub export fn G_Ticker() void {
     }
 
     // check for special buttons
-    for (0..c.MAXPLAYERS) |i| {
+    for (0..MAXPLAYERS) |i| {
         if (playeringame[i] != c.false) {
             if (players[i].cmd.buttons & c.BT_SPECIAL != 0) {
                 switch (players[i].cmd.buttons & c.BT_SPECIALMASK) {
@@ -668,15 +673,15 @@ pub export fn G_Ticker() void {
 
     // do main actions
     switch (gamestate) {
-        c.GS_LEVEL => {
+        .Level => {
             P_Ticker();
             ST_Ticker();
             c.AM_Ticker();
             c.HU_Ticker();
         },
-        c.GS_INTERMISSION => c.WI_Ticker(),
-        c.GS_FINALE => c.F_Ticker(),
-        c.GS_DEMOSCREEN => D_PageTicker(),
+        .Intermission => c.WI_Ticker(),
+        .Finale => c.F_Ticker(),
+        .DemoScreen => D_PageTicker(),
         else => {},
     }
 }
@@ -731,10 +736,10 @@ export fn G_PlayerReborn(player: c_int) void {
     p.attackdown = c.true;    // don't do anything immediately
     p.playerstate = c.PST_LIVE;
     p.health = c.MAXHEALTH;
-    p.readyweapon = c.wp_pistol;
-    p.pendingweapon = c.wp_pistol;
-    p.weaponowned[c.wp_fist] = c.true;
-    p.weaponowned[c.wp_pistol] = c.true;
+    p.readyweapon = @intFromEnum(WeaponType.Pistol);
+    p.pendingweapon = @intFromEnum(WeaponType.Pistol);
+    p.weaponowned[@intFromEnum(WeaponType.Fist)] = c.true;
+    p.weaponowned[@intFromEnum(WeaponType.Pistol)] = c.true;
     p.ammo[c.am_clip] = 50;
     p.maxammo = c.maxammo;
 }
@@ -840,7 +845,7 @@ fn G_DoReborn(playernum: c_int) void {
         }
 
         // try to spawn at one of the other players spots
-        for (0..c.MAXPLAYERS) |i| {
+        for (0..MAXPLAYERS) |i| {
             if (G_CheckSpot(playernum, &c.playerstarts[i])) {
                 c.playerstarts[i].type = @intCast(playernum+1);     // fake as other player
                 P_SpawnPlayer(&c.playerstarts[i]);
@@ -902,7 +907,7 @@ export fn G_SecretExitLevel() void {
 fn G_DoCompleted() void {
     gameaction = c.ga_nothing;
 
-    for (0..c.MAXPLAYERS) |i| {
+    for (0..MAXPLAYERS) |i| {
         if (playeringame[i] != c.false) {
             G_PlayerFinishLevel(i);        // take away cards and stuff
         }
@@ -919,7 +924,7 @@ fn G_DoCompleted() void {
                 return;
             },
             9 => {
-                for (0..c.MAXPLAYERS) |i| {
+                for (0..MAXPLAYERS) |i| {
                     players[i].didsecret = c.true;
                 }
             },
@@ -935,7 +940,7 @@ fn G_DoCompleted() void {
 
     if (gamemap == 9 and c.gamemode != c.commercial) {
         // exit secret level
-        for (0..c.MAXPLAYERS) |i| {
+        for (0..MAXPLAYERS) |i| {
             players[i].didsecret = c.true;
         }
     }
@@ -988,7 +993,7 @@ fn G_DoCompleted() void {
     }
     wminfo.pnum = @intCast(consoleplayer);
 
-    for (0..c.MAXPLAYERS) |i| {
+    for (0..MAXPLAYERS) |i| {
         wminfo.plyr[i].in = playeringame[i];
         wminfo.plyr[i].skills = players[i].killcount;
         wminfo.plyr[i].sitems = players[i].itemcount;
@@ -997,7 +1002,7 @@ fn G_DoCompleted() void {
         wminfo.plyr[i].frags = players[i].frags;
     }
 
-    gamestate = c.GS_INTERMISSION;
+    gamestate = .Intermission;
     viewactive = c.false;
     c.automapactive = c.false;
 
@@ -1033,7 +1038,7 @@ export fn G_WorldDone() void {
 }
 
 fn G_DoWorldDone() void {
-    gamestate = c.GS_LEVEL;
+    gamestate = .Level;
     gamemap = wminfo.next+1;
     G_DoLoadLevel();
     gameaction = c.ga_nothing;
@@ -1080,10 +1085,10 @@ fn G_DoLoadGame() void {
         return;
     }
 
-    gameskill = reader.readByte() catch unreachable;
+    gameskill = @enumFromInt(reader.readByte() catch unreachable);
     gameepisode = reader.readByte() catch unreachable;
     gamemap = reader.readByte() catch unreachable;
-    for (0..c.MAXPLAYERS) |j| {
+    for (0..MAXPLAYERS) |j| {
         playeringame[j] = reader.readByte() catch unreachable;
     }
 
@@ -1151,10 +1156,10 @@ fn G_DoSaveGame() void {
     _ = fmt.bufPrintZ(&version, "version {d}", .{c.VERSION}) catch unreachable;
     _ = writer.write(&version) catch unreachable;
 
-    _ = writer.writeByte(@intCast(gameskill)) catch unreachable;
+    _ = writer.writeByte(@intCast(@intFromEnum(gameskill))) catch unreachable;
     _ = writer.writeByte(@intCast(gameepisode)) catch unreachable;
     _ = writer.writeByte(@intCast(gamemap)) catch unreachable;
-    for (0..c.MAXPLAYERS) |i| {
+    for (0..MAXPLAYERS) |i| {
         _ = writer.writeByte(@intCast(playeringame[i])) catch unreachable;
     }
     const lt: u32 = @intCast(c.leveltime);
@@ -1195,11 +1200,11 @@ fn G_DoSaveGame() void {
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayer, playeringame[] should be set.
 //
-var d_skill: c.skill_t = undefined;
+var d_skill: Skill = undefined;
 var d_episode: c_int = 0;
 var d_map: c_int = 0;
 
-export fn G_DeferedInitNew(skill: c.skill_t, episode: c_int, map: c_int) void {
+pub export fn G_DeferedInitNew(skill: Skill, episode: c_int, map: c_int) void {
     d_skill = skill;
     d_episode = episode;
     d_map = map;
@@ -1227,16 +1232,10 @@ fn G_DoNewGame() void {
 extern var skytexture: c_int;
 
 
-pub fn G_InitNew(skill: c.skill_t, episode: c_int, map: c_int) void {
+pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
     if (paused) {
         paused = false;
         c.S_ResumeSound();
-    }
-
-    var _skill = skill;
-
-    if (_skill > c.sk_nightmare) {
-        _skill = c.sk_nightmare;
     }
 
     var _episode = episode;
@@ -1277,20 +1276,20 @@ pub fn G_InitNew(skill: c.skill_t, episode: c_int, map: c_int) void {
 
     M_ClearRandom();
 
-    if (_skill == c.sk_nightmare or c.respawnparm != c.false) {
+    if (skill == .Nightmare or c.respawnparm != c.false) {
         respawnmonsters = c.true;
     } else {
         respawnmonsters = c.false;
     }
 
-    if (c.fastparm != c.false or (_skill == c.sk_nightmare and gameskill != c.sk_nightmare)) {
+    if (c.fastparm != c.false or (skill == .Nightmare and gameskill != .Nightmare)) {
         for (c.S_SARG_RUN1..c.S_SARG_PAIN2+1) |i| {
             c.states[i].tics >>= 1;
         }
         c.mobjinfo[c.MT_BRUISERSHOT].speed = 20*c.FRACUNIT;
         c.mobjinfo[c.MT_HEADSHOT].speed = 20*c.FRACUNIT;
         c.mobjinfo[c.MT_TROOPSHOT].speed = 20*c.FRACUNIT;
-    } else if (_skill != c.sk_nightmare and gameskill == c.sk_nightmare) {
+    } else if (skill != .Nightmare and gameskill == .Nightmare) {
         for (c.S_SARG_RUN1..c.S_SARG_PAIN2+1) |i| {
             c.states[i].tics <<= 1;
         }
@@ -1312,7 +1311,7 @@ pub fn G_InitNew(skill: c.skill_t, episode: c_int, map: c_int) void {
     viewactive = c.true;
     gameepisode = episode;
     gamemap = _map;
-    gameskill = _skill;
+    gameskill = skill;
 
     viewactive = c.true;
 
@@ -1415,7 +1414,7 @@ pub fn G_BeginRecording() void {
 
     demo_p[0] = c.VERSION;
     demo_p += 1;
-    demo_p[0] = @intCast(gameskill);
+    demo_p[0] = @intCast(@intFromEnum(gameskill));
     demo_p += 1;
     demo_p[0] = @intCast(gameepisode);
     demo_p += 1;
@@ -1463,7 +1462,7 @@ fn G_DoPlayDemo() void {
         return;
     }
 
-    const skill: c.skill_t = demo_p[0];
+    const skill: Skill = @enumFromInt(demo_p[0]);
     demo_p += 1;
     const episode: c_int = demo_p[0];
     demo_p += 1;

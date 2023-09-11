@@ -1,11 +1,10 @@
 const c = @cImport({
-    @cInclude("doomdef.h");
     @cInclude("doomstat.h");
     @cInclude("doomtype.h");
     @cInclude("dstrings.h");
+    @cInclude("d_event.h");
     @cInclude("d_net.h");
     @cInclude("d_player.h");
-    @cInclude("g_game.h");
     @cInclude("r_main.h");
     @cInclude("s_sound.h");
     @cInclude("sounds.h");
@@ -58,6 +57,7 @@ const G_BeginRecording = g_game.G_BeginRecording;
 const G_BuildTiccmd = g_game.G_BuildTiccmd;
 const G_DeferedPlayDemo = g_game.G_DeferedPlayDemo;
 const G_InitNew = g_game.G_InitNew;
+const G_LoadGame = g_game.G_LoadGame;
 const G_RecordDemo = g_game.G_RecordDemo;
 const G_Responder = g_game.G_Responder;
 const G_TimeDemo = g_game.G_TimeDemo;
@@ -68,6 +68,13 @@ const W_InitMultipleFiles = w_wad.W_InitMultipleFiles;
 const W_CacheLumpName = w_wad.W_CacheLumpName;
 
 const wipe = @import("f_wipe.zig");
+
+const doomdef = @import("doomdef.zig");
+const MAXPLAYERS = doomdef.MAXPLAYERS;
+const SCREENWIDTH = doomdef.SCREENWIDTH;
+const SCREENHEIGHT = doomdef.SCREENHEIGHT;
+const GameState = doomdef.GameState;
+const Skill = doomdef.Skill;
 
 const MAXWADFILES = 20;
 
@@ -83,7 +90,7 @@ export var singletics: c.boolean = c.false; // debug flag to cancel adaptiveness
 
 extern var inhelpscreens: c.boolean;
 
-export var startskill: c.skill_t = 0;
+export var startskill: Skill = .Medium;
 export var startepisode: c_int = 0;
 export var startmap: c_int = 0;
 export var autostart: c.boolean = c.false;
@@ -151,7 +158,7 @@ pub export fn D_ProcessEvents() void {
 //
 
 // wipegamestate can be set to -1 to force a wipe on the next draw
-pub export var wipegamestate: c.gamestate_t = c.GS_DEMOSCREEN;
+pub export var wipegamestate: GameState = .DemoScreen;
 extern var setsizeneeded: c.boolean;
 extern var automapactive: c.boolean;
 extern var menuactive: c.boolean;
@@ -164,8 +171,7 @@ fn D_Display() void {
         var menuactivestate = false;
         var inhelpscreensstate = false;
         var fullscreen = false;
-        // TODO: Add an Invalid value to gamestate_t
-        var oldgamestate: c.gamestate_t = std.math.maxInt(c.gamestate_t);
+        var oldgamestate: GameState = .ForceRedraw;
         var borderdrawcount: c_int = 0;
     };
 
@@ -173,79 +179,77 @@ fn D_Display() void {
         return; // for comparative timing / profiling
     }
 
-    var redrawsbar = false;
-
     // change the view size if needed
     if (setsizeneeded != c.false) {
         R_ExecuteSetViewSize();
-        S.oldgamestate = std.math.maxInt(c.gamestate_t); // force background redraw
+        S.oldgamestate = .ForceRedraw; // force background redraw
         S.borderdrawcount = 3;
     }
 
     // save the current screen if about to wipe
     var dowipe = false;
-    if (c.gamestate != wipegamestate) {
+    if (g_game.gamestate != wipegamestate) {
         dowipe = true;
         wipe.StartScreen();
     }
 
-    if (c.gamestate == c.GS_LEVEL and c.gametic != 0)
+    if (g_game.gamestate == .Level and c.gametic != 0) {
         HU_Erase();
+    }
 
     // do buffered drawing
-    switch (c.gamestate) {
-        c.GS_LEVEL => blk: {
+    switch (g_game.gamestate) {
+        .Level => blk: {
             if (c.gametic == 0)
                 break :blk;
-            if (automapactive != c.false)
+            if (automapactive != c.false) {
                 AM_Drawer();
-            if (dowipe or (c.viewheight != 200 and S.fullscreen))
-                redrawsbar = true;
-            if (S.inhelpscreensstate and inhelpscreens != c.true)
-                redrawsbar = true; // just put away the help screen
+            }
+            const redrawsbar =
+                dowipe
+                or (c.viewheight != 200 and S.fullscreen)
+                // just put away the help screen
+                or S.inhelpscreensstate and inhelpscreens != c.true;
             ST_Drawer(c.viewheight == 200, redrawsbar);
             S.fullscreen = c.viewheight == 200;
         },
 
-        c.GS_INTERMISSION => {
-            WI_Drawer();
-        },
+        .Intermission => WI_Drawer(),
+        .Finale => F_Drawer(),
+        .DemoScreen => D_PageDrawer(),
 
-        c.GS_FINALE => {
-            F_Drawer();
-        },
-
-        c.GS_DEMOSCREEN => {
-            D_PageDrawer();
-        },
-
-        else => {}, // TODO: Convert gamestate_t to Zig enum and eliminate this else
+        .ForceWipe,
+        .ForceRedraw => {},
     }
 
     // draw buffered stuff to screen
     I_UpdateNoBlit();
 
     // draw the view directly
-    if (c.gamestate == c.GS_LEVEL and automapactive == c.false and c.gametic != 0)
+    if (g_game.gamestate == .Level and automapactive == c.false and c.gametic != 0) {
         c.R_RenderPlayerView(&c.players[@intCast(c.displayplayer)]);
+    }
 
-    if (c.gamestate == c.GS_LEVEL and c.gametic != 0)
+    if (g_game.gamestate == .Level and c.gametic != 0) {
         HU_Drawer();
+    }
 
     // clean up border stuff
-    if (c.gamestate != S.oldgamestate and c.gamestate != c.GS_LEVEL)
+    if (g_game.gamestate != S.oldgamestate and g_game.gamestate != .Level) {
         I_SetPalette(@ptrCast(W_CacheLumpName("PLAYPAL", .Cache)));
+    }
 
     // see if the border needs to be initially drawn
-    if (c.gamestate == c.GS_LEVEL and S.oldgamestate != c.GS_LEVEL) {
+    if (g_game.gamestate == .Level and S.oldgamestate != .Level) {
         S.viewactivestate = false; // view was not active
         R_FillBackScreen(); // draw the pattern into the back screen
     }
 
     // see if the border needs to be updated to the screen
-    if (c.gamestate == c.GS_LEVEL and automapactive == c.false and c.scaledviewwidth != 320) {
-        if (menuactive != c.false or S.menuactivestate or !S.viewactivestate)
+    if (g_game.gamestate == .Level and automapactive == c.false and c.scaledviewwidth != 320) {
+        if (menuactive != c.false or S.menuactivestate or !S.viewactivestate) {
             S.borderdrawcount = 3;
+        }
         if (S.borderdrawcount != 0) {
             R_DrawViewBorder(); // erase old menu stuff
             S.borderdrawcount -= 1;
@@ -255,8 +259,8 @@ fn D_Display() void {
     S.menuactivestate = menuactive != c.false;
     S.viewactivestate = viewactive != c.false;
     S.inhelpscreensstate = inhelpscreens != c.false;
-    wipegamestate = c.gamestate;
-    S.oldgamestate = c.gamestate;
+    wipegamestate = g_game.gamestate;
+    S.oldgamestate = g_game.gamestate;
 
     // draw pause pic
     if (g_game.paused) {
@@ -275,7 +279,7 @@ fn D_Display() void {
     }
 
     // wipe update
-    wipe.EndScreen(0, 0, c.SCREENWIDTH, c.SCREENHEIGHT);
+    wipe.EndScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
 
     var wipestart = I_GetTime() - 1;
     var done = false;
@@ -294,7 +298,7 @@ fn D_Display() void {
             }
         }
         wipestart = nowtime;
-        done = wipe.ScreenWipe(.Melt, c.SCREENWIDTH, c.SCREENHEIGHT, @intCast(tics));
+        done = wipe.ScreenWipe(.Melt, SCREENWIDTH, SCREENHEIGHT, @intCast(tics));
         I_UpdateNoBlit();
         M_Drawer(); // menu is drawn even on top of wipes
         I_FinishUpdate(); // page flip or blit buffer
@@ -305,7 +309,7 @@ fn D_Display() void {
 //  D_DoomLoop
 //
 extern var demorecording: c.boolean;
-extern var netcmds: [c.MAXPLAYERS][c.BACKUPTICS]TicCmd;
+extern var netcmds: [MAXPLAYERS][c.BACKUPTICS]TicCmd;
 
 fn D_DoomLoop() noreturn {
     if (demorecording != c.false) {
@@ -400,7 +404,7 @@ export fn D_DoAdvanceDemo() void {
     switch (demosequence) {
         0 => {
             pagetic = if (c.gamemode == c.commercial) 35 * 11 else 170;
-            c.gamestate = c.GS_DEMOSCREEN;
+            g_game.gamestate = .DemoScreen;
             pagename = "TITLEPIC";
             c.S_StartMusic(if (c.gamemode == c.commercial) c.mus_dm2ttl else c.mus_intro);
         },
@@ -409,14 +413,14 @@ export fn D_DoAdvanceDemo() void {
         },
         2 => {
             pagetic = 200;
-            c.gamestate = c.GS_DEMOSCREEN;
+            g_game.gamestate = .DemoScreen;
             pagename = "CREDIT";
         },
         3 => {
             G_DeferedPlayDemo("demo2");
         },
         4 => {
-            c.gamestate = c.GS_DEMOSCREEN;
+            g_game.gamestate = .DemoScreen;
             if (c.gamemode == c.commercial) {
                 pagetic = 35 * 11;
                 pagename = "TITLEPIC";
@@ -814,14 +818,14 @@ pub fn D_DoomMain() noreturn {
     }
 
     // get skill / episode / map from parms
-    startskill = c.sk_medium;
+    startskill = .Medium;
     startepisode = 1;
     startmap = 1;
     autostart = c.false;
 
     p = @intCast(M_CheckParm("-skill"));
     if (p != 0 and p < myargc - 1) {
-        startskill = myargv[p + 1][0] - '1';
+        startskill = @enumFromInt(myargv[p + 1][0] - '1');
         autostart = c.true;
     }
 
@@ -981,7 +985,7 @@ pub fn D_DoomMain() noreturn {
                 fmt.bufPrintZ(&filebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}) catch unreachable
             else
                 fmt.bufPrintZ(&filebuf, c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}) catch unreachable;
-        c.G_LoadGame(file.ptr);
+        G_LoadGame(file);
     }
 
     if (c.gameaction != c.ga_loadgame) {

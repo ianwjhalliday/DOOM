@@ -9,13 +9,15 @@ const c = @cImport({
     @cInclude("tables.h");
 });
 
+const doomdef = @import("doomdef.zig");
+const PowerType = doomdef.PowerType;
+const WeaponType = doomdef.WeaponType;
+
 pub const player_t = c.player_t;
 
-// TODO: restore imports once no C files call FixedMul
-// const fixed_t = @import("m_fixed.zig").fixed_t;
-// const FixedMul = @import("m_fixed.zig").FixedMul;
-const fixed_t = c_int;
-extern fn FixedMul(a: fixed_t, b: fixed_t) fixed_t;
+const m_fixed = @import("m_fixed.zig");
+const fixed_t = m_fixed.fixed_t;
+const FixedMul = m_fixed.FixedMul;
 
 // Index of the special effects (INVUL inverse) map.
 const INVERSECOLORMAP = 32;
@@ -218,21 +220,28 @@ pub export fn P_PlayerThink(player: *c.player_t) void {
         // The actual changing of the weapon is done
         //  when the weapon psprite can do it
         //  (read: not in the middle of an attack).
-        var newweapon = (cmd.buttons & c.BT_WEAPONMASK) >> c.BT_WEAPONSHIFT;
+        var newweapon: WeaponType = @enumFromInt((cmd.buttons & c.BT_WEAPONMASK) >> c.BT_WEAPONSHIFT);
 
-        if (newweapon == c.wp_fist and player.weaponowned[c.wp_chainsaw] != 0 and player.weaponowned[c.wp_chainsaw] != 0 and !(player.readyweapon == c.wp_chainsaw and player.powers[c.pw_strength] != 0)) {
-            newweapon = c.wp_chainsaw;
+        if (newweapon == .Fist
+            and player.weaponowned[@intFromEnum(WeaponType.Chainsaw)] != 0
+            and !(player.readyweapon == @intFromEnum(WeaponType.Chainsaw)
+                and player.powers[@intFromEnum(PowerType.Strength)] != 0)) {
+            newweapon = .Chainsaw;
         }
 
-        if (c.gamemode == c.commercial and newweapon == c.wp_shotgun and player.weaponowned[c.wp_supershotgun] != 0 and player.readyweapon != c.wp_supershotgun) {
-            newweapon = c.wp_supershotgun;
+        if (c.gamemode == c.commercial
+            and newweapon == .Shotgun
+            and player.weaponowned[@intFromEnum(WeaponType.SuperShotgun)] != 0
+            and player.readyweapon != @intFromEnum(WeaponType.SuperShotgun)) {
+            newweapon = .SuperShotgun;
         }
 
-        if (player.weaponowned[@intCast(newweapon)] != 0 and newweapon != player.readyweapon) {
+        if (player.weaponowned[@intFromEnum(newweapon)] != 0
+            and newweapon != @as(WeaponType, @enumFromInt(player.readyweapon))) {
             // Do not go to plasma or BFG in shareware,
             //  even if cheated.
-            if ((newweapon != c.wp_plasma and newweapon != c.wp_bfg) or c.gamemode != c.shareware) {
-                player.pendingweapon = @intCast(newweapon);
+            if ((newweapon != .Plasma and newweapon != .Bfg) or c.gamemode != c.shareware) {
+                player.pendingweapon = @intFromEnum(newweapon);
             }
         }
     }
@@ -253,27 +262,27 @@ pub export fn P_PlayerThink(player: *c.player_t) void {
     // Counters, time dependend power ups.
 
     // Strength counts up to diminish fade.
-    if (player.powers[c.pw_strength] != 0) {
-        player.powers[c.pw_strength] += 1;
+    if (player.powers[@intFromEnum(PowerType.Strength)] != 0) {
+        player.powers[@intFromEnum(PowerType.Strength)] += 1;
     }
 
-    if (player.powers[c.pw_invulnerability] != 0) {
-        player.powers[c.pw_invulnerability] -= 1;
+    if (player.powers[@intFromEnum(PowerType.Invulnerability)] != 0) {
+        player.powers[@intFromEnum(PowerType.Invulnerability)] -= 1;
     }
 
-    if (player.powers[c.pw_invisibility] != 0) {
-        player.powers[c.pw_invisibility] -= 1;
-        if (player.powers[c.pw_invisibility] == 0) {
+    if (player.powers[@intFromEnum(PowerType.Invisibility)] != 0) {
+        player.powers[@intFromEnum(PowerType.Invisibility)] -= 1;
+        if (player.powers[@intFromEnum(PowerType.Invisibility)] == 0) {
             player.mo[0].flags &= ~c.MF_SHADOW;
         }
     }
 
-    if (player.powers[c.pw_infrared] != 0) {
-        player.powers[c.pw_infrared] -= 1;
+    if (player.powers[@intFromEnum(PowerType.Infrared)] != 0) {
+        player.powers[@intFromEnum(PowerType.Infrared)] -= 1;
     }
 
-    if (player.powers[c.pw_ironfeet] != 0) {
-        player.powers[c.pw_ironfeet] -= 1;
+    if (player.powers[@intFromEnum(PowerType.IronFeet)] != 0) {
+        player.powers[@intFromEnum(PowerType.IronFeet)] -= 1;
     }
 
     if (player.damagecount != 0) {
@@ -285,14 +294,16 @@ pub export fn P_PlayerThink(player: *c.player_t) void {
     }
 
     // Handling colormaps.
-    if (player.powers[c.pw_invulnerability] != 0) {
-        if (player.powers[c.pw_invulnerability] > 4 * 32 or player.powers[c.pw_invulnerability] & 8 != 0) {
+    if (player.powers[@intFromEnum(PowerType.Invulnerability)] != 0) {
+        if (player.powers[@intFromEnum(PowerType.Invulnerability)] > 4 * 32
+            or player.powers[@intFromEnum(PowerType.Invulnerability)] & 8 != 0) {
             player.fixedcolormap = INVERSECOLORMAP;
         } else {
             player.fixedcolormap = 0;
         }
-    } else if (player.powers[c.pw_infrared] != 0) {
-        if (player.powers[c.pw_infrared] > 4 * 32 or player.powers[c.pw_infrared] & 8 != 0) {
+    } else if (player.powers[@intFromEnum(PowerType.Infrared)] != 0) {
+        if (player.powers[@intFromEnum(PowerType.Infrared)] > 4 * 32
+            or player.powers[@intFromEnum(PowerType.Infrared)] & 8 != 0) {
             // almost full bright
             player.fixedcolormap = 1;
         } else {

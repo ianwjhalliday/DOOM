@@ -1,13 +1,10 @@
 pub const c = @cImport({
-    @cInclude("doomdef.h");
     @cInclude("doomstat.h");
     @cInclude("dstrings.h");
     @cInclude("d_event.h");
-    @cInclude("d_items.h");
     @cInclude("d_player.h");
     @cInclude("tables.h");
     @cInclude("am_map.h");
-    @cInclude("g_game.h");
     @cInclude("p_inter.h");
     @cInclude("r_main.h");
     @cInclude("sounds.h");
@@ -48,6 +45,11 @@ const STlib_updateBinIcon = st_lib.STlib_updateBinIcon;
 
 const I_SetPalette = @import("i_video.zig").I_SetPalette;
 
+const d_items = @import("d_items.zig");
+
+const g_game = @import("g_game.zig");
+const G_DeferedInitNew = g_game.G_DeferedInitNew;
+
 const w_wad = @import("w_wad.zig");
 const W_CacheLumpName = w_wad.W_CacheLumpName;
 const W_CacheLumpNum = w_wad.W_CacheLumpNum;
@@ -57,11 +59,21 @@ const z_zone = @import("z_zone.zig");
 const Z_ChangeTag = z_zone.Z_ChangeTag;
 const Z_Malloc = z_zone.Z_Malloc;
 
+const doomdef = @import("doomdef.zig");
+const MAXPLAYERS = doomdef.MAXPLAYERS;
+const SCREEN_MUL = doomdef.SCREEN_MUL;
+const SCREENWIDTH = doomdef.SCREENWIDTH;
+const SCREENHEIGHT = doomdef.SCREENHEIGHT;
+const TICRATE = doomdef.TICRATE;
+const Card = doomdef.Card;
+const PowerType = doomdef.PowerType;
+const WeaponType = doomdef.WeaponType;
+
 // Size of statusbar.
 // Now sensitive for scaling.
-pub const ST_HEIGHT = 32 * c.SCREEN_MUL;
-pub const ST_WIDTH = c.SCREENWIDTH;
-pub const ST_Y = (c.SCREENHEIGHT - ST_HEIGHT);
+pub const ST_HEIGHT = 32 * SCREEN_MUL;
+pub const ST_WIDTH = SCREENWIDTH;
+pub const ST_Y = (SCREENHEIGHT - ST_HEIGHT);
 
 //
 // STATUS BAR DATA
@@ -103,11 +115,11 @@ const ST_DEADFACE = (ST_GODFACE + 1);
 const ST_FACESX = 143;
 const ST_FACESY = 168;
 
-const ST_EVILGRINCOUNT = (2 * c.TICRATE);
-const ST_STRAIGHTFACECOUNT = (c.TICRATE / 2);
-const ST_TURNCOUNT = (1 * c.TICRATE);
-const ST_OUCHCOUNT = (1 * c.TICRATE);
-const ST_RAMPAGEDELAY = (2 * c.TICRATE);
+const ST_EVILGRINCOUNT = (2 * TICRATE);
+const ST_STRAIGHTFACECOUNT = (TICRATE / 2);
+const ST_TURNCOUNT = (1 * TICRATE);
+const ST_OUCHCOUNT = (1 * TICRATE);
+const ST_RAMPAGEDELAY = (2 * TICRATE);
 
 const ST_MUCHPAIN = 20;
 
@@ -220,7 +232,7 @@ var tallpercent: *c.patch_t = undefined;
 var shortnum: [10]*c.patch_t = undefined;
 
 // 3 key-cards, 3 skulls
-var keys: [c.NUMCARDS]*c.patch_t = undefined;
+var keys: [@intFromEnum(Card.NUMCARDS)]*c.patch_t = undefined;
 
 // face status patches
 var faces: [ST_NUMFACES]*c.patch_t = undefined;
@@ -272,7 +284,7 @@ var st_oldhealth: c_int = -1;
 
 // used for evil grin
 // TODO: Convert to bool when player_t::weaponowned is converted to bool
-var oldweaponsowned = [_]c.boolean{c.false} ** c.NUMWEAPONS;
+var oldweaponsowned = [_]c.boolean{c.false} ** @intFromEnum(WeaponType.NUMWEAPONS);
 
 // count until face changes
 var st_facecount: c_int = 0;
@@ -497,7 +509,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
           // TODO: Convert `powers` to bool
           if (plyr.powers[i] == 0) {
             _ = c.P_GivePower(plyr, @intCast(i));
-          } else if (i != c.pw_strength) {
+          } else if (i != @intFromEnum(PowerType.Strength)) {
             plyr.powers[i] = 1;
           } else {
             plyr.powers[i] = 0;
@@ -515,8 +527,8 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
       // 'choppers' invulnerability & chainsaw
       else if (cht_CheckCheat(&cheat_choppers, @intCast(ev.data1)) != 0)
       {
-        plyr.weaponowned[c.wp_chainsaw] = c.true;
-        plyr.powers[c.pw_invulnerability] = c.true;
+        plyr.weaponowned[@intFromEnum(WeaponType.Chainsaw)] = c.true;
+        plyr.powers[@intFromEnum(PowerType.Invulnerability)] = c.true;
         plyr.message = c.STSTR_CHOPPERS;
       }
       // 'mypos' for player position
@@ -586,7 +598,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
 
       // So be it.
       plyr.message = c.STSTR_CLEV;
-      c.G_DeferedInitNew(c.gameskill, epsd, map);
+      G_DeferedInitNew(g_game.gameskill, epsd, map);
     }
   }
   return c.false;
@@ -741,7 +753,7 @@ fn ST_updateFaceWidget() void {
     {
         // invulnerability
         if ((plyr.cheats & c.CF_GODMODE) != 0
-            or plyr.powers[c.pw_invulnerability] != 0)
+            or plyr.powers[@intFromEnum(PowerType.Invulnerability)] != 0)
         {
             S.priority = 4;
 
@@ -769,17 +781,17 @@ fn ST_updateWidgets() void {
     // must redirect the pointer if the ready weapon has changed.
     //  if (w_ready.data != plyr.readyweapon)
     //  {
-    if (c.weaponinfo[plyr.readyweapon].ammo == c.am_noammo) {
+    if (d_items.weaponinfo[plyr.readyweapon].ammo == .NoAmmo) {
         w_ready.num = &S.largeammo;
     } else {
-        w_ready.num = &plyr.ammo[c.weaponinfo[plyr.readyweapon].ammo];
+        w_ready.num = &plyr.ammo[@intFromEnum(d_items.weaponinfo[plyr.readyweapon].ammo)];
     }
     //{
     // static int tic=0;
     // static int dir=-1;
     // if (!(tic&15))
-    //   plyr.ammo[c.weaponinfo[plyr.readyweapon].ammo]+=dir;
-    // if (plyr.ammo[c.weaponinfo[plyr.readyweapon].ammo] == -100)
+    //   plyr.ammo[d_items.weaponinfo[plyr.readyweapon].ammo]+=dir;
+    // if (plyr.ammo[d_items.weaponinfo[plyr.readyweapon].ammo] == -100)
     //   dir = 1;
     // tic++;
     // }
@@ -812,7 +824,7 @@ fn ST_updateWidgets() void {
     st_fragson = c.deathmatch != 0 and st_statusbaron;
     st_fragscount = 0;
 
-    for (0..c.MAXPLAYERS) |i| {
+    for (0..MAXPLAYERS) |i| {
         if (i != c.consoleplayer) {
             st_fragscount += plyr.frags[i];
         } else {
@@ -832,9 +844,9 @@ var st_palette: c_int = 0;
 fn ST_doPaletteStuff() void {
     var cnt = plyr.damagecount;
 
-    if (plyr.powers[c.pw_strength] != 0) {
+    if (plyr.powers[@intFromEnum(PowerType.Strength)] != 0) {
         // slowly fade the berzerk out
-        const bzc = 12 - (plyr.powers[c.pw_strength]>>6);
+        const bzc = 12 - (plyr.powers[@intFromEnum(PowerType.Strength)]>>6);
 
         if (bzc > cnt) {
             cnt = bzc;
@@ -858,8 +870,8 @@ fn ST_doPaletteStuff() void {
         }
 
         palette += STARTBONUSPALS;
-    } else if (plyr.powers[c.pw_ironfeet] > 4*32
-              or plyr.powers[c.pw_ironfeet]&8 != 0) {
+    } else if (plyr.powers[@intFromEnum(PowerType.IronFeet)] > 4*32
+              or plyr.powers[@intFromEnum(PowerType.IronFeet)]&8 != 0) {
         palette = RADIATIONPAL;
     } else {
         palette = 0;
@@ -952,7 +964,7 @@ fn ST_loadGraphics() void {
     tallpercent = @ptrCast(@alignCast(W_CacheLumpName("STTPRCNT", .Static)));
 
     // key cards
-    for (0..c.NUMCARDS) |i| {
+    for (0..@intFromEnum(Card.NUMCARDS)) |i| {
         _ = fmt.bufPrintZ(&namebuf, "STKEYS{d}", .{ i }) catch unreachable;
         keys[i] = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));
     }
@@ -1088,7 +1100,7 @@ fn ST_createWidgets() void {
                   ST_AMMOX,
                   ST_AMMOY,
                   &tallnum,
-                  &plyr.ammo[c.weaponinfo[plyr.readyweapon].ammo],
+                  &plyr.ammo[@intFromEnum(d_items.weaponinfo[plyr.readyweapon].ammo)],
                   &st_statusbaron,
                   ST_AMMOWIDTH );
 
