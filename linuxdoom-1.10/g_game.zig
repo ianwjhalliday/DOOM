@@ -56,11 +56,14 @@ const m_random = @import("m_random.zig");
 const M_ClearRandom = m_random.M_ClearRandom;
 const P_Random = m_random.P_Random;
 
-// const P_Ticker = @import("p_tick.zig").P_Ticker;
-extern fn P_Ticker() void;
-const ST_Ticker = @import("st_stuff.zig").ST_Ticker;
+// HACK: importing p_tick from p_telept.zig to work around duplicate export issue
+// TODO: import p_tick.zig directly once p_spec is converted to zig
+const p_tick = @import("p_telept.zig").p_tick;
+const P_Ticker = p_tick.P_Ticker;
 
-const ST_Responder = @import("st_stuff.zig").ST_Responder;
+const st_stuff = @import("st_stuff.zig");
+const ST_Ticker = st_stuff.ST_Ticker;
+const ST_Responder = st_stuff.ST_Responder;
 
 const w_wad = @import("w_wad.zig");
 const W_CacheLumpName = w_wad.W_CacheLumpName;
@@ -1066,6 +1069,7 @@ pub export fn G_LoadGame(name: [*:0]const u8) void {
 const VERSIONSIZE = 16;
 
 
+extern fn A_BrainAwake(mo: *c.mobj_t) void;
 fn G_DoLoadGame() void {
     gameaction = c.ga_nothing;
 
@@ -1121,6 +1125,23 @@ fn G_DoLoadGame() void {
 
     // draw the pattern into the back screen
     c.R_FillBackScreen();
+
+    // Hack fix for crash on loading save games in map 30
+    if (gamemap == 30 and c.gamemode == c.commercial) {
+        var thinker = p_tick.thinkercap.next orelse &p_tick.thinkercap;
+        while (thinker != &p_tick.thinkercap) : (thinker = thinker.next.?) {
+            // not a mobj
+            if (thinker.function.acp1 != @as(p_tick.actionf_p1, @ptrCast(&c.P_MobjThinker))) {
+                continue;
+            }
+
+            const m = @as(*c.mobj_t, @ptrCast(thinker));
+
+            if (m.type == c.MT_BOSSBRAIN) {
+                A_BrainAwake(m);
+            }
+        }
+    }
 }
 
 

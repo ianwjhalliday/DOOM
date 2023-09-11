@@ -8,7 +8,7 @@ const c = @cImport({
     @cInclude("sounds.h");
 });
 
-const p_tick = @import("p_tick.zig");
+pub const p_tick = @import("p_tick.zig");
 
 
 //

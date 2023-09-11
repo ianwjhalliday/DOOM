@@ -1970,6 +1970,15 @@ void A_SpawnFly (mobj_t* mo)
 	
     targ = mo->target;
 
+    if (!targ)
+    {
+        // Can occur when reloading a save game
+        // look for a new target
+
+        // Use self location as approximation of target
+        targ = mo;
+    }
+
     // First spawn teleport fog.
     fog = P_SpawnMobj (targ->x, targ->y, targ->z, MT_SPAWNFIRE);
     S_StartSound (fog, sfx_telept);
