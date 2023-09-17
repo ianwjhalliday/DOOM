@@ -5,12 +5,15 @@ const c = @cImport({
     @cInclude("arpa/inet.h");
     @cInclude("netdb.h");
     @cInclude("doomstat.h");
-    @cInclude("d_net.h");
 });
 
 const std = @import("std");
 const mem = std.mem;
 const os = std.os;
+
+const d_net = @import("d_net.zig");
+const DoomCom = d_net.DoomCom;
+const DoomData = d_net.DoomData;
 
 const I_Error = @import("i_system.zig").I_Error;
 const m_argv = @import("m_argv.zig");
@@ -26,7 +29,7 @@ var DOOMPORT: u16 = 5000 + 0x1d;
 var sendsocket: os.socket_t = undefined;
 var insocket: os.socket_t = undefined;
 
-var sendaddress: [c.MAXNETNODES]os.sockaddr.in = undefined;
+var sendaddress: [d_net.MAXNETNODES]os.sockaddr.in = undefined;
 
 
 //
@@ -55,25 +58,22 @@ fn BindToLocalPort(s: os.socket_t, port: u16) void {
 }
 
 
-extern var doomcom: *c.doomcom_t;
-extern var netbuffer: *c.doomdata_t;
-
 //
 // PacketSend
 //
 fn PacketSend() void {
-    var sw = c.doomdata_t{
+    var sw = DoomData{
         // byte swap
-        .checksum = mem.nativeToBig(c_uint, netbuffer.checksum),
-        .player = netbuffer.player,
-        .retransmitfrom = netbuffer.retransmitfrom,
-        .starttic = netbuffer.starttic,
-        .numtics = netbuffer.numtics,
+        .checksum = mem.nativeToBig(c_uint, d_net.netbuffer.checksum),
+        .player = d_net.netbuffer.player,
+        .retransmitfrom = d_net.netbuffer.retransmitfrom,
+        .starttic = d_net.netbuffer.starttic,
+        .numtics = d_net.netbuffer.numtics,
         .cmds = undefined,
     };
 
-    for (0..netbuffer.numtics) |i| {
-        sw.cmds[i] = netbuffer.cmds[i];
+    for (0..d_net.netbuffer.numtics) |i| {
+        sw.cmds[i] = d_net.netbuffer.cmds[i];
         sw.cmds[i].angleturn = mem.nativeToBig(c_short, sw.cmds[i].angleturn);
         sw.cmds[i].consistancy = mem.nativeToBig(c_short, sw.cmds[i].consistancy);
     }
@@ -81,10 +81,10 @@ fn PacketSend() void {
     //std.debug.print("sending {}\n", .{gametic});
     _ = os.sendto(
         sendsocket,
-        mem.asBytes(&sw)[0..@intCast(doomcom.datalength)],
+        mem.asBytes(&sw)[0..@intCast(d_net.doomcom.datalength)],
         0,
-        @ptrCast(&sendaddress[@intCast(doomcom.remotenode)]),
-        sendaddress[@intCast(doomcom.remotenode)].len
+        @ptrCast(&sendaddress[@intCast(d_net.doomcom.remotenode)]),
+        sendaddress[@intCast(d_net.doomcom.remotenode)].len
     ) catch { // |err|
         // I_Error("SendPacket error: %s", @errorName(err).ptr);
     };
@@ -97,7 +97,7 @@ fn PacketSend() void {
 fn PacketGet() void {
     var fromaddress = os.sockaddr.in{.port = 0, .addr = 0};
     var sl: os.socklen_t = @sizeOf(os.sockaddr.in);
-    var sw: c.doomdata_t = undefined;
+    var sw: DoomData = undefined;
 
     const rc = os.recvfrom(
         insocket,
@@ -109,7 +109,7 @@ fn PacketGet() void {
         if (err != error.WouldBlock) {
             I_Error("GetPacket: %s", @errorName(err).ptr);
         }
-        doomcom.remotenode = -1;               // no packet
+        d_net.doomcom.remotenode = -1;               // no packet
         return;
     };
 
@@ -125,30 +125,30 @@ fn PacketGet() void {
     }
 
     // find remote node number
-    for (0..@intCast(doomcom.numnodes)) |i| {
+    for (0..@intCast(d_net.doomcom.numnodes)) |i| {
         if (fromaddress.addr == sendaddress[i].addr) {
-            doomcom.remotenode = @intCast(i);   // good packet from a game player
+            d_net.doomcom.remotenode = @intCast(i);   // good packet from a game player
             break;
         }
     } else {
         // packet is not from one of the players (new game broadcast)
-        doomcom.remotenode = -1;                // no packet
+        d_net.doomcom.remotenode = -1;                // no packet
         return;
     }
 
-    doomcom.datalength = @intCast(rc);
+    d_net.doomcom.datalength = @intCast(rc);
 
     // byte swap
-    netbuffer.checksum = mem.bigToNative(u32, sw.checksum);
-    netbuffer.player = sw.player;
-    netbuffer.retransmitfrom = sw.retransmitfrom;
-    netbuffer.starttic = sw.starttic;
-    netbuffer.numtics = sw.numtics;
+    d_net.netbuffer.checksum = mem.bigToNative(u32, sw.checksum);
+    d_net.netbuffer.player = sw.player;
+    d_net.netbuffer.retransmitfrom = sw.retransmitfrom;
+    d_net.netbuffer.starttic = sw.starttic;
+    d_net.netbuffer.numtics = sw.numtics;
 
-    for (0..netbuffer.numtics) |i| {
-        netbuffer.cmds[i] = sw.cmds[i];
-        netbuffer.cmds[i].angleturn = mem.bigToNative(i16, sw.cmds[i].angleturn);
-        netbuffer.cmds[i].consistancy = mem.bigToNative(i16, sw.cmds[i].consistancy);
+    for (0..d_net.netbuffer.numtics) |i| {
+        d_net.netbuffer.cmds[i] = sw.cmds[i];
+        d_net.netbuffer.cmds[i].angleturn = mem.bigToNative(i16, sw.cmds[i].angleturn);
+        d_net.netbuffer.cmds[i].consistancy = mem.bigToNative(i16, sw.cmds[i].consistancy);
     }
 }
 
@@ -159,27 +159,27 @@ fn PacketGet() void {
 pub export fn I_InitNetwork() void {
     // struct hostent*     hostentry;      // host information entry
 
-    doomcom = std.heap.raw_c_allocator.create(c.doomcom_t) catch unreachable;
-    doomcom.* = std.mem.zeroes(c.doomcom_t);
+    d_net.doomcom = std.heap.raw_c_allocator.create(DoomCom) catch unreachable;
+    d_net.doomcom.* = std.mem.zeroes(DoomCom);
 
     // set up for network
     var i = M_CheckParm("-dup");
     if (i != 0 and i < m_argv.myargc-1) {
-        doomcom.ticdup = m_argv.myargv[@intCast(i+1)][0]-'0';
-        if (doomcom.ticdup < 1) {
-            doomcom.ticdup = 1;
+        d_net.doomcom.ticdup = m_argv.myargv[@intCast(i+1)][0]-'0';
+        if (d_net.doomcom.ticdup < 1) {
+            d_net.doomcom.ticdup = 1;
         }
-        if (doomcom.ticdup > 9) {
-            doomcom.ticdup = 9;
+        if (d_net.doomcom.ticdup > 9) {
+            d_net.doomcom.ticdup = 9;
         }
     } else {
-        doomcom.ticdup = 1;
+        d_net.doomcom.ticdup = 1;
     }
 
     if (M_CheckParm("-extratic") != 0) {
-        doomcom.extratics = 1;
+        d_net.doomcom.extratics = 1;
     } else {
-        doomcom.extratics = 0;
+        d_net.doomcom.extratics = 0;
     }
 
     const p = M_CheckParm("-port");
@@ -197,64 +197,60 @@ pub export fn I_InitNetwork() void {
     if (i == 0) {
         // single player game
         c.netgame = c.false;
-        doomcom.id = c.DOOMCOM_ID;
-        doomcom.numplayers = 1;
-        doomcom.numnodes = 1;
-        doomcom.deathmatch = c.false;
-        doomcom.consoleplayer = 0;
+        d_net.doomcom.id = d_net.DOOMCOM_ID;
+        d_net.doomcom.numplayers = 1;
+        d_net.doomcom.numnodes = 1;
+        d_net.doomcom.deathmatch = c.false;
+        d_net.doomcom.consoleplayer = 0;
         return;
     }
 
     c.netgame = c.true;
 
     // parse player number and host list
-    doomcom.consoleplayer = m_argv.myargv[@intCast(i+1)][0]-'1';
+    d_net.doomcom.consoleplayer = m_argv.myargv[@intCast(i+1)][0]-'1';
 
-    doomcom.numnodes = 1;      // this node for sure
+    d_net.doomcom.numnodes = 1;      // this node for sure
 
     i += 1;
     i += 1; // Not a typo, original C code had i++ before the loop and
             // ++i in the while condition expression
     while (i < m_argv.myargc and m_argv.myargv[@intCast(i)][0] != '-') : (i += 1) {
-        sendaddress[@intCast(doomcom.numnodes)].family = os.AF.INET;
-        sendaddress[@intCast(doomcom.numnodes)].port = mem.nativeToBig(u16, DOOMPORT);
+        sendaddress[@intCast(d_net.doomcom.numnodes)].family = os.AF.INET;
+        sendaddress[@intCast(d_net.doomcom.numnodes)].port = mem.nativeToBig(u16, DOOMPORT);
         if (m_argv.myargv[@intCast(i)][0] == '.') {
-            sendaddress[@intCast(doomcom.numnodes)].addr
+            sendaddress[@intCast(d_net.doomcom.numnodes)].addr
                 = c.inet_addr(m_argv.myargv[@intCast(i)]+1);
         } else {
             const hostentry = c.gethostbyname(m_argv.myargv[@intCast(i)]);
             if (hostentry == null) {
                 I_Error("gethostbyname: couldn't find %s", m_argv.myargv[@intCast(i)]);
             }
-            sendaddress[@intCast(doomcom.numnodes)].addr
+            sendaddress[@intCast(d_net.doomcom.numnodes)].addr
                 = mem.bytesAsValue(u32, hostentry[0].h_addr_list[0][0..4]).*;
         }
-        doomcom.numnodes += 1;
+        d_net.doomcom.numnodes += 1;
     }
 
-    doomcom.id = c.DOOMCOM_ID;
-    doomcom.numplayers = doomcom.numnodes;
+    d_net.doomcom.id = d_net.DOOMCOM_ID;
+    d_net.doomcom.numplayers = d_net.doomcom.numnodes;
 
     // build message to receive
-    var trueval = c.true;   // NOTE: CAREFUL! Doom's `true` is a c_uint whereas Zig's is a byte
     insocket = UDPsocket();
     BindToLocalPort(insocket, mem.nativeToBig(u16, DOOMPORT));
-    // TODO: FIONBIO is apparently not standard across platforms so instead
-    // it is recommended to use fnctl(..., O_NONBLOCK, ...) instead. Will it
-    // work here if we do this following?
-    // std.c.fcntl(insocket, std.os.O.NONBLOCK, &trueval);
-    _ = std.c.ioctl(insocket, std.os.linux.T.FIONBIO, &trueval);
+    const flags = std.c.fcntl(insocket, std.os.F.GETFL);
+    _ = std.c.fcntl(insocket, std.os.F.SETFL, flags | std.os.O.NONBLOCK);
 
     sendsocket = UDPsocket();
 }
 
 
-pub export fn I_NetCmd() void {
-    if (doomcom.command == c.CMD_SEND) {
+pub fn I_NetCmd() void {
+    if (d_net.doomcom.command == d_net.CMD_SEND) {
         PacketSend();
-    } else if (doomcom.command == c.CMD_GET) {
+    } else if (d_net.doomcom.command == d_net.CMD_GET) {
         PacketGet();
     } else {
-        I_Error("Bad net cmd: %i\n", doomcom.command);
+        I_Error("Bad net cmd: %i\n", d_net.doomcom.command);
     }
 }

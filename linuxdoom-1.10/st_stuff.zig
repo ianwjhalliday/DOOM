@@ -14,6 +14,8 @@ pub const c = @cImport({
 extern fn V_CopyRect(srcx: c_int, srcy: c_int, srcscrn: c_int, width: c_int, height: c_int, destx: c_int, desty: c_int, destscr: c_int) void;
 extern fn V_DrawPatch(x: c_int, y: c_int, scrn: c_int, patch: *c.patch_t) void;
 
+const player_t = @import("p_user.zig").player_t;
+
 const fmt = @import("std").fmt;
 
 const d_main = @import("d_main.zig");
@@ -199,7 +201,7 @@ const ST_MAXAMMO3Y = 185;
 const ST_MSGWIDTH = 52;
 
 // main player in game
-var plyr: *c.player_t = undefined;
+var plyr: *player_t = undefined;
 
 // ST_Start() has just been called
 var st_firsttime = false;
@@ -387,6 +389,7 @@ fn ST_refreshBackground() void {
     }
 }
 
+extern fn P_GivePower([*c]player_t, c_int) c.boolean;
 
 // Respond to keyboard input events,
 //  intercept cheats.
@@ -508,7 +511,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
         {
           // TODO: Convert `powers` to bool
           if (plyr.powers[i] == 0) {
-            _ = c.P_GivePower(plyr, @intCast(i));
+            _ = P_GivePower(plyr, @intCast(i));
           } else if (i != @intFromEnum(PowerType.Strength)) {
             plyr.powers[i] = 1;
           } else {
@@ -538,9 +541,9 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
             var buf: [ST_MSGWIDTH]u8 = undefined;
         };
         _ = fmt.bufPrintZ(&S.buf, "ang=0x{x};x,y=(0x{x},0x{x})", .{
-            @as(c_uint, @bitCast(c.players[@intCast(c.consoleplayer)].mo[0].angle)),
-            @as(c_uint, @bitCast(c.players[@intCast(c.consoleplayer)].mo[0].x)),
-            @as(c_uint, @bitCast(c.players[@intCast(c.consoleplayer)].mo[0].y)),
+            @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo[0].angle)),
+            @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo[0].x)),
+            @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo[0].y)),
         }) catch unreachable;
         plyr.message = &S.buf;
       }
@@ -825,7 +828,7 @@ fn ST_updateWidgets() void {
     st_fragscount = 0;
 
     for (0..MAXPLAYERS) |i| {
-        if (i != c.consoleplayer) {
+        if (i != g_game.consoleplayer) {
             st_fragscount += plyr.frags[i];
         } else {
             st_fragscount -= plyr.frags[i];
@@ -984,7 +987,7 @@ fn ST_loadGraphics() void {
     }
 
     // face backgrounds for different color players
-    _ = fmt.bufPrintZ(&namebuf, "STFB{d}", .{ c.consoleplayer }) catch unreachable;
+    _ = fmt.bufPrintZ(&namebuf, "STFB{d}", .{ g_game.consoleplayer }) catch unreachable;
     faceback = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));
 
     // status bar background bits
@@ -1065,7 +1068,7 @@ fn ST_unloadData() void {
 
 fn ST_initData() void {
     st_firsttime = true;
-    plyr = &c.players[@intCast(c.consoleplayer)];
+    plyr = &g_game.players[g_game.consoleplayer];
 
     st_statusbaron = true;
 

@@ -9,12 +9,10 @@ const player_t = @import("p_user.zig").player_t;
 const P_PlayerThink = @import("p_user.zig").P_PlayerThink;
 const MAXPLAYERS = @import("doomdef.zig").MAXPLAYERS;
 
-extern var players: [MAXPLAYERS]player_t;
+const g_game = @import("g_game.zig");
 
 // TODO: import free from z_zone
 extern fn Z_Free(ptr: *anyopaque) void;
-// TODO: import g_game to use g_game.paused instead of via extern
-extern var paused: bool;
 
 export var leveltime: c_int = 0;
 
@@ -114,18 +112,21 @@ fn P_RunThinkers() void {
 // can call G_PlayerExited.
 // Carries out all thinking of monsters and players.
 //
-pub export fn P_Ticker() void {
+pub fn P_Ticker() void {
     // run the tic
-    if (paused) {
+    if (g_game.paused) {
         return;
     }
 
     // pause if in menu and at least one tic has been run
-    if (c.netgame == c.false and c.menuactive != c.false and c.demoplayback == c.false and c.players[@intCast(c.consoleplayer)].viewz != 1) {
+    if (g_game.netgame == c.false
+        and c.menuactive != c.false
+        and g_game.demoplayback == c.false
+        and g_game.players[g_game.consoleplayer].viewz != 1) {
         return;
     }
 
-    for (&players, 0..) |*player, i| {
+    for (&g_game.players, 0..) |*player, i| {
         if (c.playeringame[i] != c.false) {
             P_PlayerThink(player);
         }

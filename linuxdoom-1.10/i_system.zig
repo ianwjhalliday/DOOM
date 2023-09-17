@@ -6,14 +6,15 @@ const c = @cImport({
 });
 
 extern fn I_InitSound() void;
-extern fn D_QuitNetGame() void;
 extern fn I_ShutdownSound() void;
 extern fn I_ShutdownMusic() void;
 
 const std = @import("std");
 const I_ShutdownGraphics = @import("i_video.zig").I_ShutdownGraphics;
+const D_QuitNetGame = @import("d_net.zig").D_QuitNetGame;
 const M_SaveDefaults = @import("m_misc.zig").M_SaveDefaults;
-const G_CheckDemoStatus = @import("g_game.zig").G_CheckDemoStatus;
+const g_game = @import("g_game.zig");
+const G_CheckDemoStatus = g_game.G_CheckDemoStatus;
 
 const TicCmd = @import("d_ticcmd.zig").TicCmd;
 
@@ -93,8 +94,6 @@ pub export fn I_AllocLow(length: c_int) ?[*]u8 {
     }
 }
 
-extern var demorecording: c.boolean;
-
 pub export fn I_Error(errormsg: [*:0]const u8, ...) noreturn {
     // NOTE: zig translate-c fails to parse stdio.h's `stderr` so
     // open it manually here (and also can't case `2` to `*FILE`
@@ -110,7 +109,7 @@ pub export fn I_Error(errormsg: [*:0]const u8, ...) noreturn {
     _ = c.fclose(stderr);
 
     // Shutdown. Here might be other errors.
-    if (demorecording == c.true) {
+    if (g_game.demorecording) {
         _ = G_CheckDemoStatus();
     }
 

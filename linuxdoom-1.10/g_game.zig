@@ -2,7 +2,6 @@ const c = @cImport({
     @cInclude("doomstat.h");
     @cInclude("dstrings.h");
     @cInclude("d_event.h");
-    @cInclude("d_net.h");
     @cInclude("d_player.h");
     @cInclude("d_ticcmd.h");
     @cInclude("am_map.h");
@@ -44,6 +43,8 @@ const Event = d_main.Event;
 const D_AdvanceDemo = d_main.D_AdvanceDemo;
 const D_PageTicker = d_main.D_PageTicker;
 
+const d_net = @import("d_net.zig");
+
 const m_argv = @import("m_argv.zig");
 const M_CheckParm = m_argv.M_CheckParm;
 
@@ -60,6 +61,8 @@ const P_Random = m_random.P_Random;
 // TODO: import p_tick.zig directly once p_spec is converted to zig
 const p_tick = @import("p_telept.zig").p_tick;
 const P_Ticker = p_tick.P_Ticker;
+
+const player_t = @import("p_user.zig").player_t;
 
 const st_stuff = @import("st_stuff.zig");
 const ST_Ticker = st_stuff.ST_Ticker;
@@ -94,7 +97,7 @@ export var gamemap: c_int = 0;
 pub export var paused = false;
 var sendpause = false;     // send a pause event next tic
 var sendsave = false;      // send a save event next tic
-export var usergame: c.boolean = c.false;      // ok to save / end game
+pub export var usergame: c.boolean = c.false;      // ok to save / end game
 
 var timingdemo = false;    // if true, exit with report on completion
 pub var nodrawers = false;     // for comparative timing purposes
@@ -102,22 +105,22 @@ var starttime: c_int = 0;               // for comparative timing purposes
 
 export var viewactive: c.boolean = c.false;
 
-export var deathmatch: c.boolean = c.false;    // only if started as net death
-export var netgame: c.boolean = c.false;       // only true if packets are broadcast
-export var playeringame: [MAXPLAYERS]c.boolean = undefined;
-export var players: [MAXPLAYERS]c.player_t = undefined;
+pub export var deathmatch: c.boolean = c.false;    // only if started as net death
+pub export var netgame: c.boolean = c.false;       // only true if packets are broadcast
+pub export var playeringame: [MAXPLAYERS]c.boolean = undefined;
+pub export var players: [MAXPLAYERS]player_t = undefined;
 
-export var consoleplayer: usize = 0;           // player taking events and displaying
-export var displayplayer: usize = 0;           // view being displayed
-export var gametic: c_int = 0;
+pub export var consoleplayer: usize = 0;           // player taking events and displaying
+pub var displayplayer: usize = 0;           // view being displayed
+pub export var gametic: c_int = 0;
 export var totalkills: c_int = 0;              // for intermission
 export var totalitems: c_int = 0;              // for intermission
 export var totalsecret: c_int = 0;             // for intermission
 
 export var demonamebuf: [32]u8 = undefined;
 var demoname: []const u8 = undefined;
-export var demorecording: c.boolean = c.false;
-export var demoplayback: c.boolean = c.false;
+pub var demorecording = false;
+pub export var demoplayback: c.boolean = c.false;
 var netdemo = false;
 // TODO: Convert these demo globals to an io.Reader/Writer
 var demobuffer: [*]u8 = undefined;
@@ -129,7 +132,7 @@ export var precache: c.boolean = c.true;        // if true, load all graphics at
 
 export var wminfo: c.wbstartstruct_t = undefined;  // parms for world map / intermission
 
-export var consistancy: [MAXPLAYERS][c.BACKUPTICS]c_short = undefined;
+export var consistancy: [MAXPLAYERS][d_net.BACKUPTICS]c_short = undefined;
 
 
 //
@@ -202,7 +205,7 @@ var savedescription = [_]u8{0} ** SAVESTRINGSIZE;
 
 const BODYQUESIZE = 32;
 
-var bodyque: [BODYQUESIZE]*c.mobj_t = undefined;
+var bodyque: [BODYQUESIZE]@TypeOf(players[0].mo) = undefined;
 export var bodyqueslot: c_int = 0;
 
 // TODO: Remove `statcopy` from codebase
@@ -215,12 +218,12 @@ export var statcopy: *anyopaque = undefined;           // for statistics driver
 // or reads it from the demo buffer.
 // If recording a demo, write it out
 //
-pub export fn G_BuildTiccmd(cmd: *TicCmd) void {
+pub fn G_BuildTiccmd(cmd: *TicCmd) void {
     cmd.* = I_BaseTiccmd().*;   // empty, or external driver
 
     // TODO: Fix spelling error in "consistancy" across code base
     cmd.consistancy =
-        consistancy[@intCast(consoleplayer)][@intCast(@mod(c.maketic, c.BACKUPTICS))];
+        consistancy[@intCast(consoleplayer)][@intCast(@mod(d_net.maketic, d_net.BACKUPTICS))];
 
 
     const strafe = gamekeydown[@intCast(key_strafe)] or mousebuttons[@intCast(mousebstrafe)] or joybuttons[@intCast(joybstrafe)];
@@ -235,7 +238,7 @@ pub export fn G_BuildTiccmd(cmd: *TicCmd) void {
         or joyxmove > 0
         or gamekeydown[@intCast(key_right)]
         or gamekeydown[@intCast(key_left)]) {
-        turnheld += c.ticdup;
+        turnheld += d_net.ticdup;
     } else {
         turnheld = 0;
     }
@@ -338,7 +341,7 @@ pub export fn G_BuildTiccmd(cmd: *TicCmd) void {
             dclicktime = 0;
         }
     } else {
-        dclicktime += c.ticdup;
+        dclicktime += d_net.ticdup;
         if (dclicktime > 20) {
             dclicks = 0;
             dclickstate = false;
@@ -359,7 +362,7 @@ pub export fn G_BuildTiccmd(cmd: *TicCmd) void {
             dclicktime2 = 0;
         }
     } else {
-        dclicktime2 += c.ticdup;
+        dclicktime2 += d_net.ticdup;
         if (dclicktime2 > 20) {
             dclicks2 = 0;
             dclickstate2 = false;
@@ -563,7 +566,6 @@ pub fn G_Responder(ev: *Event) bool {
 }
 
 
-extern var netcmds: [MAXPLAYERS][c.BACKUPTICS]c.ticcmd_t;
 extern var player_names: [4][*:0]u8;
 extern var rndindex: c_int;
 
@@ -601,20 +603,20 @@ pub export fn G_Ticker() void {
 
     // get commands, check consistancy,
     // and build new consistancy check
-    const buf: usize = @intCast(@mod(@divTrunc(gametic, c.ticdup), c.BACKUPTICS));
+    const buf: usize = @intCast(@mod(@divTrunc(gametic, d_net.ticdup), d_net.BACKUPTICS));
 
     for (0..MAXPLAYERS) |i| {
         if (playeringame[i] != c.false) {
             const cmd = &players[i].cmd;
 
-            cmd.* = netcmds[i][buf];
+            cmd.* = @as(*@TypeOf(players[i].cmd), @ptrCast(&d_net.netcmds[i][buf])).*;
 
             if (demoplayback != c.false) {
-                // TODO: Remove cast after netcmds is ported to zig and has TicCmd type
+                // TODO: Remove cast after player_t is ported to zig and .cmd has TicCmd type
                 G_ReadDemoTiccmd(@ptrCast(cmd));
             }
-            if (demorecording != c.false) {
-                // TODO: Remove cast after netcmds is ported to zig and has TicCmd type
+            if (demorecording) {
+                // TODO: Remove cast after player_t is ported to zig and .cmd has TicCmd type
                 G_WriteDemoTiccmd(@ptrCast(cmd));
             }
 
@@ -628,8 +630,8 @@ pub export fn G_Ticker() void {
                 players[consoleplayer].message = &S.turbomessage;
             }
 
-            if (netgame != c.false and !netdemo and @mod(gametic, c.ticdup) == 0) {
-                if (gametic > c.BACKUPTICS
+            if (netgame != c.false and !netdemo and @mod(gametic, d_net.ticdup) == 0) {
+                if (gametic > d_net.BACKUPTICS
                     and consistancy[i][buf] != cmd.consistancy) {
                     I_Error("consistency failure (%i should be %i)",
                             cmd.consistancy, consistancy[i][buf]);
@@ -728,7 +730,7 @@ export fn G_PlayerReborn(player: c_int) void {
     const secretcount = players[@intCast(player)].secretcount;
 
     const p = &players[@intCast(player)];
-    p.* = mem.zeroes(c.player_t);
+    p.* = mem.zeroes(player_t);
 
     players[@intCast(player)].frags = frags;
     players[@intCast(player)].killcount = killcount;
@@ -746,6 +748,9 @@ export fn G_PlayerReborn(player: c_int) void {
     p.ammo[c.am_clip] = 50;
     p.maxammo = c.maxammo;
 }
+
+extern fn P_CheckPosition(thing: @TypeOf(players[0].mo), x: c.fixed_t, y: c.fixed_t) c.boolean;
+extern fn P_RemoveMobj(th: @TypeOf(players[0].mo)) void;
 
 //
 // G_CheckSpot
@@ -768,14 +773,14 @@ export fn G_CheckSpot(playernum: c_int, mthing: *c.mapthing_t) bool {
     const x: c.fixed_t = @as(c.fixed_t, mthing.x) << c.FRACBITS;
     const y: c.fixed_t = @as(c.fixed_t, mthing.y) << c.FRACBITS;
 
-    if (c.P_CheckPosition(players[@intCast(playernum)].mo, x, y) == c.false) {
+    if (P_CheckPosition(players[@intCast(playernum)].mo, x, y) == c.false) {
         return false;
     }
 
     // flush an old corpse if needed
     const slot: usize = @intCast(@mod(bodyqueslot, BODYQUESIZE));
     if (bodyqueslot >= BODYQUESIZE) {
-        c.P_RemoveMobj(bodyque[slot]);
+        P_RemoveMobj(bodyque[slot]);
     }
     bodyque[slot] = players[@intCast(playernum)].mo;
     bodyqueslot += 1;
@@ -1241,9 +1246,9 @@ fn G_DoNewGame() void {
     for (playeringame[1..]) |*pig| {
         pig.* = c.false;
     }
-    c.respawnparm = c.false;
+    d_main.respawnparm = false;
     c.fastparm = c.false;
-    c.nomonsters = c.false;
+    d_main.nomonsters = c.false;
     consoleplayer = 0;
     G_InitNew(d_skill, d_episode, d_map);
     gameaction = c.ga_nothing;
@@ -1297,7 +1302,7 @@ pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
 
     M_ClearRandom();
 
-    if (skill == .Nightmare or c.respawnparm != c.false) {
+    if (skill == .Nightmare or d_main.respawnparm) {
         respawnmonsters = c.true;
     } else {
         respawnmonsters = c.false;
@@ -1426,7 +1431,7 @@ pub fn G_RecordDemo(name: []const u8) void {
     demobuffer = @ptrCast(z_zone.Z_Malloc(maxsize, .Static, null));
     demoend = demobuffer + @as(usize, @intCast(maxsize));
 
-    demorecording = c.true;
+    demorecording = true;
 }
 
 
@@ -1443,11 +1448,11 @@ pub fn G_BeginRecording() void {
     demo_p += 1;
     demo_p[0] = @intCast(deathmatch);
     demo_p += 1;
-    demo_p[0] = @intCast(c.respawnparm);
+    demo_p[0] = @intFromBool(d_main.respawnparm);
     demo_p += 1;
     demo_p[0] = @intCast(c.fastparm);
     demo_p += 1;
-    demo_p[0] = @intCast(c.nomonsters);
+    demo_p[0] = @intCast(d_main.nomonsters);
     demo_p += 1;
     demo_p[0] = @intCast(consoleplayer);
     demo_p += 1;
@@ -1491,11 +1496,11 @@ fn G_DoPlayDemo() void {
     demo_p += 1;
     deathmatch = demo_p[0];
     demo_p += 1;
-    c.respawnparm = demo_p[0];
+    d_main.respawnparm = demo_p[0] != 0;
     demo_p += 1;
     c.fastparm = demo_p[0];
     demo_p += 1;
-    c.nomonsters = demo_p[0];
+    d_main.nomonsters = demo_p[0];
     demo_p += 1;
     consoleplayer = demo_p[0];
     demo_p += 1;
@@ -1525,7 +1530,7 @@ fn G_DoPlayDemo() void {
 pub fn G_TimeDemo(name: [*]const u8) void {
     nodrawers = M_CheckParm("-nodraw") != 0;
     timingdemo = true;
-    c.singletics = c.true;
+    d_main.singletics = true;
 
     defdemoname = name;
     gameaction = c.ga_playdemo;
@@ -1540,7 +1545,7 @@ pub fn G_TimeDemo(name: [*]const u8) void {
 // = Returns true if a new demo loop action will take place
 // ===================
 
-pub export fn G_CheckDemoStatus() c.boolean {
+pub fn G_CheckDemoStatus() bool {
     if (timingdemo) {
         const endtime = I_GetTime();
         I_Error("timed %i gametics in %i realtics", gametic, endtime-starttime);
@@ -1559,23 +1564,23 @@ pub export fn G_CheckDemoStatus() c.boolean {
         playeringame[1] = c.false;
         playeringame[2] = c.false;
         playeringame[3] = c.false;
-        c.respawnparm = c.false;
+        d_main.respawnparm = false;
         c.fastparm = c.false;
-        c.nomonsters = c.false;
+        d_main.nomonsters = c.false;
         consoleplayer = 0;
         D_AdvanceDemo();
-        return c.true;
+        return true;
     }
 
-    if (demorecording != c.false) {
+    if (demorecording) {
         demo_p[0] = DEMOMARKER;
         demo_p += 1;
         const len = @intFromPtr(demo_p) - @intFromPtr(demobuffer);
         _ = M_WriteFile(demoname, demobuffer[0..len]);
         Z_Free(demobuffer);
-        demorecording = c.false;
+        demorecording = false;
         I_Error("Demo %s recorded", &demonamebuf);
     }
 
-    return c.false;
+    return false;
 }

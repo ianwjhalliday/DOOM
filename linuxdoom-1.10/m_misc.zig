@@ -10,6 +10,7 @@ const io = std.io;
 const mem = std.mem;
 const os = std.os;
 const zone = @import("z_zone.zig");
+const g_game = @import("g_game.zig");
 const I_Error = @import("i_system.zig").I_Error;
 const I_ReadScreen = @import("i_video.zig").I_ReadScreen;
 const M_CheckParm = @import("m_argv.zig").M_CheckParm;
@@ -386,5 +387,5 @@ pub fn M_ScreenShot() void {
     WritePCXfile(name, linear, SCREENWIDTH, SCREENHEIGHT, @ptrCast(W_CacheLumpName("PLAYPAL", .Cache)));
 
     // TODO: message field should be []const u8, remove @constCast here
-    c.players[@intCast(c.consoleplayer)].message = @constCast("screen shot");
+    g_game.players[g_game.consoleplayer].message = @constCast("screen shot");
 }

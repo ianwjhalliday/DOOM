@@ -298,7 +298,7 @@ pub fn I_StartFrame() void {
 //
 // I_StartTic
 //
-pub export fn I_StartTic() void {
+pub fn I_StartTic() void {
     if (mainWindow == null) {
         return;
     }
