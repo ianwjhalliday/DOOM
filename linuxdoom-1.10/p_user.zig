@@ -13,6 +13,8 @@ const doomdef = @import("doomdef.zig");
 const PowerType = doomdef.PowerType;
 const WeaponType = doomdef.WeaponType;
 
+const doomstat = @import("doomstat.zig");
+
 pub const player_t = c.player_t;
 
 const m_fixed = @import("m_fixed.zig");
@@ -229,7 +231,7 @@ pub export fn P_PlayerThink(player: *c.player_t) void {
             newweapon = .Chainsaw;
         }
 
-        if (c.gamemode == c.commercial
+        if (doomstat.gamemode == .Commercial
             and newweapon == .Shotgun
             and player.weaponowned[@intFromEnum(WeaponType.SuperShotgun)] != 0
             and player.readyweapon != @intFromEnum(WeaponType.SuperShotgun)) {
@@ -240,7 +242,7 @@ pub export fn P_PlayerThink(player: *c.player_t) void {
             and newweapon != @as(WeaponType, @enumFromInt(player.readyweapon))) {
             // Do not go to plasma or BFG in shareware,
             //  even if cheated.
-            if ((newweapon != .Plasma and newweapon != .Bfg) or c.gamemode != c.shareware) {
+            if ((newweapon != .Plasma and newweapon != .Bfg) or doomstat.gamemode != .Shareware) {
                 player.pendingweapon = @intFromEnum(newweapon);
             }
         }

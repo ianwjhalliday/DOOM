@@ -78,6 +78,8 @@ const SCREENHEIGHT = doomdef.SCREENHEIGHT;
 const GameState = doomdef.GameState;
 const Skill = doomdef.Skill;
 
+const doomstat = @import("doomstat.zig");
+
 const MAXWADFILES = 20;
 
 var wadfiles = [_][]const u8{undefined} ** MAXWADFILES;
@@ -143,7 +145,7 @@ pub export fn D_PostEvent(ev: *const Event) void {
 //
 pub fn D_ProcessEvents() void {
     // IF STORE DEMO, DO NOT ACCEPT INPUT
-    if (c.gamemode == c.commercial and W_CheckNumForName(@constCast("map01")) < 0)
+    if (doomstat.gamemode == .Commercial and W_CheckNumForName(@constCast("map01")) < 0)
         return;
 
     while (eventtail != eventhead) : (eventtail = (1 + eventtail) % c.MAXEVENTS) {
@@ -404,10 +406,10 @@ pub fn D_DoAdvanceDemo() void {
 
     switch (demosequence) {
         0 => {
-            pagetic = if (c.gamemode == c.commercial) 35 * 11 else 170;
+            pagetic = if (doomstat.gamemode == .Commercial) 35 * 11 else 170;
             g_game.gamestate = .DemoScreen;
             pagename = "TITLEPIC";
-            c.S_StartMusic(if (c.gamemode == c.commercial) c.mus_dm2ttl else c.mus_intro);
+            c.S_StartMusic(if (doomstat.gamemode == .Commercial) c.mus_dm2ttl else c.mus_intro);
         },
         1 => {
             G_DeferedPlayDemo("demo1");
@@ -422,13 +424,13 @@ pub fn D_DoAdvanceDemo() void {
         },
         4 => {
             g_game.gamestate = .DemoScreen;
-            if (c.gamemode == c.commercial) {
+            if (doomstat.gamemode == .Commercial) {
                 pagetic = 35 * 11;
                 pagename = "TITLEPIC";
                 c.S_StartMusic(c.mus_dm2ttl);
             } else {
                 pagetic = 200;
-                pagename = if (c.gamemode == c.retail) "CREDIT" else "HELP2";
+                pagename = if (doomstat.gamemode == .Retail) "CREDIT" else "HELP2";
             }
         },
         5 => {
@@ -442,7 +444,7 @@ pub fn D_DoAdvanceDemo() void {
     }
 
     demosequence += 1;
-    demosequence %= if (c.gamemode == c.retail) 7 else 6;
+    demosequence %= if (doomstat.gamemode == .Retail) 7 else 6;
 }
 
 //
@@ -506,7 +508,7 @@ fn IdentifyVersion() void {
     _ = fmt.bufPrintZ(&basedefault, "{s}/.doomrc", .{home}) catch unreachable;
 
     if (M_CheckParm("-shdev") != 0) {
-        c.gamemode = c.shareware;
+        doomstat.gamemode = .Shareware;
         devparm = c.true;
         D_AddFile(c.DEVDATA ++ "doom1.wad");
         D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
@@ -516,7 +518,7 @@ fn IdentifyVersion() void {
     }
 
     if (M_CheckParm("-regdev") != 0) {
-        c.gamemode = c.registered;
+        doomstat.gamemode = .Registered;
         devparm = c.true;
         D_AddFile(c.DEVDATA ++ "doom.wad");
         D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
@@ -527,7 +529,7 @@ fn IdentifyVersion() void {
     }
 
     if (M_CheckParm("-comdev") != 0) {
-        c.gamemode = c.commercial;
+        doomstat.gamemode = .Commercial;
         devparm = c.true;
         D_AddFile(c.DEVDATA ++ "doom2.wad");
 
@@ -540,53 +542,53 @@ fn IdentifyVersion() void {
     const stdout = std.io.getStdOut().writer();
 
     if (os.access(doom2fwad, os.R_OK)) {
-        c.gamemode = c.commercial;
+        doomstat.gamemode = .Commercial;
         // C'est ridicule!
         // Let's handle languages in config files, okay?
-        c.language = c.french;
+        doomstat.language = .French;
         stdout.print("French version\n", .{}) catch unreachable;
         D_AddFile(doom2fwad);
         return;
     } else |_| {}
 
     if (os.access(doom2wad, os.R_OK)) {
-        c.gamemode = c.commercial;
+        doomstat.gamemode = .Commercial;
         D_AddFile(doom2wad);
         return;
     } else |_| {}
 
     if (os.access(plutoniawad, os.R_OK)) {
-        c.gamemode = c.commercial;
+        doomstat.gamemode = .Commercial;
         D_AddFile(plutoniawad);
         return;
     } else |_| {}
 
     if (os.access(tntwad, os.R_OK)) {
-        c.gamemode = c.commercial;
+        doomstat.gamemode = .Commercial;
         D_AddFile(tntwad);
         return;
     } else |_| {}
 
     if (os.access(doomuwad, os.R_OK)) {
-        c.gamemode = c.retail;
+        doomstat.gamemode = .Retail;
         D_AddFile(doomuwad);
         return;
     } else |_| {}
 
     if (os.access(doomwad, os.R_OK)) {
-        c.gamemode = c.registered;
+        doomstat.gamemode = .Registered;
         D_AddFile(doomwad);
         return;
     } else |_| {}
 
     if (os.access(doom1wad, os.R_OK)) {
-        c.gamemode = c.shareware;
+        doomstat.gamemode = .Shareware;
         D_AddFile(doom1wad);
         return;
     } else |_| {}
 
     stdout.print("Game mode indeterminate.\n", .{}) catch unreachable;
-    c.gamemode = c.indetermined;
+    doomstat.gamemode = .Indetermined;
 
     // We don't abort. Let's see what the PWAD contains.
     //exit(1);
@@ -673,7 +675,6 @@ fn FindResponseFile() void {
 //
 // D_DoomMain
 //
-extern var modifiedgame: c.boolean;
 extern var forwardmove: [2]c_int;
 extern var sidemove: [2]c_int;
 extern var statcopy: *anyopaque;
@@ -697,7 +698,7 @@ pub fn D_DoomMain() noreturn {
 
     IdentifyVersion();
 
-    modifiedgame = c.false;
+    doomstat.modifiedgame = c.false;
 
     nomonsters = toDoomBoolean(M_CheckParm("-nomonsters") != 0);
     respawnparm = M_CheckParm("-respawn") != 0;
@@ -709,20 +710,20 @@ pub fn D_DoomMain() noreturn {
         g_game.deathmatch = 1;
     }
 
-    const title = switch (c.gamemode) {
-        c.retail => fmt.comptimePrint("                         " ++
+    const title = switch (doomstat.gamemode) {
+        .Retail => fmt.comptimePrint("                         " ++
             "The Ultimate DOOM Startup v{}.{}" ++
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
-        c.shareware => fmt.comptimePrint("                            " ++
+        .Shareware => fmt.comptimePrint("                            " ++
             "DOOM Shareware Startup v{}.{}" ++
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
-        c.registered => fmt.comptimePrint("                            " ++
+        .Registered => fmt.comptimePrint("                            " ++
             "DOOM Registered Startup v{}.{}" ++
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
-        c.commercial => fmt.comptimePrint("                         " ++
+        .Commercial => fmt.comptimePrint("                         " ++
             "DOOM 2: Hell on Earth v{}.{}" ++
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
-        else => fmt.comptimePrint("                     " ++
+        .Indetermined => fmt.comptimePrint("                     " ++
             "Public DOOM - v{}.{}" ++
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
     };
@@ -774,14 +775,13 @@ pub fn D_DoomMain() noreturn {
 
         var file: []u8 = undefined;
         // Map name handling.
-        switch (c.gamemode) {
-            c.shareware, c.retail, c.registered => {
+        switch (doomstat.gamemode) {
+            .Shareware, .Retail, .Registered => {
                 file = fmt.bufPrint(&filebuf, "~" ++ c.DEVMAPS ++ "E{}M{}.wad", .{myargv[p + 1][0], myargv[p + 2][0]}) catch unreachable;
                 stdout.print("Warping to Episode {s}, Map {s}.\n", .{myargv[p + 1], myargv[p + 2]}) catch unreachable;
             },
 
-            // c.commercial,
-            else => {
+            .Commercial, .Indetermined => {
                 const num = fmt.parseInt(usize, std.mem.span(myargv[p + 1]), 10) catch 0;
                 if (num < 10) {
                     file = fmt.bufPrint(&filebuf, "~" ++ c.DEVMAPS ++ "cdata/map0{}.wad", .{num}) catch unreachable;
@@ -797,7 +797,7 @@ pub fn D_DoomMain() noreturn {
     if (p != 0) {
         // the parms after p are wadfile/lump names,
         // until end of parms or another - preceded parm
-        modifiedgame = c.true; // homebrew levels
+        doomstat.modifiedgame = c.true; // homebrew levels
         p += 1;
         while (p != myargc and myargv[p][0] != '-') : (p += 1) {
             D_AddFile(std.mem.span(myargv[p]));
@@ -851,7 +851,7 @@ pub fn D_DoomMain() noreturn {
 
     p = @intCast(M_CheckParm("-warp"));
     if (p != 0 and p < myargc - 1) {
-        if (c.gamemode == c.commercial) {
+        if (doomstat.gamemode == .Commercial) {
             startmap = fmt.parseInt(c_int, std.mem.span(myargv[p + 1]), 10) catch 0;
         } else {
             startepisode = myargv[p + 1][0] - '0';
@@ -874,18 +874,18 @@ pub fn D_DoomMain() noreturn {
     W_InitMultipleFiles(wadfiles[0..numwadfiles]);
 
     // Check for -file in shareware
-    if (modifiedgame != c.false) {
+    if (doomstat.modifiedgame != c.false) {
         // These are the lumps that will be checked in IWAD,
         // if any one is not present, execution will be aborted.
         var names = [_][:0]const u8{ "e2m1", "e2m2", "e2m3", "e2m4", "e2m5", "e2m6", "e2m7", "e2m8", "e2m9", "e3m1", "e3m3", "e3m3", "e3m4", "e3m5", "e3m6", "e3m7", "e3m8", "e3m9", "dphoof", "bfgga0", "heada1", "cybra1", "spida1d1" };
 
-        if (c.gamemode == c.shareware) {
+        if (doomstat.gamemode == .Shareware) {
             I_Error("\nYou cannot -file with the shareware version. Register!");
         }
 
         // Check for fake IWAD with right name,
         // but w/o all the lumps of the registered version.
-        if (c.gamemode == c.registered) {
+        if (doomstat.gamemode == .Registered) {
             var i: usize = 0;
             _ = i;
             for (names) |name| {
@@ -897,7 +897,7 @@ pub fn D_DoomMain() noreturn {
     }
 
     // Iff additonal PWAD files are used, print modified banner
-    if (modifiedgame != c.false) {
+    if (doomstat.modifiedgame != c.false) {
         stdout.print("===========================================================================\n" ++
             "ATTENTION:  This version of DOOM has been modified.  If you would like to\n" ++
             "get a copy of the original game, call 1-800-IDGAMES or see the readme file.\n" ++
@@ -908,20 +908,18 @@ pub fn D_DoomMain() noreturn {
     }
 
     // Check and print which version is executed.
-    switch (c.gamemode) {
-        c.shareware, c.indetermined => {
+    switch (doomstat.gamemode) {
+        .Shareware, .Indetermined => {
             stdout.print("===========================================================================\n" ++
                 "                                Shareware!\n" ++
                 "===========================================================================\n", .{}) catch unreachable;
         },
-        c.registered, c.retail, c.commercial => {
+        .Registered, .Retail, .Commercial => {
             stdout.print("===========================================================================\n" ++
                 "                 Commercial product - do not distribute!\n" ++
                 "         Please report software piracy to the SPA: 1-800-388-PIR8\n" ++
                 "===========================================================================\n", .{}) catch unreachable;
         },
-
-        else => unreachable,
     }
 
     stdout.print("M_Init: Init miscellaneous info.\n", .{}) catch unreachable;

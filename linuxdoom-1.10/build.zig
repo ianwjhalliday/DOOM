@@ -19,7 +19,6 @@ pub fn build(b: *std.Build) void {
     };
 
     const c_files = [_][]const u8{
-        "doomstat.c",
         "dstrings.c",
         "i_sound.c",
         "tables.c",

@@ -83,6 +83,8 @@ const GameState = doomdef.GameState;
 const Skill = doomdef.Skill;
 const WeaponType = doomdef.WeaponType;
 
+const doomstat = @import("doomstat.zig");
+
 const SAVEGAMESIZE = 0x2c000;
 const SAVESTRINGSIZE = 24;
 
@@ -419,10 +421,7 @@ export fn G_DoLoadLevel() void {
 
     // DOOM determines the sky texture to be used
     // depending on the current episode, and the game version.
-    if ((c.gamemode == c.commercial)
-        or (c.gamemode == c.pack_tnt)
-        or (c.gamemode == c.pack_plut))
-    {
+    if (doomstat.gamemode == .Commercial) {
         if (gamemap < 12) {
             c.skytexture = c.R_TextureNumForName(@constCast("SKY1"));
         } else if (gamemap < 21) {
@@ -904,7 +903,7 @@ export fn G_ExitLevel() void {
 // Here's for the german edition.
 export fn G_SecretExitLevel() void {
     // IF NO WOLF3D LEVELS, NO SECRET EXIT!
-    if (c.gamemode == c.commercial and W_CheckNumForName("map31") < 0) {
+    if (doomstat.gamemode == .Commercial and W_CheckNumForName("map31") < 0) {
         secretexit = false;
     } else {
         secretexit = true;
@@ -925,7 +924,7 @@ fn G_DoCompleted() void {
         c.AM_Stop();
     }
 
-    if (c.gamemode != c.commercial)
+    if (doomstat.gamemode != .Commercial)
         switch (gamemap) {
             8 => {
                 gameaction = c.ga_victory;
@@ -940,13 +939,13 @@ fn G_DoCompleted() void {
         };
 
 //#if 0  Hmmm - why?
-    if (gamemap == 8 and c.gamemode != c.commercial) {
+    if (gamemap == 8 and doomstat.gamemode != .Commercial) {
         // victory
         gameaction = c.ga_victory;
         return;
     }
 
-    if (gamemap == 9 and c.gamemode != c.commercial) {
+    if (gamemap == 9 and doomstat.gamemode != .Commercial) {
         // exit secret level
         for (0..MAXPLAYERS) |i| {
             players[i].didsecret = c.true;
@@ -960,7 +959,7 @@ fn G_DoCompleted() void {
     wminfo.last = gamemap - 1;
 
     // wminfo.next is 0 biased, unlike gamemap
-    if (c.gamemode == c.commercial) {
+    if (doomstat.gamemode == .Commercial) {
         if (secretexit) {
             switch (gamemap) {
                 15 => wminfo.next = 30,
@@ -994,7 +993,7 @@ fn G_DoCompleted() void {
     wminfo.maxitems = totalitems;
     wminfo.maxsecret = totalsecret;
     wminfo.maxfrags = 0;
-    if (c.gamemode == c.commercial) {
+    if (doomstat.gamemode == .Commercial) {
         wminfo.partime = 35 * cpars[@intCast(gamemap-1)];
     } else {
         wminfo.partime = 35 * pars[@intCast(gameepisode-1)][@intCast(gamemap-1)];
@@ -1033,7 +1032,7 @@ export fn G_WorldDone() void {
         players[consoleplayer].didsecret = c.true;
     }
 
-    if (c.gamemode == c.commercial) {
+    if (doomstat.gamemode == .Commercial) {
         const dofinale = switch (gamemap) {
             15, 31 => secretexit,
             6, 11, 20, 30 => true,
@@ -1132,7 +1131,7 @@ fn G_DoLoadGame() void {
     c.R_FillBackScreen();
 
     // Hack fix for crash on loading save games in map 30
-    if (gamemap == 30 and c.gamemode == c.commercial) {
+    if (gamemap == 30 and doomstat.gamemode == .Commercial) {
         var thinker = p_tick.thinkercap.next orelse &p_tick.thinkercap;
         while (thinker != &p_tick.thinkercap) : (thinker = thinker.next.?) {
             // not a mobj
@@ -1274,11 +1273,11 @@ pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
         _episode = 1;
     }
 
-    if (c.gamemode == c.retail) {
+    if (doomstat.gamemode == .Retail) {
         if (_episode > 4) {
             _episode = 4;
         }
-    } else if (c.gamemode == c.shareware) {
+    } else if (doomstat.gamemode == .Shareware) {
         if (_episode > 1) {
             _episode = 1; // only start episode 1 on shareware
         }
@@ -1296,7 +1295,7 @@ pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
         _map = 1;
     }
 
-    if (_map > 9 and c.gamemode != c.commercial) {
+    if (_map > 9 and doomstat.gamemode != .Commercial) {
         _map = 9;
     }
 
@@ -1342,7 +1341,7 @@ pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
     viewactive = c.true;
 
     // set the sky map for the episode
-    if (c.gamemode == c.commercial) {
+    if (doomstat.gamemode == .Commercial) {
         if (gamemap < 12) {
             skytexture = c.R_TextureNumForName(@constCast("SKY1"));
         } else if (gamemap < 21) {

@@ -71,6 +71,8 @@ const Card = doomdef.Card;
 const PowerType = doomdef.PowerType;
 const WeaponType = doomdef.WeaponType;
 
+const doomstat = @import("doomstat.zig");
+
 // Size of statusbar.
 // Now sensitive for scaling.
 pub const ST_HEIGHT = 32 * SCREEN_MUL;
@@ -471,7 +473,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
         plyr.message = c.STSTR_MUS;
         cht_GetParam(&cheat_mus, &buf);
 
-        if (c.gamemode == c.commercial)
+        if (doomstat.gamemode == .Commercial)
         {
           const musnum = c.mus_runnin + @as(c_int, buf[0]-'0')*10 + buf[1]-'0' - 1;
 
@@ -558,7 +560,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
 
       cht_GetParam(&cheat_clev, &buf);
 
-      if (c.gamemode == c.commercial)
+      if (doomstat.gamemode == .Commercial)
       {
         epsd = 1;
         map = @as(c_int, buf[0] - '0')*10 + buf[1] - '0';
@@ -579,22 +581,22 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
       }
 
       // Ohmygod - this is not going to work.
-      if ((c.gamemode == c.retail)
+      if ((doomstat.gamemode == .Retail)
           and ((epsd > 4) or (map > 9))) {
         return c.false;
       }
 
-      if ((c.gamemode == c.registered)
+      if ((doomstat.gamemode == .Registered)
           and ((epsd > 3) or (map > 9))) {
         return c.false;
       }
 
-      if ((c.gamemode == c.shareware)
+      if ((doomstat.gamemode == .Shareware)
           and ((epsd > 1) or (map > 9))) {
         return c.false;
       }
 
-      if ((c.gamemode == c.commercial)
+      if ((doomstat.gamemode == .Commercial)
         and (( epsd > 1) or (map > 34))) {
         return c.false;
       }
