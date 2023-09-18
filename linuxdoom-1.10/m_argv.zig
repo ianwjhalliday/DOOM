@@ -9,6 +9,8 @@ const std = @import("std");
 //  of modifying `myargv` and `myargc`.
 
 pub export var myargc: c_int = undefined;
+// TODO: This type could be expressed as `[*:null]const ?[*:0]const u8`
+// albeit then will need to use .? everywhere.
 pub export var myargv: [*c][*c]const u8 = undefined;
 
 pub var myargs: [][:0]const u8 = undefined;
