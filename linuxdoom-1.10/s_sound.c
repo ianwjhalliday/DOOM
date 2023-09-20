@@ -282,6 +282,10 @@ S_StartSoundAtVolume
   // Initialize sound parameters
   if (sfx->link)
   {
+    if (sfx->link < &S_sfx[0]) {
+        // Convert zig's offset to actual address
+        sfx->link = &S_sfx[(unsigned long long)sfx->link];
+    }
     pitch = sfx->pitch;
     priority = sfx->priority;
     volume += sfx->volume;

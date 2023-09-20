@@ -235,7 +235,7 @@ void I_UpdateSoundParams(int handle, int vol, int sep, int pitch)
 int I_GetSfxLumpNum(sfxinfo_t* sfx)
 {
     char namebuf[9];
-    sprintf(namebuf, "ds%s", sfx->name);
+    sprintf(namebuf, "ds%s", sfx->link ? sfx->link->name : sfx->name);
     return W_GetNumForName(namebuf);
 }
 
