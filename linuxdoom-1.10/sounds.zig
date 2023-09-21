@@ -3,7 +3,7 @@ const std = @import("std");
 //
 // SoundFX struct.
 //
-const SfxInfo = extern struct {
+pub const SfxInfo = extern struct {
     // up to 6-character name
     name: [*:0]const u8,
 
@@ -46,7 +46,7 @@ const SfxInfo = extern struct {
 //
 // MusicInfo struct.
 //
-const MusicInfo = extern struct {
+pub const MusicInfo = extern struct {
     // up to 6-character name
     name: [*:0]const u8,
 
@@ -93,8 +93,8 @@ pub export var S_sfx: [raw_sfx.len]SfxInfo = blk: {
             .pitch = raw[4],
             .volume = raw[5],
             .data = null,
-            .usefulness = 0,
-            .lumpnum = 0,
+            .usefulness = -1,
+            .lumpnum = -1,
         };
     }
 

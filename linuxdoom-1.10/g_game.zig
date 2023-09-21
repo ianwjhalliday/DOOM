@@ -17,8 +17,6 @@ const c = @cImport({
     @cInclude("r_draw.h");
     @cInclude("r_main.h");
     @cInclude("r_sky.h");
-    @cInclude("s_sound.h");
-    @cInclude("sounds.h");
     @cInclude("tables.h");
     @cInclude("wi_stuff.h");
 });
@@ -64,6 +62,13 @@ const P_Ticker = p_tick.P_Ticker;
 
 const player_t = @import("p_user.zig").player_t;
 
+const s_sound = @import("s_sound.zig");
+const S_StartSound = s_sound.S_StartSound;
+const S_PauseSound = s_sound.S_PauseSound;
+const S_ResumeSound = s_sound.S_ResumeSound;
+
+const Sfx = @import("sounds.zig").Sfx;
+
 const st_stuff = @import("st_stuff.zig");
 const ST_Ticker = st_stuff.ST_Ticker;
 const ST_Responder = st_stuff.ST_Responder;
@@ -93,8 +98,8 @@ export var gameaction: c.gameaction_t = undefined;
 pub export var gamestate: GameState = undefined;
 pub export var gameskill: Skill = undefined;
 export var respawnmonsters: c.boolean = c.false;
-export var gameepisode: c_int = 0;
-export var gamemap: c_int = 0;
+pub export var gameepisode: c_int = 0;
+pub export var gamemap: c_int = 0;
 
 pub export var paused = false;
 var sendpause = false;     // send a pause event next tic
@@ -653,10 +658,10 @@ pub export fn G_Ticker() void {
                         paused = !paused;
                         if (paused) {
                             I_PauseMouseCapture();
-                            c.S_PauseSound();
+                            S_PauseSound();
                         } else {
                             I_ResumeMouseCapture();
-                            c.S_ResumeSound();
+                            S_ResumeSound();
                         }
                     },
 
@@ -793,7 +798,7 @@ export fn G_CheckSpot(playernum: c_int, mthing: *c.mapthing_t) bool {
                       , c.MT_TFOG);
 
     if (players[consoleplayer].viewz != 1) {
-        c.S_StartSound(mo, c.sfx_telept);  // don't start sound on first frame
+        S_StartSound(mo, @intFromEnum(Sfx.telept));  // don't start sound on first frame
     }
 
     return true;
@@ -1260,7 +1265,7 @@ extern var skytexture: c_int;
 pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
     if (paused) {
         paused = false;
-        c.S_ResumeSound();
+        S_ResumeSound();
     }
 
     var _episode = episode;

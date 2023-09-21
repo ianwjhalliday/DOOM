@@ -5,7 +5,6 @@ const c = @cImport({
     @cInclude("d_event.h");
     @cInclude("d_player.h");
     @cInclude("r_main.h");
-    @cInclude("s_sound.h");
     @cInclude("sounds.h");
     @cInclude("v_video.h");
 });
@@ -64,6 +63,11 @@ const G_RecordDemo = g_game.G_RecordDemo;
 const G_Responder = g_game.G_Responder;
 const G_TimeDemo = g_game.G_TimeDemo;
 const TicCmd = @import("d_ticcmd.zig").TicCmd;
+
+const s_sound = @import("s_sound.zig");
+const S_Init = s_sound.S_Init;
+const S_StartMusic = s_sound.S_StartMusic;
+const S_UpdateSounds = s_sound.S_UpdateSounds;
 
 const w_wad = @import("w_wad.zig");
 const W_InitMultipleFiles = w_wad.W_InitMultipleFiles;
@@ -350,7 +354,7 @@ fn D_DoomLoop() noreturn {
             TryRunTics(); // will run at least one tic
         }
 
-        c.S_UpdateSounds(g_game.players[g_game.consoleplayer].mo); // move positional sounds
+        S_UpdateSounds(g_game.players[g_game.consoleplayer].mo); // move positional sounds
 
         // Update display, next frame, with current state.
         D_Display();
@@ -409,7 +413,7 @@ pub fn D_DoAdvanceDemo() void {
             pagetic = if (doomstat.gamemode == .Commercial) 35 * 11 else 170;
             g_game.gamestate = .DemoScreen;
             pagename = "TITLEPIC";
-            c.S_StartMusic(if (doomstat.gamemode == .Commercial) c.mus_dm2ttl else c.mus_intro);
+            S_StartMusic(if (doomstat.gamemode == .Commercial) c.mus_dm2ttl else c.mus_intro);
         },
         1 => {
             G_DeferedPlayDemo("demo1");
@@ -427,7 +431,7 @@ pub fn D_DoAdvanceDemo() void {
             if (doomstat.gamemode == .Commercial) {
                 pagetic = 35 * 11;
                 pagename = "TITLEPIC";
-                c.S_StartMusic(c.mus_dm2ttl);
+                S_StartMusic(c.mus_dm2ttl);
             } else {
                 pagetic = 200;
                 pagename = if (doomstat.gamemode == .Retail) "CREDIT" else "HELP2";
@@ -685,7 +689,6 @@ extern fn Z_Init() void;
 extern fn M_Init() void;
 extern fn R_Init() void;
 extern fn P_Init() void;
-extern fn S_Init(sfxVolume: c_int, musicVolume: c_int) void;
 extern fn HU_Init() void;
 const ST_Init = @import("st_stuff.zig").ST_Init;
 
@@ -938,7 +941,7 @@ pub fn D_DoomMain() noreturn {
     D_CheckNetGame();
 
     stdout.print("S_Init: Setting up sound.\n", .{}) catch unreachable;
-    S_Init(c.snd_SfxVolume, c.snd_MusicVolume);
+    S_Init(s_sound.snd_SfxVolume, s_sound.snd_MusicVolume);
 
     stdout.print("HU_Init: Setting up heads up display.\n", .{}) catch unreachable;
     HU_Init();
