@@ -80,11 +80,11 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .target = target,
         });
-        o.addIncludePath(".");
-        o.addSystemIncludePath("/usr/local/include");
+        o.addIncludePath(.{ .path = "." });
+        o.addSystemIncludePath(.{ .path = "/usr/local/include" });
         // TODO: Properly find and setup system include paths per platform
-        o.addSystemIncludePath("/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include");
-        o.addFrameworkPath("/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks");
+        o.addSystemIncludePath(.{ .path = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include" });
+        o.addFrameworkPath(.{ .path = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks" });
 
         exe.addObject(o);
     }
