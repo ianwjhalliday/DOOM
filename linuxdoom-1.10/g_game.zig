@@ -16,7 +16,6 @@ const c = @cImport({
     @cInclude("r_data.h");
     @cInclude("r_draw.h");
     @cInclude("r_main.h");
-    @cInclude("r_sky.h");
     @cInclude("tables.h");
     @cInclude("wi_stuff.h");
 });
@@ -61,6 +60,8 @@ const p_tick = @import("p_telept.zig").p_tick;
 const P_Ticker = p_tick.P_Ticker;
 
 const player_t = @import("p_user.zig").player_t;
+
+const r_sky = @import("r_sky.zig");
 
 const s_sound = @import("s_sound.zig");
 const S_StartSound = s_sound.S_StartSound;
@@ -422,17 +423,17 @@ export fn G_DoLoadLevel() void {
     //  a flat. The data is in the WAD only because
     //  we look for an actual index, instead of simply
     //  setting one.
-    c.skyflatnum = c.R_FlatNumForName(@constCast(c.SKYFLATNAME));
+    r_sky.skyflatnum = c.R_FlatNumForName(@constCast(r_sky.SKYFLATNAME));
 
     // DOOM determines the sky texture to be used
     // depending on the current episode, and the game version.
     if (doomstat.gamemode == .Commercial) {
         if (gamemap < 12) {
-            c.skytexture = c.R_TextureNumForName(@constCast("SKY1"));
+            r_sky.skytexture = c.R_TextureNumForName(@constCast("SKY1"));
         } else if (gamemap < 21) {
-            c.skytexture = c.R_TextureNumForName(@constCast("SKY2"));
+            r_sky.skytexture = c.R_TextureNumForName(@constCast("SKY2"));
         } else {
-            c.skytexture = c.R_TextureNumForName(@constCast("SKY3"));
+            r_sky.skytexture = c.R_TextureNumForName(@constCast("SKY3"));
         }
     }
 
@@ -1258,10 +1259,6 @@ fn G_DoNewGame() void {
     gameaction = c.ga_nothing;
 }
 
-// The sky texture to be used instead of the F_SKY1 dummy.
-extern var skytexture: c_int;
-
-
 pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
     if (paused) {
         paused = false;
@@ -1348,18 +1345,18 @@ pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
     // set the sky map for the episode
     if (doomstat.gamemode == .Commercial) {
         if (gamemap < 12) {
-            skytexture = c.R_TextureNumForName(@constCast("SKY1"));
+            r_sky.skytexture = c.R_TextureNumForName(@constCast("SKY1"));
         } else if (gamemap < 21) {
-            skytexture = c.R_TextureNumForName(@constCast("SKY2"));
+            r_sky.skytexture = c.R_TextureNumForName(@constCast("SKY2"));
         } else {
-            skytexture = c.R_TextureNumForName(@constCast("SKY3"));
+            r_sky.skytexture = c.R_TextureNumForName(@constCast("SKY3"));
         }
     } else {
         switch (episode) {
-            1 => skytexture = c.R_TextureNumForName(@constCast("SKY1")),
-            2 => skytexture = c.R_TextureNumForName(@constCast("SKY2")),
-            3 => skytexture = c.R_TextureNumForName(@constCast("SKY3")),
-            4 => skytexture = c.R_TextureNumForName(@constCast("SKY4")),
+            1 => r_sky.skytexture = c.R_TextureNumForName(@constCast("SKY1")),
+            2 => r_sky.skytexture = c.R_TextureNumForName(@constCast("SKY2")),
+            3 => r_sky.skytexture = c.R_TextureNumForName(@constCast("SKY3")),
+            4 => r_sky.skytexture = c.R_TextureNumForName(@constCast("SKY4")),
             else => {},
         }
     }
