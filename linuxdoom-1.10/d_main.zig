@@ -9,14 +9,12 @@ const c = @cImport({
     @cInclude("v_video.h");
 });
 
-extern fn M_Responder(ev: *Event) c.boolean;
 extern fn W_CheckNumForName(name: [*c]const u8) c_int;
 
 extern fn AM_Drawer() void;
 extern fn F_Drawer() void;
 extern fn HU_Drawer() void;
 extern fn HU_Erase() void;
-extern fn M_Drawer() void;
 extern fn R_FillBackScreen() void;
 extern fn R_DrawViewBorder() void;
 const ST_Drawer = @import("st_stuff.zig").ST_Drawer;
@@ -24,7 +22,6 @@ extern fn WI_Drawer() void;
 
 extern fn NetUpdate() void;
 
-extern fn M_Ticker() void;
 extern fn G_Ticker() void;
 extern fn I_UpdateSound() void;
 extern fn I_SubmitSound() void;
@@ -64,6 +61,12 @@ const G_Responder = g_game.G_Responder;
 const G_TimeDemo = g_game.G_TimeDemo;
 const TicCmd = @import("d_ticcmd.zig").TicCmd;
 
+const m_menu = @import("m_menu.zig");
+const M_Drawer = m_menu.M_Drawer;
+const M_Init = m_menu.M_Init;
+const M_Responder = m_menu.M_Responder;
+const M_Ticker = m_menu.M_Ticker;
+
 const s_sound = @import("s_sound.zig");
 const S_Init = s_sound.S_Init;
 const S_StartMusic = s_sound.S_StartMusic;
@@ -89,14 +92,12 @@ const MAXWADFILES = 20;
 var wadfiles = [_][]const u8{undefined} ** MAXWADFILES;
 var numwadfiles: usize = 0;
 
-pub export var devparm: c.boolean = c.false; // started game with -devparm
+pub var devparm = false; // started game with -devparm
 pub export var nomonsters: c.boolean = c.false; // checkparm of -nomonsters
 pub var respawnparm = false;    // checkparm of -respawn
 pub export var fastparm: c.boolean = c.false; // checkparm of -fast
 
 pub var singletics = false;     // debug flag to cancel adaptiveness
-
-extern var inhelpscreens: c.boolean;
 
 pub var startskill: Skill = .Medium;
 pub var startepisode: c_int = 0;
@@ -154,7 +155,7 @@ pub fn D_ProcessEvents() void {
 
     while (eventtail != eventhead) : (eventtail = (1 + eventtail) % c.MAXEVENTS) {
         const ev = &events[eventtail];
-        if (M_Responder(ev) != c.false)
+        if (M_Responder(ev))
             continue; // menu ate the event
         _ = G_Responder(ev);
     }
@@ -169,7 +170,6 @@ pub fn D_ProcessEvents() void {
 pub export var wipegamestate: GameState = .DemoScreen;
 extern var setsizeneeded: c.boolean;
 extern var automapactive: c.boolean;
-extern var menuactive: c.boolean;
 extern var viewactive: c.boolean;
 extern fn R_ExecuteSetViewSize() void;
 extern fn R_RenderPlayerView(player: @TypeOf(&g_game.players[0])) void;
@@ -218,7 +218,7 @@ fn D_Display() void {
                 dowipe
                 or (c.viewheight != 200 and S.fullscreen)
                 // just put away the help screen
-                or S.inhelpscreensstate and inhelpscreens != c.true;
+                or S.inhelpscreensstate and !m_menu.inhelpscreens;
             ST_Drawer(c.viewheight == 200, redrawsbar);
             S.fullscreen = c.viewheight == 200;
         },
@@ -256,7 +256,7 @@ fn D_Display() void {
 
     // see if the border needs to be updated to the screen
     if (g_game.gamestate == .Level and automapactive == c.false and c.scaledviewwidth != 320) {
-        if (menuactive != c.false or S.menuactivestate or !S.viewactivestate) {
+        if (m_menu.menuactive or S.menuactivestate or !S.viewactivestate) {
             S.borderdrawcount = 3;
         }
         if (S.borderdrawcount != 0) {
@@ -265,9 +265,9 @@ fn D_Display() void {
         }
     }
 
-    S.menuactivestate = menuactive != c.false;
+    S.menuactivestate = m_menu.menuactive;
     S.viewactivestate = viewactive != c.false;
-    S.inhelpscreensstate = inhelpscreens != c.false;
+    S.inhelpscreensstate = m_menu.inhelpscreens;
     wipegamestate = g_game.gamestate;
     S.oldgamestate = g_game.gamestate;
 
@@ -404,7 +404,7 @@ pub fn D_AdvanceDemo() void {
 pub fn D_DoAdvanceDemo() void {
     g_game.players[g_game.consoleplayer].playerstate = c.PST_LIVE; // not reborn
     advancedemo = false;
-    g_game.usergame = c.false; // no save / end game here
+    g_game.usergame = false; // no save / end game here
     g_game.paused = false;
     c.gameaction = c.ga_nothing;
 
@@ -454,7 +454,7 @@ pub fn D_DoAdvanceDemo() void {
 //
 // D_StartTitle
 //
-export fn D_StartTitle() void {
+pub fn D_StartTitle() void {
     c.gameaction = c.ga_nothing;
     demosequence = 0;
     D_AdvanceDemo();
@@ -513,7 +513,7 @@ fn IdentifyVersion() void {
 
     if (M_CheckParm("-shdev") != 0) {
         doomstat.gamemode = .Shareware;
-        devparm = c.true;
+        devparm = true;
         D_AddFile(c.DEVDATA ++ "doom1.wad");
         D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
         D_AddFile(c.DEVMAPS ++ "data_se/pnames.lmp");
@@ -523,7 +523,7 @@ fn IdentifyVersion() void {
 
     if (M_CheckParm("-regdev") != 0) {
         doomstat.gamemode = .Registered;
-        devparm = c.true;
+        devparm = true;
         D_AddFile(c.DEVDATA ++ "doom.wad");
         D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
         D_AddFile(c.DEVMAPS ++ "data_se/texture2.lmp");
@@ -534,7 +534,7 @@ fn IdentifyVersion() void {
 
     if (M_CheckParm("-comdev") != 0) {
         doomstat.gamemode = .Commercial;
-        devparm = c.true;
+        devparm = true;
         D_AddFile(c.DEVDATA ++ "doom2.wad");
 
         D_AddFile(c.DEVMAPS ++ "cdata/texture1.lmp");
@@ -686,7 +686,6 @@ extern var singledemo: c.boolean;
 
 extern fn V_Init() void;
 extern fn Z_Init() void;
-extern fn M_Init() void;
 extern fn R_Init() void;
 extern fn P_Init() void;
 extern fn HU_Init() void;
@@ -706,7 +705,7 @@ pub fn D_DoomMain() noreturn {
     nomonsters = toDoomBoolean(M_CheckParm("-nomonsters") != 0);
     respawnparm = M_CheckParm("-respawn") != 0;
     fastparm = toDoomBoolean(M_CheckParm("-fast") != 0);
-    devparm = toDoomBoolean(M_CheckParm("-devparm") != 0);
+    devparm = M_CheckParm("-devparm") != 0;
     if (M_CheckParm("-altdeath") != 0) {
         g_game.deathmatch = 2;
     } else if (M_CheckParm("-deathmatch") != 0) {
@@ -734,7 +733,7 @@ pub fn D_DoomMain() noreturn {
     const stdout = std.io.getStdOut().writer();
     stdout.print("{s}\n", .{title}) catch unreachable;
 
-    if (devparm != c.false) {
+    if (devparm) {
         stdout.print("{s}", .{c.D_DEVSTR}) catch unreachable;
     }
 

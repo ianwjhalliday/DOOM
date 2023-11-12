@@ -65,10 +65,10 @@ var channels: []Channel = undefined;
 // These are not used, but should be (menu).
 // Maximum volume of a sound effect.
 // Internal default is max out of 0-15.
-pub export var snd_SfxVolume: c_int = 15;
+pub var snd_SfxVolume: c_int = 15;
 
 // Maximum volume of music. Useless so far.
-pub export var snd_MusicVolume: c_int = 15;
+pub var snd_MusicVolume: c_int = 15;
 
 
 
@@ -161,7 +161,7 @@ export fn S_Start() void {
 
 
 
-fn S_StartSoundAtVolume(origin_p: *anyopaque, sfx_id: c_int, volume_p: c_int) void {
+fn S_StartSoundAtVolume(origin_p: ?*anyopaque, sfx_id: c_int, volume_p: c_int) void {
     // Debug.
     //fprintf( stderr,
     //         "S_StartSoundAtVolume: playing sound %d (%s)\n",
@@ -270,8 +270,11 @@ fn S_StartSoundAtVolume(origin_p: *anyopaque, sfx_id: c_int, volume_p: c_int) vo
 }
 
 
+pub fn S_StartSound_Zig(origin: ?*anyopaque, sfx_id: Sfx) void {
+    S_StartSound(origin, @intFromEnum(sfx_id));
+}
 
-pub export fn S_StartSound(origin: *anyopaque, sfx_id: c_int) void {
+export fn S_StartSound(origin: ?*anyopaque, sfx_id: c_int) void {
     S_StartSoundAtVolume(origin, sfx_id, snd_SfxVolume);
 }
 
@@ -359,7 +362,7 @@ pub fn S_UpdateSounds(listener_p: ?*anyopaque) void {
 }
 
 
-pub export fn S_SetMusicVolume(volume: c_int) void {
+pub fn S_SetMusicVolume(volume: c_int) void {
     if (volume < 0 or volume > 127) {
         I_Error("Attempt to set music volume at %d", volume);
     }
@@ -370,7 +373,7 @@ pub export fn S_SetMusicVolume(volume: c_int) void {
 
 
 
-pub export fn S_SetSfxVolume(volume: c_int) void {
+pub fn S_SetSfxVolume(volume: c_int) void {
     if (volume < 0 or volume > 127) {
         I_Error("Attempt to set sfx volume at %d", volume);
     }

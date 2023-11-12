@@ -347,7 +347,7 @@ pub export fn I_ReadScreen(scr: [*]u8) void {
 // I_SetPalette
 //
 var palette: [3*256]u8 = undefined;
-pub export fn I_SetPalette(pal: [*]u8) void {
+pub fn I_SetPalette(pal: [*]u8) void {
     var i: usize = 0;
     while (i < 3*256) : (i += 3) {
         palette[i+0] = gammatable[@intCast(usegamma)][pal[i+0]];

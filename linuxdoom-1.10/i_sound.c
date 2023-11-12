@@ -255,7 +255,8 @@ void I_InitMusic(void)
         fprintf(stderr, "I_InitMusic: Failed to load soundfont '%s'. Music will not play.\n", sfFile);
     }
 
-    tsf_set_output(soundfont, TSF_STEREO_INTERLEAVED, SAMPLERATE, snd_MusicVolume / 15.0 * 0.65);
+    // Volume start at zero but it will be immediately updated by I_SetMusicVolume via S_Init
+    tsf_set_output(soundfont, TSF_STEREO_INTERLEAVED, SAMPLERATE, 0);
 }
 
 void I_ShutdownMusic(void)

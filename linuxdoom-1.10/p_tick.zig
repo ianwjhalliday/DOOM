@@ -10,6 +10,7 @@ const P_PlayerThink = @import("p_user.zig").P_PlayerThink;
 const MAXPLAYERS = @import("doomdef.zig").MAXPLAYERS;
 
 const g_game = @import("g_game.zig");
+const m_menu = @import("m_menu.zig");
 
 // TODO: import free from z_zone
 extern fn Z_Free(ptr: *anyopaque) void;
@@ -120,7 +121,7 @@ pub fn P_Ticker() void {
 
     // pause if in menu and at least one tic has been run
     if (g_game.netgame == c.false
-        and c.menuactive != c.false
+        and m_menu.menuactive
         and g_game.demoplayback == c.false
         and g_game.players[g_game.consoleplayer].viewz != 1) {
         return;

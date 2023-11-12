@@ -34,6 +34,9 @@ const G_BuildTiccmd = g_game.G_BuildTiccmd;
 const G_CheckDemoStatus = g_game.G_CheckDemoStatus;
 const G_Ticker = g_game.G_Ticker;
 
+const m_menu = @import("m_menu.zig");
+const M_Ticker = m_menu.M_Ticker;
+
 //
 // Network play related stuff.
 // There is a data struct that stores network
@@ -692,7 +695,7 @@ pub fn D_QuitNetGame() void {
     }
 
     if (g_game.netgame == c.false
-        or g_game.usergame == c.false
+        or !g_game.usergame
         // or g_game.consoleplayer == -1  // TODO: Bug? Is is possible for consoleplayer to be set to -1?
         or g_game.demoplayback != c.false) {
         return;
@@ -721,8 +724,6 @@ pub fn D_QuitNetGame() void {
 var frameon: c_int = undefined;
 var frameskip = [_]bool{false} ** 4;
 var oldnettics: c_int = undefined;
-
-extern fn M_Ticker() void;
 
 pub fn TryRunTics() void {
     const S = struct {

@@ -8,7 +8,6 @@ const c = @cImport({
     @cInclude("f_finale.h");
     @cInclude("hu_stuff.h");
     @cInclude("info.h");
-    @cInclude("m_menu.h");
     @cInclude("p_local.h");
     @cInclude("p_mobj.h");
     @cInclude("p_saveg.h");
@@ -45,6 +44,9 @@ const d_net = @import("d_net.zig");
 const m_argv = @import("m_argv.zig");
 const M_CheckParm = m_argv.M_CheckParm;
 
+const m_menu = @import("m_menu.zig");
+const M_StartControlPanel = m_menu.M_StartControlPanel;
+
 const m_misc = @import("m_misc.zig");
 const M_ReadFile = m_misc.M_ReadFile;
 const M_WriteFile = m_misc.M_WriteFile;
@@ -64,7 +66,7 @@ const player_t = @import("p_user.zig").player_t;
 const r_sky = @import("r_sky.zig");
 
 const s_sound = @import("s_sound.zig");
-const S_StartSound = s_sound.S_StartSound;
+const S_StartSound = s_sound.S_StartSound_Zig;
 const S_PauseSound = s_sound.S_PauseSound;
 const S_ResumeSound = s_sound.S_ResumeSound;
 
@@ -105,7 +107,7 @@ pub export var gamemap: c_int = 0;
 pub export var paused = false;
 var sendpause = false;     // send a pause event next tic
 var sendsave = false;      // send a save event next tic
-pub export var usergame: c.boolean = c.false;      // ok to save / end game
+pub var usergame = false;      // ok to save / end game
 
 var timingdemo = false;    // if true, exit with report on completion
 pub var nodrawers = false;     // for comparative timing purposes
@@ -504,7 +506,7 @@ pub fn G_Responder(ev: *Event) bool {
         if (ev.type == .KeyDown or
             (ev.type == .Mouse and ev.data1 != 0) or
             (ev.type == .Joystick and ev.data1 != 0)) {
-            c.M_StartControlPanel();
+            M_StartControlPanel();
             return true;
         }
         return false;
@@ -551,8 +553,8 @@ pub fn G_Responder(ev: *Event) bool {
         mousebuttons[0] = (ev.data1 & 1) != 0;
         mousebuttons[1] = (ev.data1 & 2) != 0;
         mousebuttons[2] = (ev.data1 & 4) != 0;
-        mousex = @divTrunc(ev.data2*(c.mouseSensitivity+5), 10);
-        mousey = @divTrunc(ev.data3*(c.mouseSensitivity+5), 10);
+        mousex = @divTrunc(ev.data2*(m_menu.mouseSensitivity+5), 10);
+        mousey = @divTrunc(ev.data3*(m_menu.mouseSensitivity+5), 10);
         return true;    // eat events
       },
 
@@ -799,7 +801,7 @@ export fn G_CheckSpot(playernum: c_int, mthing: *c.mapthing_t) bool {
                       , c.MT_TFOG);
 
     if (players[consoleplayer].viewz != 1) {
-        S_StartSound(mo, @intFromEnum(Sfx.telept));  // don't start sound on first frame
+        S_StartSound(mo, .telept);  // don't start sound on first frame
     }
 
     return true;
@@ -872,7 +874,7 @@ fn G_DoReborn(playernum: c_int) void {
 }
 
 
-export fn G_ScreenShot() void {
+pub fn G_ScreenShot() void {
     gameaction = c.ga_screenshot;
 }
 
@@ -1070,8 +1072,7 @@ extern fn R_ExecuteSetViewSize() void;
 var savenamebuf: [256]u8 = undefined;
 var savename: []const u8 = undefined;
 
-pub export fn G_LoadGame(name: [*:0]const u8) void {
-    // TODO: Is there a simpler way to memcpyZ?
+pub fn G_LoadGame(name: [:0]const u8) void {
     savename = fmt.bufPrint(&savenamebuf, "{s}", .{name}) catch unreachable;
     gameaction = c.ga_loadgame;
 }
@@ -1160,7 +1161,7 @@ fn G_DoLoadGame() void {
 // Called by the menu task.
 // Description is a 24 byte text string
 //
-export fn G_SaveGame(slot: c_int, description: [*:0]const u8) void {
+pub fn G_SaveGame(slot: c_int, description: [*:0]const u8) void {
     savegameslot = slot;
     _ = fmt.bufPrintZ(&savedescription, "{s}", .{description}) catch unreachable;
     sendsave = true;
@@ -1235,7 +1236,7 @@ var d_skill: Skill = undefined;
 var d_episode: c_int = 0;
 var d_map: c_int = 0;
 
-pub export fn G_DeferedInitNew(skill: Skill, episode: c_int, map: c_int) void {
+pub fn G_DeferedInitNew(skill: Skill, episode: c_int, map: c_int) void {
     d_skill = skill;
     d_episode = episode;
     d_map = map;
@@ -1331,7 +1332,7 @@ pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
         p.playerstate = c.PST_REBORN;
     }
 
-    usergame = c.true;                // will be set false if a demo
+    usergame = true;                // will be set false if a demo
     paused = false;
     demoplayback = c.false;
     c.automapactive = c.false;
@@ -1420,7 +1421,7 @@ fn G_WriteDemoTiccmd(cmd: *TicCmd) void {
 // G_RecordDemo
 //
 pub fn G_RecordDemo(name: []const u8) void {
-    usergame = c.false;
+    usergame = false;
     demoname = fmt.bufPrintZ(&demonamebuf, "{s}.lmp", .{name}) catch unreachable;
     const i: usize = @intCast(M_CheckParm("-maxdemo"));
     const maxsize: i32 =
@@ -1521,7 +1522,7 @@ fn G_DoPlayDemo() void {
     G_InitNew(skill, episode, map);
     precache = c.true;
 
-    usergame = c.false;
+    usergame = false;
     demoplayback = c.true;
 }
 

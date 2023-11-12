@@ -54,7 +54,7 @@ pub fn I_ZoneBase(size: *c_int) [*]u8 {
 }
 
 var basetime: c_long = 0;
-pub export fn I_GetTime() c_int {
+pub fn I_GetTime() c_int {
     var tp: c.struct_timeval = undefined;
     var tzp: c.struct_timezone = undefined;
     _ = c.gettimeofday(&tp, &tzp);
@@ -69,7 +69,7 @@ pub fn I_Init() void {
     I_InitSound();
 }
 
-pub export fn I_Quit() void {
+pub fn I_Quit() void {
     D_QuitNetGame();
     I_ShutdownSound();
     I_ShutdownMusic();
@@ -79,7 +79,7 @@ pub export fn I_Quit() void {
 }
 
 /// Wait for vertical retrace or pause a bit.
-pub export fn I_WaitVBL(count: c_int) void {
+pub fn I_WaitVBL(count: c_int) void {
     _ = c.usleep(@intCast(count * (1000000/70)));
 }
 

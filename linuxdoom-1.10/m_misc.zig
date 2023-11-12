@@ -15,6 +15,8 @@ const I_Error = @import("i_system.zig").I_Error;
 const I_ReadScreen = @import("i_video.zig").I_ReadScreen;
 const M_CheckParm = @import("m_argv.zig").M_CheckParm;
 const m_argv = @import("m_argv.zig");
+const m_menu = @import("m_menu.zig");
+const s_sound = @import("s_sound.zig");
 const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpName;
 const doomdef = @import("doomdef.zig");
 const SCREENWIDTH = doomdef.SCREENWIDTH;
@@ -98,19 +100,10 @@ extern var joybstrafe: c_int;
 extern var joybuse: c_int;
 extern var joybspeed: c_int;
 
-extern var mouseSensitivity: c_int;
-extern var showMessages: c_int;
-
-extern var detailLevel: c_int;
-
-extern var screenblocks: c_int;
-
 extern var usegamma: c_int;
 
 // machine-independent sound params
 extern var numChannels: c_int;
-extern var snd_SfxVolume: c_int;
-extern var snd_MusicVolume: c_int;
 
 extern var chat_macros: [10][*:0]const u8;
 
@@ -142,10 +135,10 @@ pub const Default = struct {
 };
 
 const defaults = [_]Default{
-    Default.int("mouse_sensitivity", &mouseSensitivity, 5),
-    Default.int("sfx_volume", &snd_SfxVolume, 8),
-    Default.int("music_volume", &snd_MusicVolume, 8),
-    Default.int("show_messages", &showMessages, 1),
+    Default.int("mouse_sensitivity", &m_menu.mouseSensitivity, 5),
+    Default.int("sfx_volume", &s_sound.snd_SfxVolume, 8),
+    Default.int("music_volume", &s_sound.snd_MusicVolume, 8),
+    Default.int("show_messages", &m_menu.showMessages, 1),
 
     // #ifdef NORMALUNIX
     Default.int("key_right", &key_right, doomdef.KEY_RIGHTARROW),
@@ -172,8 +165,8 @@ const defaults = [_]Default{
     Default.int("joyb_use", &joybuse, 3),
     Default.int("joyb_speed", &joybspeed, 2),
 
-    Default.int("screenblocks", &screenblocks, 9),
-    Default.int("detaillevel", &detailLevel, 0),
+    Default.int("screenblocks", &m_menu.screenblocks, 9),
+    Default.int("detaillevel", &m_menu.detailLevel, 0),
 
     Default.int("snd_channels", &numChannels, 3),
 

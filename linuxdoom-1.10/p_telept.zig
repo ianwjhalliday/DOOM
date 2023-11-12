@@ -8,6 +8,8 @@ const c = @cImport({
     @cInclude("sounds.h");
 });
 
+const S_StartSound = @import("s_sound.zig").S_StartSound_Zig;
+
 pub const p_tick = @import("p_tick.zig");
 
 
@@ -64,12 +66,12 @@ pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *c.mobj_t) c_int 
 
             // spawn teleport fog at source and destination
             const fog1 = c.P_SpawnMobj(oldx, oldy, oldz, c.MT_TFOG);
-            c.S_StartSound(fog1, c.sfx_telept);
+            S_StartSound(fog1, .telept);
             const an = m.angle >> c.ANGLETOFINESHIFT;
             const fog2 = c.P_SpawnMobj(m.x + 20 * c.finecosine[an], m.y + 20 * c.finesine[an], thing.z, c.MT_TFOG);
 
             // emit sound, where?
-            c.S_StartSound(fog2, c.sfx_telept);
+            S_StartSound(fog2, .telept);
 
             // don't move for a bit
             if (thing.player != null) {
