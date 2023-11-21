@@ -108,27 +108,32 @@ extern var numChannels: c_int;
 
 pub const Default = struct {
     name: [*:0]const u8,
-    location: *c_int,
-    defaultvalue: Value,
+    d: union(enum) {
+        int: DefaultInt,
+        str: DefaultStr,
+    },
 
-    const Value = union(enum) {
-        int: c_int,
-        str: [*:0]const u8,
+    const DefaultInt = struct {
+        location: *c_int,
+        defaultvalue: c_int,
+    };
+
+    const DefaultStr = struct {
+        location: *[]const u8,
+        defaultvalue: []const u8,
     };
 
     pub fn int(name: [*:0]const u8, location: *c_int, defaultvalue: c_int) Default {
         return Default{
             .name = name,
-            .location = location,
-            .defaultvalue = Value{.int = defaultvalue},
+            .d = .{.int = DefaultInt{.location = location, .defaultvalue = defaultvalue}},
         };
     }
 
-    pub fn str(name: [*:0]const u8, location: *[*:0]const u8, defaultvalue: [*:0]const u8) Default {
+    pub fn str(name: [*:0]const u8, location: *[]const u8, defaultvalue: []const u8) Default {
         return Default{
             .name = name,
-            .location = @ptrCast(location),
-            .defaultvalue = Value{.str = defaultvalue},
+            .d = .{.str = DefaultStr{.location = location, .defaultvalue = defaultvalue}},
         };
     }
 };
@@ -202,9 +207,9 @@ pub fn M_SaveDefaults() void {
     defer buf_stream.flush() catch {};
 
     for (defaults) |default| {
-        switch (default.defaultvalue) {
-            .int => st.print("{s}\t\t{}\n", .{default.name, default.location.*}) catch {},
-            .str => st.print("{s}\t\t\"{s}\"\n", .{default.name, @as(*[*:0]const u8, @ptrCast(@alignCast(default.location))).*}) catch {},
+        switch (default.d) {
+            .int => |d| st.print("{s}\t\t{}\n", .{default.name, d.location.*}) catch {},
+            .str => |d| st.print("{s}\t\t\"{s}\"\n", .{default.name, d.location.*}) catch {},
         }
     }
 }
@@ -215,9 +220,9 @@ pub fn M_SaveDefaults() void {
 pub fn M_LoadDefaults() void {
     // set everything to base values
     for (defaults) |default| {
-        switch (default.defaultvalue) {
-            .int => |i| default.location.* = i,
-            .str => |s| @as(*[*:0]const u8, @ptrCast(@alignCast(default.location))).* = s,
+        switch (default.d) {
+            .int => |d| d.location.* = d.defaultvalue,
+            .str => |d| d.location.* = d.defaultvalue,
         }
     }
 
@@ -264,15 +269,15 @@ pub fn M_LoadDefaults() void {
 
             if (value[0] == '"') {
                 // get a string default
-                const s = std.heap.raw_c_allocator.dupeZ(u8, value[1..value.len-1]) catch unreachable;
-                @as(*[*:0]const u8, @ptrCast(@alignCast(default.location))).* = s;
+                const s = std.heap.raw_c_allocator.dupe(u8, value[1..value.len-1]) catch unreachable;
+                default.d.str.location.* = s;
             } else {
                 // assume an integer default
                 const i = std.fmt.parseInt(c_int, value, 0) catch {
                     stderr.print("M_LoadDefaults: couldn't parse integer: '{s}'\n", .{value}) catch {};
                     continue;
                 };
-                default.location.* = i;
+                default.d.int.location.* = i;
             }
         }
     } else |_| {

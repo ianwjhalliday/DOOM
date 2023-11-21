@@ -53,7 +53,7 @@ fn HU_INPUTY() c_short { return HU_MSGY + HU_MSGHEIGHT*(std.mem.littleToNative(c
 const HU_INPUTWIDTH = 64;
 const HU_INPUTHEIGHT = 1;
 
-pub var chat_macros = [_][*:0]const u8{
+pub var chat_macros = [_][]const u8{
     c.HUSTR_CHATMACRO0,
     c.HUSTR_CHATMACRO1,
     c.HUSTR_CHATMACRO2,
@@ -634,7 +634,7 @@ pub fn HU_Responder(ev: *Event) bool {
             }
             ch = ch - '0';
 
-            const macromessage = std.mem.span(chat_macros[@intCast(ch)]);
+            const macromessage = chat_macros[@intCast(ch)];
 
             // kill last message with a '\n'
             HU_queueChatChar(doomdef.KEY_ENTER); // DEBUG!!!
