@@ -23,6 +23,8 @@ const G_DeferedInitNew = g_game.G_DeferedInitNew;
 const G_LoadGame = g_game.G_LoadGame;
 const G_SaveGame = g_game.G_SaveGame;
 const G_ScreenShot = g_game.G_ScreenShot;
+const hu_stuff = @import("hu_stuff.zig");
+const HU_FONTSIZE = hu_stuff.HU_FONTSIZE;
 const i_system = @import("i_system.zig");
 const I_GetTime = i_system.I_GetTime;
 const I_Quit = i_system.I_Quit;
@@ -45,11 +47,6 @@ const Z_Tag = @import("z_zone.zig").Z_Tag;
 
 const SCREENWIDTH = doomdef.SCREENWIDTH;
 
-extern var hu_font: [c.HU_FONTSIZE]*c.patch_t;
-extern var message_dontfuckwithme: c.boolean;
-
-extern var chat_on: c.boolean;          // in heads-up code
-
 //
 // defaulted values
 //
@@ -57,7 +54,7 @@ pub var mouseSensitivity: c_int = 0;       // has default
 
 // Show messages has default, 0 = off, 1 = on
 // TODO: Would be easier if this is usize for array indexing
-pub export var showMessages: c_int = 0;
+pub var showMessages: c_int = 0;
 
 
 // Blocky mode, has default, 0 = high, 1 = normal
@@ -865,7 +862,7 @@ fn M_ChangeMessages(choice: c_int) void {
         g_game.players[g_game.consoleplayer].message = c.MSGON ;
     }
 
-    message_dontfuckwithme = c.true;
+    hu_stuff.message_dontfuckwithme = true;
 }
 
 
@@ -1106,10 +1103,10 @@ fn M_StringWidth(string: [*:0]const u8) u16 {
     for (mem.span(string)) |ch| {
         const fc = @as(i32, std.ascii.toUpper(ch)) - c.HU_FONTSTART;
         w +=
-            if (fc < 0 or fc >= c.HU_FONTSIZE)
+            if (fc < 0 or fc >= HU_FONTSIZE)
                 4
             else
-                @intCast(mem.littleToNative(c_short, hu_font[@intCast(fc)].width));
+                @intCast(mem.littleToNative(c_short, hu_stuff.hu_font[@intCast(fc)].width));
     }
 
     return w;
@@ -1121,7 +1118,7 @@ fn M_StringWidth(string: [*:0]const u8) u16 {
 //      Find string height from hu_font chars
 //
 fn M_StringHeight(string: [*:0]const u8) c_int {
-    const height = mem.littleToNative(c_short, hu_font[0].height);
+    const height = mem.littleToNative(c_short, hu_stuff.hu_font[0].height);
 
     var h = height;
     for (mem.span(string)) |ch| {
@@ -1149,17 +1146,17 @@ fn M_WriteText(x: u16, y: u16, string: [*:0]const u8) void {
         }
 
         const fch = @as(i32, std.ascii.toUpper(ch)) - c.HU_FONTSTART;
-        if (fch < 0 or fch >= c.HU_FONTSIZE) {
+        if (fch < 0 or fch >= HU_FONTSIZE) {
             cx += 4;
             continue;
         }
 
-        const w: u16 = @intCast(mem.littleToNative(c_short, hu_font[@intCast(fch)].width));
+        const w: u16 = @intCast(mem.littleToNative(c_short, hu_stuff.hu_font[@intCast(fch)].width));
         if (cx + w > SCREENWIDTH) {
             break;
         }
 
-        c.V_DrawPatchDirect(cx, cy, 0, hu_font[@intCast(fch)]);
+        c.V_DrawPatchDirect(cx, cy, 0, @ptrCast(hu_stuff.hu_font[@intCast(fch)]));
         cx += w;
     }
 }
@@ -1281,7 +1278,7 @@ pub fn M_Responder(ev: *Event) bool {
 
           else => {
             ch = @as(c_int, std.ascii.toUpper(@intCast(ch)));
-            if (ch != 32 and (ch-c.HU_FONTSTART < 0 or ch-c.HU_FONTSTART >= c.HU_FONTSIZE)) {
+            if (ch != 32 and (ch-c.HU_FONTSTART < 0 or ch-c.HU_FONTSTART >= HU_FONTSIZE)) {
                 // do nothing but eat the event still
             } else if (ch >= 32 and ch <= 127 and
                 saveCharIndex < SAVESTRINGSIZE-1 and
@@ -1322,7 +1319,7 @@ pub fn M_Responder(ev: *Event) bool {
     // F-Keys
     if (!menuactive) switch (ch) {
       doomdef.KEY_MINUS => {         // Screen size down
-        if (c.automapactive != c.false or chat_on != c.false) {
+        if (c.automapactive != c.false or hu_stuff.chat_on) {
             return false;
         }
         M_SizeDisplay(0);
@@ -1331,7 +1328,7 @@ pub fn M_Responder(ev: *Event) bool {
       },
 
       doomdef.KEY_EQUALS => {        // Screen size up
-        if (c.automapactive != c.false or chat_on != c.false) {
+        if (c.automapactive != c.false or hu_stuff.chat_on) {
             return false;
         }
         M_SizeDisplay(1);
@@ -1411,7 +1408,6 @@ pub fn M_Responder(ev: *Event) bool {
         return true;
       },
 
-      'g',
       doomdef.KEY_F11 => {           // gamma toggle
         c.usegamma += 1;
         if (c.usegamma > 4) {
@@ -1591,7 +1587,7 @@ pub fn M_Drawer() void {
 
             const x: u16 = @intCast(160 - @divTrunc(M_StringWidth(&stringbuf), 2));
             M_WriteText(x, y, &stringbuf);
-            y += @intCast(mem.littleToNative(c_short, hu_font[0].height));
+            y += @intCast(mem.littleToNative(c_short, hu_stuff.hu_font[0].height));
         }
         return;
     }

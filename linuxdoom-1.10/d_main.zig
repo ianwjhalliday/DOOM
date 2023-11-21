@@ -13,8 +13,6 @@ extern fn W_CheckNumForName(name: [*c]const u8) c_int;
 
 extern fn AM_Drawer() void;
 extern fn F_Drawer() void;
-extern fn HU_Drawer() void;
-extern fn HU_Erase() void;
 extern fn R_FillBackScreen() void;
 extern fn R_DrawViewBorder() void;
 const ST_Drawer = @import("st_stuff.zig").ST_Drawer;
@@ -61,6 +59,11 @@ const G_Responder = g_game.G_Responder;
 const G_TimeDemo = g_game.G_TimeDemo;
 const TicCmd = @import("d_ticcmd.zig").TicCmd;
 
+const hu_stuff = @import("hu_stuff.zig");
+const HU_Drawer = hu_stuff.HU_Drawer;
+const HU_Erase = hu_stuff.HU_Erase;
+const HU_Init = hu_stuff.HU_Init;
+
 const m_menu = @import("m_menu.zig");
 const M_Drawer = m_menu.M_Drawer;
 const M_Init = m_menu.M_Init;
@@ -71,6 +74,9 @@ const s_sound = @import("s_sound.zig");
 const S_Init = s_sound.S_Init;
 const S_StartMusic = s_sound.S_StartMusic;
 const S_UpdateSounds = s_sound.S_UpdateSounds;
+
+const st_stuff = @import("st_stuff.zig");
+const ST_Init = st_stuff.ST_Init;
 
 const w_wad = @import("w_wad.zig");
 const W_InitMultipleFiles = w_wad.W_InitMultipleFiles;
@@ -688,8 +694,6 @@ extern fn V_Init() void;
 extern fn Z_Init() void;
 extern fn R_Init() void;
 extern fn P_Init() void;
-extern fn HU_Init() void;
-const ST_Init = @import("st_stuff.zig").ST_Init;
 
 pub fn toDoomBoolean(b: bool) c.boolean {
     return if (b) c.true else c.false;

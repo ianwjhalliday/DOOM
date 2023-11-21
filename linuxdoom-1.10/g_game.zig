@@ -41,6 +41,11 @@ const D_PageTicker = d_main.D_PageTicker;
 
 const d_net = @import("d_net.zig");
 
+const hu_stuff = @import("hu_stuff.zig");
+const HU_Ticker = hu_stuff.HU_Ticker;
+const HU_Responder = hu_stuff.HU_Responder;
+const HU_dequeueChatChar = hu_stuff.HU_dequeueChatChar;
+
 const m_argv = @import("m_argv.zig");
 const M_CheckParm = m_argv.M_CheckParm;
 
@@ -312,7 +317,7 @@ pub fn G_BuildTiccmd(cmd: *TicCmd) void {
     }
 
     // buttons
-    cmd.chatchar = c.HU_dequeueChatChar();
+    cmd.chatchar = HU_dequeueChatChar();
 
     if (gamekeydown[@intCast(key_fire)] or mousebuttons[@intCast(mousebfire)] or joybuttons[@intCast(joybfire)]) {
         cmd.buttons |= @intCast(c.BT_ATTACK);
@@ -479,7 +484,6 @@ export fn G_DoLoadLevel() void {
     }
 }
 
-extern fn HU_Responder(ev: *Event) c.boolean;
 extern fn AM_Responder(ev: *Event) c.boolean;
 extern fn F_Responder(ev: *Event) c.boolean;
 
@@ -513,7 +517,7 @@ pub fn G_Responder(ev: *Event) bool {
     }
 
     if (gamestate == .Level) {
-        if (HU_Responder(ev) != c.false) {
+        if (HU_Responder(ev)) {
             return true;        // chat ate the event
         }
         if (ST_Responder(ev) != c.false) {
@@ -573,7 +577,6 @@ pub fn G_Responder(ev: *Event) bool {
 }
 
 
-extern var player_names: [4][*:0]u8;
 extern var rndindex: c_int;
 
 //
@@ -633,7 +636,7 @@ pub export fn G_Ticker() void {
                 const S = struct {
                     var turbomessage: [80]u8 = undefined;
                 };
-                _ = fmt.bufPrintZ(&S.turbomessage, "{s} is turbo!", .{player_names[i]}) catch unreachable;
+                _ = fmt.bufPrintZ(&S.turbomessage, "{s} is turbo!", .{hu_stuff.player_names[i]}) catch unreachable;
                 players[consoleplayer].message = &S.turbomessage;
             }
 
@@ -689,7 +692,7 @@ pub export fn G_Ticker() void {
             P_Ticker();
             ST_Ticker();
             c.AM_Ticker();
-            c.HU_Ticker();
+            HU_Ticker();
         },
         .Intermission => c.WI_Ticker(),
         .Finale => c.F_Ticker(),

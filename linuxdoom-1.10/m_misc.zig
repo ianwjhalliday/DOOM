@@ -11,6 +11,7 @@ const mem = std.mem;
 const os = std.os;
 const zone = @import("z_zone.zig");
 const g_game = @import("g_game.zig");
+const hu_stuff = @import("hu_stuff.zig");
 const I_Error = @import("i_system.zig").I_Error;
 const I_ReadScreen = @import("i_video.zig").I_ReadScreen;
 const M_CheckParm = @import("m_argv.zig").M_CheckParm;
@@ -105,8 +106,6 @@ extern var usegamma: c_int;
 // machine-independent sound params
 extern var numChannels: c_int;
 
-extern var chat_macros: [10][*:0]const u8;
-
 pub const Default = struct {
     name: [*:0]const u8,
     location: *c_int,
@@ -172,16 +171,16 @@ const defaults = [_]Default{
 
     Default.int("usegamma", &usegamma, 0),
 
-    Default.str("chatmacro0", &chat_macros[0], c.HUSTR_CHATMACRO0),
-    Default.str("chatmacro1", &chat_macros[1], c.HUSTR_CHATMACRO1),
-    Default.str("chatmacro2", &chat_macros[2], c.HUSTR_CHATMACRO2),
-    Default.str("chatmacro3", &chat_macros[3], c.HUSTR_CHATMACRO3),
-    Default.str("chatmacro4", &chat_macros[4], c.HUSTR_CHATMACRO4),
-    Default.str("chatmacro5", &chat_macros[5], c.HUSTR_CHATMACRO5),
-    Default.str("chatmacro6", &chat_macros[6], c.HUSTR_CHATMACRO6),
-    Default.str("chatmacro7", &chat_macros[7], c.HUSTR_CHATMACRO7),
-    Default.str("chatmacro8", &chat_macros[8], c.HUSTR_CHATMACRO8),
-    Default.str("chatmacro9", &chat_macros[9], c.HUSTR_CHATMACRO9),
+    Default.str("chatmacro0", &hu_stuff.chat_macros[0], c.HUSTR_CHATMACRO0),
+    Default.str("chatmacro1", &hu_stuff.chat_macros[1], c.HUSTR_CHATMACRO1),
+    Default.str("chatmacro2", &hu_stuff.chat_macros[2], c.HUSTR_CHATMACRO2),
+    Default.str("chatmacro3", &hu_stuff.chat_macros[3], c.HUSTR_CHATMACRO3),
+    Default.str("chatmacro4", &hu_stuff.chat_macros[4], c.HUSTR_CHATMACRO4),
+    Default.str("chatmacro5", &hu_stuff.chat_macros[5], c.HUSTR_CHATMACRO5),
+    Default.str("chatmacro6", &hu_stuff.chat_macros[6], c.HUSTR_CHATMACRO6),
+    Default.str("chatmacro7", &hu_stuff.chat_macros[7], c.HUSTR_CHATMACRO7),
+    Default.str("chatmacro8", &hu_stuff.chat_macros[8], c.HUSTR_CHATMACRO8),
+    Default.str("chatmacro9", &hu_stuff.chat_macros[9], c.HUSTR_CHATMACRO9),
 };
 
 var defaultfile: []const u8 = undefined;

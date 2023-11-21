@@ -51,8 +51,6 @@ pub fn build(b: *std.Build) void {
         "r_things.c",
         "wi_stuff.c",
         "v_video.c",
-        "hu_stuff.c",
-        "hu_lib.c",
         "info.c",
     };
 
