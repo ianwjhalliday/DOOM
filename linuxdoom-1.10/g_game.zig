@@ -797,7 +797,7 @@ export fn G_CheckSpot(playernum: c_int, mthing: *c.mapthing_t) bool {
 
     // spawn a teleport fog
     const ss = c.R_PointInSubsector(x,y);
-    const an: usize = @intCast((c.ANG45 * @divTrunc(mthing.angle, 45)) >> c.ANGLETOFINESHIFT);
+    const an: usize = @intCast((c.ANG45 *% @divTrunc(mthing.angle, 45)) >> c.ANGLETOFINESHIFT);
 
     const mo = c.P_SpawnMobj(x+20*c.finecosine[an], y+20*c.finesine[an]
                       , ss[0].sector[0].floorheight
