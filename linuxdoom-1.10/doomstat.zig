@@ -10,7 +10,7 @@ const Language = doomdef.Language;
 pub export var gamemode: GameMode = .Indetermined;
 
 // Language.
-pub var language: Language = .English;
+pub export var language: Language = .English;
 
 // Set if homebrew PWAD stuff has been added.
 pub export var modifiedgame: c.boolean = c.false;

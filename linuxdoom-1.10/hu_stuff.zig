@@ -369,8 +369,11 @@ fn ForeignTranslation(ch: u8) u8 {
 }
 
 pub fn HU_Init() void {
-    shiftxform = &english_shiftxform;
-    // shiftxform = if (french) french_shiftxform else english_shiftxform;
+    shiftxform =
+        if (doomstat.language == .French)
+            &french_shiftxform
+        else
+            &english_shiftxform;
 
     // load the heads-up font
     var buffer = [_]u8{0} ** 9;
@@ -648,9 +651,9 @@ pub fn HU_Responder(ev: *Event) bool {
             plr.message = &S.lastmessage;
             eatkey = true;
         } else {
-            // if (french) {
-            //     ch = ForeignTranslation(ch);
-            // }
+            if (doomstat.language == .French) {
+                ch = ForeignTranslation(ch);
+            }
 
             if (S.shiftdown or (ch >= 'a' and ch <= 'z')) {
                 ch = shiftxform[ch];
