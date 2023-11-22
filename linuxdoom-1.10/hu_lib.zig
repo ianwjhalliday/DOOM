@@ -118,7 +118,7 @@ pub fn HUlib_drawTextLine(l: *HudTextLine, drawcursor: bool) void {
             if (x + w > SCREENWIDTH) {
                 break;
             }
-            c.V_DrawPatchDirect(x, l.y, FG, l.f[@intCast(ch - l.sc)]);
+            c.V_DrawPatch(x, l.y, FG, l.f[@intCast(ch - l.sc)]);
             x += w;
         } else {
             x += 4;
@@ -130,7 +130,7 @@ pub fn HUlib_drawTextLine(l: *HudTextLine, drawcursor: bool) void {
 
     // draw the cursor if requested
     if (drawcursor and x + std.mem.littleToNative(c_short, l.f[@intCast('_' - l.sc)].width) <= SCREENWIDTH) {
-        c.V_DrawPatchDirect(x, l.y, FG, l.f[@intCast('_' - l.sc)]);
+        c.V_DrawPatch(x, l.y, FG, l.f[@intCast('_' - l.sc)]);
     }
 }
 

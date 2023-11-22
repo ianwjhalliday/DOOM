@@ -1,10 +1,9 @@
 const zone = @import("z_zone.zig");
 const M_Random = @import("m_random.zig").M_Random;
 const I_ReadScreen = @import("i_video.zig").I_ReadScreen;
-
-extern fn V_DrawBlock(x: c_int, y: c_int, scrn: c_int, width: c_int, height: c_int, src: [*]u8) void;
-extern fn V_MarkRect(c_int, c_int, c_int, c_int) void;
-extern var screens: [5][*]u8;
+const v_video = @import("v_video.zig");
+const V_DrawBlock = v_video.V_DrawBlock;
+const V_MarkRect = v_video.V_MarkRect;
 
 pub const WipeStyle = enum {
     // simple gradual pixel change for 8-bit only
@@ -34,11 +33,11 @@ fn wipe_shittyColMajorXform(array: [*]c_short, width: usize, height: usize) void
     @memcpy(array, dest);
 }
 
-fn wipe_initColorXForm(width: usize, height: usize) void {
+fn wipe_initColorXForm(width: u32, height: u32) void {
     @memcpy(wipe_scr, wipe_scr_start[0 .. width * height]);
 }
 
-fn wipe_doColorXForm(width: usize, height: usize, ticks: usize) bool {
+fn wipe_doColorXForm(width: u32, height: u32, ticks: usize) bool {
     var changed = false;
 
     var w = wipe_scr;
@@ -61,7 +60,7 @@ fn wipe_exitColorXForm() void {}
 
 var cols: []i32 = undefined;
 
-fn wipe_initMelt(width: usize, height: usize) void {
+fn wipe_initMelt(width: u32, height: u32) void {
     // copy start screen to main screen
     @memcpy(wipe_scr, wipe_scr_start[0 .. width * height]);
 
@@ -85,7 +84,7 @@ fn wipe_initMelt(width: usize, height: usize) void {
     }
 }
 
-fn wipe_doMelt(width: usize, height: usize, ticks: usize) bool {
+fn wipe_doMelt(width: u32, height: u32, ticks: usize) bool {
     var done = true;
     const halfwidth = width / 2;
 
@@ -132,21 +131,21 @@ fn wipe_exitMelt() void {
 }
 
 pub fn StartScreen() void {
-    wipe_scr_start = screens[2];
+    wipe_scr_start = v_video.screens[2];
     I_ReadScreen(wipe_scr_start);
 }
 
-pub fn EndScreen(x: c_int, y: c_int, width: c_int, height: c_int) void {
-    wipe_scr_end = screens[3];
+pub fn EndScreen(x: u32, y: u32, width: u32, height: u32) void {
+    wipe_scr_end = v_video.screens[3];
     I_ReadScreen(wipe_scr_end);
     V_DrawBlock(x, y, 0, width, height, wipe_scr_start); // restore start scr.
 }
 
-pub fn ScreenWipe(wipe: WipeStyle, width: usize, height: usize, ticks: usize) bool {
+pub fn ScreenWipe(wipe: WipeStyle, width: u32, height: u32, ticks: usize) bool {
     // initial stuff
     if (!go) {
         go = true;
-        wipe_scr = screens[0];
+        wipe_scr = v_video.screens[0];
         switch (wipe) {
             .ColorXForm => wipe_initColorXForm(width, height),
             .Melt => wipe_initMelt(width, height),
@@ -154,7 +153,7 @@ pub fn ScreenWipe(wipe: WipeStyle, width: usize, height: usize, ticks: usize) bo
     }
 
     // do a piece of wipe-in
-    V_MarkRect(0, 0, @intCast(width), @intCast(height));
+    V_MarkRect(0, 0, width, height);
     const rc = switch (wipe) {
         .ColorXForm => wipe_doColorXForm(width, height, ticks),
         .Melt => wipe_doMelt(width, height, ticks),

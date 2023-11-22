@@ -1,7 +1,6 @@
 const c = @cImport({
     @cInclude("dstrings.h");
     @cInclude("r_state.h");
-    @cInclude("v_video.h");
     @cInclude("info.h");
 });
 
@@ -19,19 +18,22 @@ const s_sound = @import("s_sound.zig");
 const S_ChangeMusicEnum = s_sound.S_ChangeMusicEnum;
 const S_StartMusic = s_sound.S_StartMusic;
 const S_StartSound = s_sound.S_StartSound_Zig;
+const v_video = @import("v_video.zig");
+const V_DrawPatch = v_video.c.V_DrawPatch;
+const V_DrawPatchFlipped = v_video.V_DrawPatchFlipped;
+const V_MarkRect = v_video.V_MarkRect;
 const w_wad = @import("w_wad.zig");
 const W_CacheLumpName = w_wad.W_CacheLumpName;
 const W_CacheLumpNum = w_wad.W_CacheLumpNum;
 const Z_Tag = @import("z_zone.zig").Z_Tag;
 
 extern var automapactive: c.boolean;    // in AM_map.c
-extern var screens: [5][*]u8;
 
-fn W_CacheLumpNameAsPatch(name: [*]const u8, tag: Z_Tag) *c.patch_t {
+fn W_CacheLumpNameAsPatch(name: [*]const u8, tag: Z_Tag) *v_video.c.patch_t {
     return @ptrCast(@alignCast(W_CacheLumpName(name, tag)));
 }
 
-fn W_CacheLumpNumAsPatch(lump: c_int, tag: Z_Tag) *c.patch_t {
+fn W_CacheLumpNumAsPatch(lump: c_int, tag: Z_Tag) *v_video.c.patch_t {
     return @ptrCast(@alignCast(W_CacheLumpNum(lump, tag)));
 }
 
@@ -188,7 +190,7 @@ pub fn F_Ticker() void {
 fn F_TextWrite() void {
     // erase the entire screen to a tiled background
     const src: [*]u8 = @ptrCast(W_CacheLumpName(finaleflat.ptr, .Cache));
-    var dest = screens[0];
+    var dest = v_video.screens[0];
 
     for (0..doomdef.SCREENHEIGHT) |y| {
         for (0..@divTrunc(doomdef.SCREENWIDTH, 64)) |x| {
@@ -204,7 +206,7 @@ fn F_TextWrite() void {
         }
     }
 
-    c.V_MarkRect(0, 0, doomdef.SCREENWIDTH, doomdef.SCREENHEIGHT);
+    V_MarkRect(0, 0, doomdef.SCREENWIDTH, doomdef.SCREENHEIGHT);
 
     // draw some of the text onto the screen
     var cx: c_int = 10;
@@ -230,7 +232,7 @@ fn F_TextWrite() void {
             break;
         }
 
-        c.V_DrawPatch(cx, cy, 0, @ptrCast(hu_stuff.hu_font[chidx]));
+        V_DrawPatch(cx, cy, 0, @ptrCast(hu_stuff.hu_font[chidx]));
         cx += w;
     }
 }
@@ -466,7 +468,7 @@ fn F_CastPrint(text: []const u8) void {
         }
 
         const chidx: usize = @intCast(chup - hu_stuff.HU_FONTSTART);
-        c.V_DrawPatch(@intCast(cx), 180, 0, @ptrCast(hu_stuff.hu_font[chidx]));
+        V_DrawPatch(@intCast(cx), 180, 0, @ptrCast(hu_stuff.hu_font[chidx]));
         const w = std.mem.littleToNative(c_short, hu_stuff.hu_font[chidx].width);
         cx += @intCast(w);
     }
@@ -476,10 +478,8 @@ fn F_CastPrint(text: []const u8) void {
 //
 // F_CastDrawer
 //
-extern fn V_DrawPatchFlipped(x: c_int, y: c_int, scrn: c_int, patch: *c.patch_t) void;
-
 fn F_CastDrawer() void {
-    c.V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("BOSSBACK", .Cache));
+    V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("BOSSBACK", .Cache));
 
     F_CastPrint(castorder[castnum].name);
 
@@ -494,7 +494,7 @@ fn F_CastDrawer() void {
     if (flip) {
         V_DrawPatchFlipped(160, 170, 0, patch);
     } else {
-        c.V_DrawPatch(160, 170, 0, patch);
+        V_DrawPatch(160, 170, 0, patch);
     }
 }
 
@@ -502,13 +502,13 @@ fn F_CastDrawer() void {
 //
 // F_DrawPatchCol
 //
-fn F_DrawPatchCol(x: c_int, patch: *c.patch_t, col: c_int) void {
+fn F_DrawPatchCol(x: c_int, patch: *v_video.c.patch_t, col: c_int) void {
     const patchAsBytes = @as([*]u8, @ptrCast(patch));
     const columnofs = @as([*]c_int, @ptrCast(&patch.columnofs[0]));
     const colofs: usize = @intCast(std.mem.littleToNative(c_int, columnofs[@intCast(col)]));
 
     var column: *c.column_t = @ptrCast(patchAsBytes + colofs);
-    const desttop = screens[0] + @as(usize, @intCast(x));
+    const desttop = v_video.screens[0] + @as(usize, @intCast(x));
 
     // step through the posts in a column
     while (column.topdelta != 0xff) {
@@ -540,7 +540,7 @@ fn F_BunnyScroll() void {
     const p1 = W_CacheLumpNameAsPatch("PFUB2", .Level);
     const p2 = W_CacheLumpNameAsPatch("PFUB1", .Level);
 
-    c.V_MarkRect(0, 0, doomdef.SCREENWIDTH, doomdef.SCREENHEIGHT);
+    V_MarkRect(0, 0, doomdef.SCREENWIDTH, doomdef.SCREENHEIGHT);
 
     var scrolled = 320 - @divTrunc(finalecount - 230, 2);
     if (scrolled > 320) {
@@ -564,7 +564,7 @@ fn F_BunnyScroll() void {
     }
 
     if (finalecount < 1180) {
-        c.V_DrawPatch(
+        V_DrawPatch(
             @divTrunc(doomdef.SCREENWIDTH - 13 * 8, 2),
             @divTrunc(doomdef.SCREENHEIGHT - 8 * 8, 2),
             0,
@@ -585,7 +585,7 @@ fn F_BunnyScroll() void {
 
     var namebuffer: [10]u8 = undefined;
     const name = std.fmt.bufPrintZ(&namebuffer, "END{d}", .{stage}) catch unreachable;
-    c.V_DrawPatch(
+    V_DrawPatch(
         @divTrunc(doomdef.SCREENWIDTH - 13 * 8, 2),
         @divTrunc(doomdef.SCREENHEIGHT - 8 * 8, 2),
         0,
@@ -611,12 +611,12 @@ pub fn F_Drawer() void {
     switch (g_game.gameepisode) {
         1 =>
             if (doomstat.gamemode == .Retail)
-                c.V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("CREDIT", .Cache))
+                V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("CREDIT", .Cache))
             else
-                c.V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("HELP2", .Cache)),
-        2 => c.V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("VICTORY2", .Cache)),
+                V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("HELP2", .Cache)),
+        2 => V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("VICTORY2", .Cache)),
         3 => F_BunnyScroll(),
-        4 => c.V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("ENDPIC", .Cache)),
+        4 => V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("ENDPIC", .Cache)),
         else => unreachable,
     }
 }

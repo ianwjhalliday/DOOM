@@ -7,16 +7,13 @@ const c = @cImport({
     @cInclude("signal.h");
 });
 
-extern var screens: [5][*]u8;
-extern var gammatable: [5][256]u8;
-extern var usegamma: c_int;
-
 const builtin = @import("builtin");
 const std = @import("std");
 const D_PostEvent = @import("d_main.zig").D_PostEvent;
 const Event = @import("d_main.zig").Event;
 const I_Quit = @import("i_system.zig").I_Quit;
 const doomdef = @import("doomdef.zig");
+const v_video = @import("v_video.zig");
 const SCREENWIDTH = doomdef.SCREENWIDTH;
 const SCREENHEIGHT = doomdef.SCREENHEIGHT;
 
@@ -325,7 +322,7 @@ pub fn I_FinishUpdate() void {
 
     c.glActiveTexture(c.GL_TEXTURE0);
     c.glBindTexture(c.GL_TEXTURE_2D, screenTexture);
-    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RED, SCREENWIDTH, SCREENHEIGHT, 0, c.GL_RED, c.GL_UNSIGNED_BYTE, screens[0]);
+    c.glTexImage2D(c.GL_TEXTURE_2D, 0, c.GL_RED, SCREENWIDTH, SCREENHEIGHT, 0, c.GL_RED, c.GL_UNSIGNED_BYTE, v_video.screens[0]);
     c.glActiveTexture(c.GL_TEXTURE1);
     c.glBindTexture(c.GL_TEXTURE_1D, paletteTexture);
 
@@ -340,7 +337,7 @@ pub fn I_FinishUpdate() void {
 // I_ReadScreen
 //
 pub export fn I_ReadScreen(scr: [*]u8) void {
-    @memcpy(scr, screens[0][0..SCREENWIDTH*SCREENHEIGHT]);
+    @memcpy(scr, v_video.screens[0][0..SCREENWIDTH*SCREENHEIGHT]);
 }
 
 //
@@ -350,9 +347,9 @@ var palette: [3*256]u8 = undefined;
 pub fn I_SetPalette(pal: [*]u8) void {
     var i: usize = 0;
     while (i < 3*256) : (i += 3) {
-        palette[i+0] = gammatable[@intCast(usegamma)][pal[i+0]];
-        palette[i+1] = gammatable[@intCast(usegamma)][pal[i+1]];
-        palette[i+2] = gammatable[@intCast(usegamma)][pal[i+2]];
+        palette[i+0] = v_video.gammatable[@intCast(v_video.usegamma)][pal[i+0]];
+        palette[i+1] = v_video.gammatable[@intCast(v_video.usegamma)][pal[i+1]];
+        palette[i+2] = v_video.gammatable[@intCast(v_video.usegamma)][pal[i+2]];
     }
 
     c.glBindTexture(c.GL_TEXTURE_1D, paletteTexture);

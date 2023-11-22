@@ -3,12 +3,13 @@ const mem = @import("std").mem;
 const I_Error = @import("i_system.zig").I_Error;
 const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpName;
 
-extern fn V_CopyRect(srcx: c_int, srcy: c_int, srcscrn: c_int, width: c_int, height: c_int, destx: c_int, desty: c_int, destscr: c_int) void;
-extern fn V_DrawPatch(x: c_int, y: c_int, scrn: c_int, patch: *c.patch_t) void;
-
 const st_stuff = @import("st_stuff.zig");
 const c = st_stuff.c;
 const ST_Y = st_stuff.ST_Y;
+
+const v_video = @import("v_video.zig");
+const V_CopyRect = v_video.V_CopyRectSigned;
+const V_DrawPatch = v_video.V_DrawPatchSigned;
 
 //
 // Background and foreground screen numbers
@@ -43,7 +44,7 @@ pub const StNumber = struct {
     on: *bool,
 
     // list of patches for 0-9
-    p: [*]*c.patch_t,
+    p: [*]*v_video.c.patch_t,
 
     // user data
     data: c_int,
@@ -56,7 +57,7 @@ pub const StPercent = struct {
     n: StNumber,
 
     // percent sign graphic
-    p: *c.patch_t,
+    p: *v_video.c.patch_t,
 };
 
 // Multiple Icon widget
@@ -77,7 +78,7 @@ pub const StMultIcon = struct {
     on: *bool,
 
     // list of icons
-    p: [*]*c.patch_t,
+    p: [*]*v_video.c.patch_t,
 
     // user data
     data: c_int,
@@ -101,7 +102,7 @@ pub const StBinIcon = struct {
     //  stating whether to update icon
     on: *bool,
 
-    p: *c.patch_t, // icon
+    p: *v_video.c.patch_t, // icon
     data: c_int, // user data
 };
 
@@ -109,7 +110,7 @@ pub const StBinIcon = struct {
 // Hack display negative frags.
 //  Loads and store the stminus lump.
 //
-var sttminus: *c.patch_t = undefined;
+var sttminus: *v_video.c.patch_t = undefined;
 
 pub fn STlib_init() void {
     sttminus = @ptrCast(@alignCast(W_CacheLumpName("STTMINUS", .Static)));
@@ -117,7 +118,7 @@ pub fn STlib_init() void {
 
 // TODO: Replace with Zig struct initializer at each callsite, and move these
 // functions into the structs themselves.
-pub fn STlib_initNum(n: *StNumber, x: c_int, y: c_int, pl: [*]*c.patch_t, num: *c_int, on: *bool, width: c_int) void {
+pub fn STlib_initNum(n: *StNumber, x: c_int, y: c_int, pl: [*]*v_video.c.patch_t, num: *c_int, on: *bool, width: c_int) void {
     n.x = x;
     n.y = y;
     n.oldnum = 0;
@@ -195,7 +196,7 @@ pub fn STlib_updateNum(n: *StNumber, refresh: bool) void {
     }
 }
 
-pub fn STlib_initPercent(p: *StPercent, x: c_int, y: c_int, pl: [*]*c.patch_t, num: *c_int, on: *bool, percent: *c.patch_t) void {
+pub fn STlib_initPercent(p: *StPercent, x: c_int, y: c_int, pl: [*]*v_video.c.patch_t, num: *c_int, on: *bool, percent: *v_video.c.patch_t) void {
     STlib_initNum(&p.n, x, y, pl, num, on, 3);
     p.p = percent;
 }
@@ -208,7 +209,7 @@ pub fn STlib_updatePercent(per: *StPercent, refresh: bool) void {
     STlib_updateNum(&per.n, refresh);
 }
 
-pub fn STlib_initMultIcon(i: *StMultIcon, x: c_int, y: c_int, il: [*]*c.patch_t, inum: *c_int, on: *bool) void {
+pub fn STlib_initMultIcon(i: *StMultIcon, x: c_int, y: c_int, il: [*]*v_video.c.patch_t, inum: *c_int, on: *bool) void {
     i.x = x;
     i.y = y;
     i.oldinum = -1;
@@ -238,7 +239,7 @@ pub fn STlib_updateMultIcon(mi: *StMultIcon, refresh: bool) void {
     }
 }
 
-pub fn STlib_initBinIcon(b: *StBinIcon, x: c_int, y: c_int, i: *c.patch_t, val: *bool, on: *bool) void {
+pub fn STlib_initBinIcon(b: *StBinIcon, x: c_int, y: c_int, i: *v_video.c.patch_t, val: *bool, on: *bool) void {
     b.x = x;
     b.y = y;
     b.oldval = false;

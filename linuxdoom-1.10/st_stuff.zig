@@ -11,9 +11,6 @@ pub const c = @cImport({
     @cInclude("s_sound.h");
 });
 
-extern fn V_CopyRect(srcx: c_int, srcy: c_int, srcscrn: c_int, width: c_int, height: c_int, destx: c_int, desty: c_int, destscr: c_int) void;
-extern fn V_DrawPatch(x: c_int, y: c_int, scrn: c_int, patch: *c.patch_t) void;
-
 const player_t = @import("p_user.zig").player_t;
 
 const fmt = @import("std").fmt;
@@ -51,6 +48,10 @@ const d_items = @import("d_items.zig");
 
 const g_game = @import("g_game.zig");
 const G_DeferedInitNew = g_game.G_DeferedInitNew;
+
+const v_video = @import("v_video.zig");
+const V_CopyRect = v_video.V_CopyRect;
+const V_DrawPatch = v_video.V_DrawPatch;
 
 const w_wad = @import("w_wad.zig");
 const W_CacheLumpName = w_wad.W_CacheLumpName;
@@ -224,31 +225,31 @@ var st_armson = false;
 var st_fragson = false;
 
 // main bar left
-var sbar: *c.patch_t = undefined;
+var sbar: *v_video.c.patch_t = undefined;
 
 // 0-9, tall numbers
-var tallnum: [10]*c.patch_t = undefined;
+var tallnum: [10]*v_video.c.patch_t = undefined;
 
 // tall % sign
-var tallpercent: *c.patch_t = undefined;
+var tallpercent: *v_video.c.patch_t = undefined;
 
 // 0-9, short, yellow (,different!) numbers
-var shortnum: [10]*c.patch_t = undefined;
+var shortnum: [10]*v_video.c.patch_t = undefined;
 
 // 3 key-cards, 3 skulls
-var keys: [@intFromEnum(Card.NUMCARDS)]*c.patch_t = undefined;
+var keys: [@intFromEnum(Card.NUMCARDS)]*v_video.c.patch_t = undefined;
 
 // face status patches
-var faces: [ST_NUMFACES]*c.patch_t = undefined;
+var faces: [ST_NUMFACES]*v_video.c.patch_t = undefined;
 
 // face background
-var faceback: *c.patch_t = undefined;
+var faceback: *v_video.c.patch_t = undefined;
 
 // main bar right
-var armsbg: *c.patch_t = undefined;
+var armsbg: *v_video.c.patch_t = undefined;
 
 // weapon ownership patches
-var arms: [6][2]*c.patch_t = undefined;
+var arms: [6][2]*v_video.c.patch_t = undefined;
 
 // ready-weapon widget
 var w_ready: StNumber = undefined;
@@ -1271,8 +1272,7 @@ fn ST_Stop() void {
     st_stopped = true;
 }
 
-extern var screens: [5][*]u8;
 pub fn ST_Init() void {
     ST_loadData();
-    screens[4] = @ptrCast(Z_Malloc(ST_WIDTH*ST_HEIGHT, .Static, null));
+    v_video.screens[4] = @ptrCast(Z_Malloc(ST_WIDTH*ST_HEIGHT, .Static, null));
 }

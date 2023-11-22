@@ -80,6 +80,9 @@ const S_UpdateSounds = s_sound.S_UpdateSounds;
 const st_stuff = @import("st_stuff.zig");
 const ST_Init = st_stuff.ST_Init;
 
+const v_video = @import("v_video.zig");
+const V_Init = v_video.V_Init;
+
 const w_wad = @import("w_wad.zig");
 const W_InitMultipleFiles = w_wad.W_InitMultipleFiles;
 const W_CacheLumpName = w_wad.W_CacheLumpName;
@@ -282,7 +285,7 @@ fn D_Display() void {
     // draw pause pic
     if (g_game.paused) {
         const y = if (automapactive != c.false) 4 else c.viewwindowy + 4;
-        c.V_DrawPatchDirect(c.viewwindowx + @divTrunc(c.scaledviewwidth - 68, 2), y, 0, @ptrCast(@alignCast(W_CacheLumpName("M_PAUSE", .Cache))));
+        c.V_DrawPatch(c.viewwindowx + @divTrunc(c.scaledviewwidth - 68, 2), y, 0, @ptrCast(@alignCast(W_CacheLumpName("M_PAUSE", .Cache))));
     }
 
     // menus go directly to the screen
@@ -692,7 +695,6 @@ extern var sidemove: [2]c_int;
 extern var statcopy: *anyopaque;
 extern var singledemo: c.boolean;
 
-extern fn V_Init() void;
 extern fn Z_Init() void;
 extern fn R_Init() void;
 extern fn P_Init() void;

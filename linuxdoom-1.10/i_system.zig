@@ -85,7 +85,7 @@ pub fn I_WaitVBL(count: c_int) void {
 
 // Allocates from low memory under dos,
 // just mallocs under unix
-pub export fn I_AllocLow(length: c_int) ?[*]u8 {
+pub fn I_AllocLow(length: c_int) ?[*]u8 {
     if (std.heap.raw_c_allocator.alloc(u8, @intCast(length))) |p| {
         @memset(p, 0);
         return p.ptr;

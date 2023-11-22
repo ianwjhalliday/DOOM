@@ -85,6 +85,8 @@ const st_stuff = @import("st_stuff.zig");
 const ST_Ticker = st_stuff.ST_Ticker;
 const ST_Responder = st_stuff.ST_Responder;
 
+const v_video = @import("v_video.zig");
+
 const w_wad = @import("w_wad.zig");
 const W_CacheLumpName = w_wad.W_CacheLumpName;
 const W_CheckNumForName = w_wad.W_CheckNumForName;
@@ -1172,8 +1174,6 @@ pub fn G_SaveGame(slot: c_int, description: [*:0]const u8) void {
     sendsave = true;
 }
 
-extern var screens: [5][*]u8;
-
 fn G_DoSaveGame() void {
     var namebuf: [100]u8 = undefined;
     const name =
@@ -1183,7 +1183,7 @@ fn G_DoSaveGame() void {
             fmt.bufPrint(&namebuf, "{s}{d}.dsg", .{c.SAVEGAMENAME, savegameslot}) catch unreachable
         ;
 
-    var buffer = screens[1][0x4000..0x4000+SAVEGAMESIZE];
+    var buffer = v_video.screens[1][0x4000..0x4000+SAVEGAMESIZE];
     var fbs = io.fixedBufferStream(buffer);
     var writer = fbs.writer();
 

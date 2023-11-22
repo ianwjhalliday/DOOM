@@ -18,14 +18,13 @@ const M_CheckParm = @import("m_argv.zig").M_CheckParm;
 const m_argv = @import("m_argv.zig");
 const m_menu = @import("m_menu.zig");
 const s_sound = @import("s_sound.zig");
+const v_video = @import("v_video.zig");
 const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpName;
 const doomdef = @import("doomdef.zig");
 const SCREENWIDTH = doomdef.SCREENWIDTH;
 const SCREENHEIGHT = doomdef.SCREENHEIGHT;
 
 extern var basedefault: [1023:0]u8;
-extern var screens: [5][*]u8;
-
 //
 // M_WriteFile
 //
@@ -101,8 +100,6 @@ extern var joybstrafe: c_int;
 extern var joybuse: c_int;
 extern var joybspeed: c_int;
 
-extern var usegamma: c_int;
-
 // machine-independent sound params
 extern var numChannels: c_int;
 
@@ -174,7 +171,7 @@ const defaults = [_]Default{
 
     Default.int("snd_channels", &numChannels, 3),
 
-    Default.int("usegamma", &usegamma, 0),
+    Default.int("usegamma", &v_video.usegamma, 0),
 
     Default.str("chatmacro0", &hu_stuff.chat_macros[0], c.HUSTR_CHATMACRO0),
     Default.str("chatmacro1", &hu_stuff.chat_macros[1], c.HUSTR_CHATMACRO1),
@@ -366,7 +363,7 @@ fn WritePCXfile(filename: []const u8, data: [*]const u8, width: c_int, height: c
 //
 pub fn M_ScreenShot() void {
     // munge planar buffer to linear
-    const linear = screens[2];
+    const linear = v_video.screens[2];
     I_ReadScreen(linear);
 
     // find a file name to save it to
