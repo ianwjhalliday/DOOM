@@ -74,7 +74,7 @@ pub const player_names = [_][]const u8{
 };
 
 
-pub export var hu_font: [HU_FONTSIZE]*hu_lib.c.patch_t = undefined;
+pub var hu_font: [HU_FONTSIZE]*hu_lib.c.patch_t = undefined;
 var plr: *@TypeOf(g_game.players[0]) = undefined;
 var w_title: hu_lib.HudTextLine = undefined;
 pub var chat_on = false;

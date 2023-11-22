@@ -22,7 +22,6 @@ pub fn build(b: *std.Build) void {
         "dstrings.c",
         "i_sound.c",
         "tables.c",
-        "f_finale.c",
         "m_bbox.c",
         "m_swap.c",
         "am_map.c",

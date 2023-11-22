@@ -5,7 +5,6 @@ const c = @cImport({
     @cInclude("d_player.h");
     @cInclude("d_ticcmd.h");
     @cInclude("am_map.h");
-    @cInclude("f_finale.h");
     @cInclude("hu_stuff.h");
     @cInclude("info.h");
     @cInclude("p_local.h");
@@ -40,6 +39,11 @@ const D_AdvanceDemo = d_main.D_AdvanceDemo;
 const D_PageTicker = d_main.D_PageTicker;
 
 const d_net = @import("d_net.zig");
+
+const f_finale = @import("f_finale.zig");
+const F_StartFinale = f_finale.F_StartFinale;
+const F_Responder = f_finale.F_Responder;
+const F_Ticker = f_finale.F_Ticker;
 
 const hu_stuff = @import("hu_stuff.zig");
 const HU_Ticker = hu_stuff.HU_Ticker;
@@ -92,6 +96,7 @@ const Z_Free = z_zone.Z_Free;
 
 const doomdef = @import("doomdef.zig");
 const MAXPLAYERS = doomdef.MAXPLAYERS;
+const GameAction = doomdef.GameAction;
 const GameState = doomdef.GameState;
 const Skill = doomdef.Skill;
 const WeaponType = doomdef.WeaponType;
@@ -101,9 +106,8 @@ const doomstat = @import("doomstat.zig");
 const SAVEGAMESIZE = 0x2c000;
 const SAVESTRINGSIZE = 24;
 
-
-export var gameaction: c.gameaction_t = undefined;
-pub export var gamestate: GameState = undefined;
+pub var gameaction: GameAction = undefined;
+pub var gamestate: GameState = undefined;
 pub export var gameskill: Skill = undefined;
 export var respawnmonsters: c.boolean = c.false;
 pub export var gameepisode: c_int = 0;
@@ -118,7 +122,7 @@ var timingdemo = false;    // if true, exit with report on completion
 pub var nodrawers = false;     // for comparative timing purposes
 var starttime: c_int = 0;               // for comparative timing purposes
 
-export var viewactive: c.boolean = c.false;
+pub export var viewactive: c.boolean = c.false;
 
 pub export var deathmatch: c.boolean = c.false;    // only if started as net death
 pub export var netgame: c.boolean = c.false;       // only true if packets are broadcast
@@ -462,7 +466,7 @@ export fn G_DoLoadLevel() void {
     c.P_SetupLevel(gameepisode, gamemap, 0, @intFromEnum(gameskill));
     displayplayer = consoleplayer;  // view the guy you are playing
     starttime = I_GetTime();
-    gameaction = c.ga_nothing;
+    gameaction = .Nothing;
     Z_CheckHeap();
 
     // clear cmd building stuff
@@ -485,7 +489,6 @@ export fn G_DoLoadLevel() void {
 }
 
 extern fn AM_Responder(ev: *Event) c.boolean;
-extern fn F_Responder(ev: *Event) c.boolean;
 
 //
 // G_Responder
@@ -505,7 +508,7 @@ pub fn G_Responder(ev: *Event) bool {
     }
 
     // any other key pops up menu if in demos
-    if (gameaction == c.ga_nothing and singledemo == c.false and
+    if (gameaction == .Nothing and singledemo == c.false and
         (demoplayback != c.false or gamestate == .DemoScreen)) {
         if (ev.type == .KeyDown or
             (ev.type == .Mouse and ev.data1 != 0) or
@@ -529,7 +532,7 @@ pub fn G_Responder(ev: *Event) bool {
     }
 
     if (gamestate == .Finale) {
-        if (F_Responder (ev) != c.false) {
+        if (F_Responder(ev)) {
             return true;        // finale ate the event
         }
     }
@@ -592,22 +595,21 @@ pub export fn G_Ticker() void {
     }
 
     // do things to change the game state
-    while (gameaction != c.ga_nothing) {
+    while (gameaction != .Nothing) {
         switch (gameaction) {
-            c.ga_loadlevel => G_DoLoadLevel(),
-            c.ga_newgame => G_DoNewGame(),
-            c.ga_loadgame => G_DoLoadGame(),
-            c.ga_savegame => G_DoSaveGame(),
-            c.ga_playdemo => G_DoPlayDemo(),
-            c.ga_completed => G_DoCompleted(),
-            c.ga_victory => c.F_StartFinale(),
-            c.ga_worlddone => G_DoWorldDone(),
-            c.ga_screenshot => {
+            .LoadLevel => G_DoLoadLevel(),
+            .NewGame => G_DoNewGame(),
+            .LoadGame => G_DoLoadGame(),
+            .SaveGame => G_DoSaveGame(),
+            .PlayDemo => G_DoPlayDemo(),
+            .Completed => G_DoCompleted(),
+            .Victory => F_StartFinale(),
+            .WorldDone => G_DoWorldDone(),
+            .Screenshot => {
                 M_ScreenShot();
-                gameaction = c.ga_nothing;
+                gameaction = .Nothing;
             },
-            c.ga_nothing => {},
-            else => {},
+            .Nothing => {},
         }
     }
 
@@ -677,7 +679,7 @@ pub export fn G_Ticker() void {
                         }
                         savegameslot =
                             (players[i].cmd.buttons & c.BTS_SAVEMASK)>>c.BTS_SAVESHIFT;
-                        gameaction = c.ga_savegame;
+                        gameaction = .SaveGame;
                     },
 
                     else => {},
@@ -695,7 +697,7 @@ pub export fn G_Ticker() void {
             HU_Ticker();
         },
         .Intermission => c.WI_Ticker(),
-        .Finale => c.F_Ticker(),
+        .Finale => F_Ticker(),
         .DemoScreen => D_PageTicker(),
         else => {},
     }
@@ -844,7 +846,7 @@ export fn G_DeathMatchSpawnPlayer(playernum: c_int) void {
 fn G_DoReborn(playernum: c_int) void {
     if (c.netgame == c.false) {
         // reload the level from scratch
-        gameaction = c.ga_loadlevel;
+        gameaction = .LoadLevel;
     } else {
         // respawn at the start
 
@@ -878,7 +880,7 @@ fn G_DoReborn(playernum: c_int) void {
 
 
 pub fn G_ScreenShot() void {
-    gameaction = c.ga_screenshot;
+    gameaction = .Screenshot;
 }
 
 
@@ -908,7 +910,7 @@ extern var pagename: [*:0]u8;
 
 export fn G_ExitLevel() void {
     secretexit = false;
-    gameaction = c.ga_completed;
+    gameaction = .Completed;
 }
 
 // Here's for the german edition.
@@ -919,11 +921,11 @@ export fn G_SecretExitLevel() void {
     } else {
         secretexit = true;
     }
-    gameaction = c.ga_completed;
+    gameaction = .Completed;
 }
 
 fn G_DoCompleted() void {
-    gameaction = c.ga_nothing;
+    gameaction = .Nothing;
 
     for (0..MAXPLAYERS) |i| {
         if (playeringame[i] != c.false) {
@@ -938,7 +940,7 @@ fn G_DoCompleted() void {
     if (doomstat.gamemode != .Commercial)
         switch (gamemap) {
             8 => {
-                gameaction = c.ga_victory;
+                gameaction = .Victory;
                 return;
             },
             9 => {
@@ -952,7 +954,7 @@ fn G_DoCompleted() void {
 //#if 0  Hmmm - why?
     if (gamemap == 8 and doomstat.gamemode != .Commercial) {
         // victory
-        gameaction = c.ga_victory;
+        gameaction = .Victory;
         return;
     }
 
@@ -1037,7 +1039,7 @@ fn G_DoCompleted() void {
 // G_WorldDone
 //
 export fn G_WorldDone() void {
-    gameaction = c.ga_worlddone;
+    gameaction = .WorldDone;
 
     if (secretexit) {
         players[consoleplayer].didsecret = c.true;
@@ -1050,7 +1052,7 @@ export fn G_WorldDone() void {
             else => false,
         };
         if (dofinale) {
-            c.F_StartFinale();
+            F_StartFinale();
         }
     }
 }
@@ -1059,7 +1061,7 @@ fn G_DoWorldDone() void {
     gamestate = .Level;
     gamemap = wminfo.next+1;
     G_DoLoadLevel();
-    gameaction = c.ga_nothing;
+    gameaction = .Nothing;
     viewactive = c.true;
 }
 
@@ -1077,7 +1079,7 @@ var savename: []const u8 = undefined;
 
 pub fn G_LoadGame(name: [:0]const u8) void {
     savename = fmt.bufPrint(&savenamebuf, "{s}", .{name}) catch unreachable;
-    gameaction = c.ga_loadgame;
+    gameaction = .LoadGame;
 }
 
 const VERSIONSIZE = 16;
@@ -1085,7 +1087,7 @@ const VERSIONSIZE = 16;
 
 extern fn A_BrainAwake(mo: *c.mobj_t) void;
 fn G_DoLoadGame() void {
-    gameaction = c.ga_nothing;
+    gameaction = .Nothing;
 
     const buffer = M_ReadFile(savename);
     defer z_zone.free(buffer);
@@ -1220,7 +1222,7 @@ fn G_DoSaveGame() void {
         I_Error("Savegame buffer overrun");
     }
     _ = M_WriteFile(name, buffer[0..length]);
-    gameaction = c.ga_nothing;
+    gameaction = .Nothing;
     _ = fmt.bufPrintZ(&savedescription, "", .{}) catch unreachable;
 
     players[consoleplayer].message = c.GGSAVED;
@@ -1243,7 +1245,7 @@ pub fn G_DeferedInitNew(skill: Skill, episode: c_int, map: c_int) void {
     d_skill = skill;
     d_episode = episode;
     d_map = map;
-    gameaction = c.ga_newgame;
+    gameaction = .NewGame;
 }
 
 
@@ -1260,7 +1262,7 @@ fn G_DoNewGame() void {
     d_main.nomonsters = c.false;
     consoleplayer = 0;
     G_InitNew(d_skill, d_episode, d_map);
-    gameaction = c.ga_nothing;
+    gameaction = .Nothing;
 }
 
 pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
@@ -1477,11 +1479,11 @@ var defdemoname: [*]const u8 = undefined;
 
 pub fn G_DeferedPlayDemo(name: [*]const u8) void {
     defdemoname = name;
-    gameaction = c.ga_playdemo;
+    gameaction = .PlayDemo;
 }
 
 fn G_DoPlayDemo() void {
-    gameaction = c.ga_nothing;
+    gameaction = .Nothing;
     demobuffer = @ptrCast(W_CacheLumpName(defdemoname, .Static));
     demo_p = demobuffer;
     const demoversion = demo_p[0];
@@ -1489,7 +1491,7 @@ fn G_DoPlayDemo() void {
     if (demoversion != c.VERSION and (c.VERSION == 110 and demoversion != 109)) {
         const stderr = io.getStdErr().writer();
         stderr.print("Demo is from a different game version!\n", .{}) catch {};
-        gameaction = c.ga_nothing;
+        gameaction = .Nothing;
         return;
     }
 
@@ -1538,7 +1540,7 @@ pub fn G_TimeDemo(name: [*]const u8) void {
     d_main.singletics = true;
 
     defdemoname = name;
-    gameaction = c.ga_playdemo;
+    gameaction = .PlayDemo;
 }
 
 

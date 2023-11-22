@@ -64,13 +64,26 @@ pub const TICRATE = 35;
 // The current state of the game: whether we are
 // playing, gazing at the intermission screen,
 // the game final animation, or a demo. 
-pub const GameState = enum(c_uint) {
+pub const GameState = enum {
     Level,
     Intermission,
     Finale,
     DemoScreen,
     ForceWipe,
     ForceRedraw
+};
+
+pub const GameAction = enum {
+    Nothing,
+    LoadLevel,
+    NewGame,
+    LoadGame,
+    SaveGame,
+    PlayDemo,
+    Completed,
+    Victory,
+    WorldDone,
+    Screenshot
 };
 
 //

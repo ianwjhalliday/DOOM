@@ -12,7 +12,6 @@ const c = @cImport({
 extern fn W_CheckNumForName(name: [*c]const u8) c_int;
 
 extern fn AM_Drawer() void;
-extern fn F_Drawer() void;
 extern fn R_FillBackScreen() void;
 extern fn R_DrawViewBorder() void;
 const ST_Drawer = @import("st_stuff.zig").ST_Drawer;
@@ -35,18 +34,8 @@ const d_net = @import("d_net.zig");
 const D_CheckNetGame = d_net.D_CheckNetGame;
 const TryRunTics = d_net.TryRunTics;
 
-const i_system = @import("i_system.zig");
-const I_Init = i_system.I_Init;
-const I_GetTime = i_system.I_GetTime;
-const I_Error = i_system.I_Error;
-
-const i_video = @import("i_video.zig");
-const I_InitGraphics = i_video.I_InitGraphics;
-const I_StartTic = i_video.I_StartTic;
-const I_StartFrame = i_video.I_StartFrame;
-const I_UpdateNoBlit = i_video.I_UpdateNoBlit;
-const I_FinishUpdate = i_video.I_FinishUpdate;
-const I_SetPalette = i_video.I_SetPalette;
+const f_finale = @import("f_finale.zig");
+const F_Drawer = f_finale.F_Drawer;
 
 const g_game = @import("g_game.zig");
 const G_BeginRecording = g_game.G_BeginRecording;
@@ -63,6 +52,19 @@ const hu_stuff = @import("hu_stuff.zig");
 const HU_Drawer = hu_stuff.HU_Drawer;
 const HU_Erase = hu_stuff.HU_Erase;
 const HU_Init = hu_stuff.HU_Init;
+
+const i_system = @import("i_system.zig");
+const I_Init = i_system.I_Init;
+const I_GetTime = i_system.I_GetTime;
+const I_Error = i_system.I_Error;
+
+const i_video = @import("i_video.zig");
+const I_InitGraphics = i_video.I_InitGraphics;
+const I_StartTic = i_video.I_StartTic;
+const I_StartFrame = i_video.I_StartFrame;
+const I_UpdateNoBlit = i_video.I_UpdateNoBlit;
+const I_FinishUpdate = i_video.I_FinishUpdate;
+const I_SetPalette = i_video.I_SetPalette;
 
 const m_menu = @import("m_menu.zig");
 const M_Drawer = m_menu.M_Drawer;
@@ -173,7 +175,7 @@ pub fn D_ProcessEvents() void {
 //
 
 // wipegamestate can be set to -1 to force a wipe on the next draw
-pub export var wipegamestate: GameState = .DemoScreen;
+pub var wipegamestate: GameState = .DemoScreen;
 extern var setsizeneeded: c.boolean;
 extern var automapactive: c.boolean;
 extern var viewactive: c.boolean;
@@ -412,14 +414,14 @@ pub fn D_DoAdvanceDemo() void {
     advancedemo = false;
     g_game.usergame = false; // no save / end game here
     g_game.paused = false;
-    c.gameaction = c.ga_nothing;
+    g_game.gameaction = .Nothing;
 
     switch (demosequence) {
         0 => {
             pagetic = if (doomstat.gamemode == .Commercial) 35 * 11 else 170;
             g_game.gamestate = .DemoScreen;
             pagename = "TITLEPIC";
-            S_StartMusic(if (doomstat.gamemode == .Commercial) c.mus_dm2ttl else c.mus_intro);
+            S_StartMusic(if (doomstat.gamemode == .Commercial) .dm2ttl else .intro);
         },
         1 => {
             G_DeferedPlayDemo("demo1");
@@ -437,7 +439,7 @@ pub fn D_DoAdvanceDemo() void {
             if (doomstat.gamemode == .Commercial) {
                 pagetic = 35 * 11;
                 pagename = "TITLEPIC";
-                S_StartMusic(c.mus_dm2ttl);
+                S_StartMusic(.dm2ttl);
             } else {
                 pagetic = 200;
                 pagename = if (doomstat.gamemode == .Retail) "CREDIT" else "HELP2";
@@ -461,7 +463,7 @@ pub fn D_DoAdvanceDemo() void {
 // D_StartTitle
 //
 pub fn D_StartTitle() void {
-    c.gameaction = c.ga_nothing;
+    g_game.gameaction = .Nothing;
     demosequence = 0;
     D_AdvanceDemo();
 }
@@ -991,7 +993,7 @@ pub fn D_DoomMain() noreturn {
         G_LoadGame(file);
     }
 
-    if (c.gameaction != c.ga_loadgame) {
+    if (g_game.gameaction != .LoadGame) {
         if (autostart or c.netgame != 0) {
             G_InitNew(startskill, startepisode, startmap);
         } else {

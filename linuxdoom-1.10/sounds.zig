@@ -106,7 +106,7 @@ pub export var S_sfx: [raw_sfx.len]SfxInfo = blk: {
 // Identifiers for all music in game.
 //
 
-pub const Music = enum {
+pub const Music = enum(c_int) {
     None,
     e1m1,
     e1m2,

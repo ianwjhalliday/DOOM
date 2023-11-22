@@ -384,8 +384,12 @@ pub fn S_SetSfxVolume(volume: c_int) void {
 //
 // Starts some music with the music id found in sounds.h.
 //
-pub export fn S_StartMusic(m_id: c_int) void {
-    S_ChangeMusic(m_id, c.false);
+pub fn S_StartMusic(music: Music) void {
+    S_ChangeMusicEnum(music, false);
+}
+
+pub fn S_ChangeMusicEnum(music: Music, looping: bool) void {
+    S_ChangeMusic(@intFromEnum(music), @intFromBool(looping));
 }
 
 pub export fn S_ChangeMusic(musicnum: c_int, looping: c_int) void {
