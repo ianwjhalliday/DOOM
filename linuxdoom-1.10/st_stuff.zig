@@ -1093,21 +1093,16 @@ fn ST_initData() void {
 
 
 fn ST_createWidgets() void {
-    // TODO:
-    // BUG: ammo type will be noammo when fist or chainsaw is the active
-    // weapon from previous level; this results in trying to access
-    // plyr.ammo[5] which is invalid. Looks like this was a bug in the original
-    // source. This would just end up accessing the maxammo[0] entry. In Zig
-    // the array access is checked in debug builds and crashes.
-
     // ready weapon ammo
-    STlib_initNum(&w_ready,
-                  ST_AMMOX,
-                  ST_AMMOY,
-                  &tallnum,
-                  &plyr.ammo[@intFromEnum(d_items.weaponinfo[plyr.readyweapon].ammo)],
-                  &st_statusbaron,
-                  ST_AMMOWIDTH );
+    if (d_items.weaponinfo[plyr.readyweapon].ammo != .NoAmmo) {
+        STlib_initNum(&w_ready,
+                      ST_AMMOX,
+                      ST_AMMOY,
+                      &tallnum,
+                      &plyr.ammo[@intFromEnum(d_items.weaponinfo[plyr.readyweapon].ammo)],
+                      &st_statusbaron,
+                      ST_AMMOWIDTH );
+    }
 
     // the last weapon type
     w_ready.data = @intCast(plyr.readyweapon);
