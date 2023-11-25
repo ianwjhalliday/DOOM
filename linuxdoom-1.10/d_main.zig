@@ -15,7 +15,6 @@ extern fn AM_Drawer() void;
 extern fn R_FillBackScreen() void;
 extern fn R_DrawViewBorder() void;
 const ST_Drawer = @import("st_stuff.zig").ST_Drawer;
-extern fn WI_Drawer() void;
 
 extern fn NetUpdate() void;
 
@@ -86,6 +85,9 @@ const V_Init = v_video.V_Init;
 const w_wad = @import("w_wad.zig");
 const W_InitMultipleFiles = w_wad.W_InitMultipleFiles;
 const W_CacheLumpName = w_wad.W_CacheLumpName;
+
+const wi_stuff = @import("wi_stuff.zig");
+const WI_Drawer = wi_stuff.WI_Drawer;
 
 const wipe = @import("f_wipe.zig");
 

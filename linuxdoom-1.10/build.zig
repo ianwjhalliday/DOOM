@@ -48,7 +48,6 @@ pub fn build(b: *std.Build) void {
         "r_plane.c",
         "r_segs.c",
         "r_things.c",
-        "wi_stuff.c",
         "info.c",
     };
 

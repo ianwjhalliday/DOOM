@@ -91,7 +91,7 @@ pub fn free(slice: anytype) void {
     if (info.size != .Slice) {
         @compileError("expected slice argument, found " ++ @typeName(ArgType));
     }
-    Z_Free(slice.ptr);
+    Z_Free(@ptrCast(slice.ptr));
 }
 
 /// You can pass `null` user if the tag is < Z_Tag.PurgeLevel

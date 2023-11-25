@@ -1,4 +1,4 @@
-const c = @cImport({
+pub const c = @cImport({
     @cInclude("doomstat.h");
     @cInclude("dstrings.h");
     @cInclude("d_event.h");
@@ -15,7 +15,6 @@ const c = @cImport({
     @cInclude("r_draw.h");
     @cInclude("r_main.h");
     @cInclude("tables.h");
-    @cInclude("wi_stuff.h");
 });
 
 const fmt = @import("std").fmt;
@@ -90,6 +89,10 @@ const v_video = @import("v_video.zig");
 const w_wad = @import("w_wad.zig");
 const W_CacheLumpName = w_wad.W_CacheLumpName;
 const W_CheckNumForName = w_wad.W_CheckNumForName;
+
+const wi_stuff = @import("wi_stuff.zig");
+const WI_Start = wi_stuff.WI_Start;
+const WI_Ticker = wi_stuff.WI_Ticker;
 
 const z_zone = @import("z_zone.zig");
 const Z_ChangeTag = z_zone.Z_ChangeTag;
@@ -698,7 +701,7 @@ pub export fn G_Ticker() void {
             c.AM_Ticker();
             HU_Ticker();
         },
-        .Intermission => c.WI_Ticker(),
+        .Intermission => WI_Ticker(),
         .Finale => F_Ticker(),
         .DemoScreen => D_PageTicker(),
         else => {},
@@ -1033,14 +1036,14 @@ fn G_DoCompleted() void {
     //     memcpy(statcopy, &wminfo, sizeof(wminfo));
     // }
 
-    c.WI_Start(&wminfo);
+    WI_Start(&wminfo);
 }
 
 
 //
 // G_WorldDone
 //
-export fn G_WorldDone() void {
+pub fn G_WorldDone() void {
     gameaction = .WorldDone;
 
     if (secretexit) {
