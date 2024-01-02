@@ -1,9 +1,9 @@
 const std = @import("std");
 const I_Error = @import("i_system.zig").I_Error;
-const Z_ChangeTag = @import("z_zone.zig").Z_ChangeTag;
-const Z_Malloc = @import("z_zone.zig").Z_Malloc;
-const Z_Free = @import("z_zone.zig").Z_Free;
-const Z_Tag = @import("z_zone.zig").Z_Tag;
+const z_zone = @import("z_zone.zig");
+const Z_ChangeTag = z_zone.Z_ChangeTag;
+const Z_Free = z_zone.Z_Free;
+const Z_Tag = z_zone.Z_Tag;
 
 const WadInfo = extern struct {
     identification: [4]u8,
@@ -356,7 +356,7 @@ pub export fn W_CacheLumpNum(lump: c_int, tag: Z_Tag) *anyopaque {
         // read the lump in
 
         // std.debug.print("cache miss on lump {}\n", .{lump});
-        _ = Z_Malloc(W_LumpLength(lump), tag, &lumpcache[@intCast(lump)]);
+        _ = z_zone.alloc(u8, @intCast(W_LumpLength(lump)), tag, &lumpcache[@intCast(lump)]);
         W_ReadLump(lump, lumpcache[@intCast(lump)].?);
     } else {
         //std.debug.print("cache hit on lump {}\n", .{lump});

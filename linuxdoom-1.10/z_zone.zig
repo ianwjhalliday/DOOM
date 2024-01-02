@@ -56,9 +56,9 @@ const MemZone = extern struct {
     rover: *MemBlock,
 };
 
-export var mainzone: *MemZone = undefined;
+var mainzone: *MemZone = undefined;
 
-export fn Z_Init() void {
+pub fn Z_Init() void {
     var size: i32 = undefined;
 
     mainzone = @ptrCast(@alignCast(I_ZoneBase(&size)));
@@ -95,7 +95,7 @@ pub fn free(slice: anytype) void {
 }
 
 /// You can pass `null` user if the tag is < Z_Tag.PurgeLevel
-pub export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopaque {
+export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopaque {
     // TODO: `requested_size` should be `usize` once all code is zig
     const MINFRAGMENT = 64;
 

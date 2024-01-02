@@ -101,7 +101,6 @@ const WI_Ticker = wi_stuff.WI_Ticker;
 const z_zone = @import("z_zone.zig");
 const Z_ChangeTag = z_zone.Z_ChangeTag;
 const Z_CheckHeap = z_zone.Z_CheckHeap;
-const Z_Free = z_zone.Z_Free;
 
 const doomdef = @import("doomdef.zig");
 const MAXPLAYERS = doomdef.MAXPLAYERS;
@@ -151,6 +150,7 @@ pub var demorecording = false;
 pub export var demoplayback: c.boolean = c.false;
 var netdemo = false;
 // TODO: Convert these demo globals to an io.Reader/Writer
+var demobufferslice: []u8 = undefined;
 var demobuffer: [*]u8 = undefined;
 var demo_p: [*]u8 = undefined;
 var demoend: [*]u8 = undefined;
@@ -1434,14 +1434,15 @@ pub fn G_RecordDemo(name: []const u8) void {
     usergame = false;
     demoname = fmt.bufPrintZ(&demonamebuf, "{s}.lmp", .{name}) catch unreachable;
     const i: usize = @intCast(M_CheckParm("-maxdemo"));
-    const maxsize: i32 =
+    const maxsize: u32 =
         if (i != 0 and i<m_argv.myargc-1)
-            (fmt.parseInt(i32, mem.span(m_argv.myargv[i+1]), 0) catch 128)*1024
+            (fmt.parseInt(u32, mem.span(m_argv.myargv[i+1]), 0) catch 128)*1024
         else
             0x20000;
-    // TODO: Convert to z_zone.alloc() and make demobuffer a slice, eliminate demoend
-    demobuffer = @ptrCast(z_zone.Z_Malloc(maxsize, .Static, null));
-    demoend = demobuffer + @as(usize, @intCast(maxsize));
+    // TODO: Make demobuffer a slice, eliminate demobufferslice and demoend
+    demobufferslice = z_zone.alloc(u8, maxsize, .Static, null);
+    demobuffer = demobufferslice.ptr;
+    demoend = demobuffer + demobufferslice.len;
 
     demorecording = true;
 }
@@ -1589,7 +1590,7 @@ pub fn G_CheckDemoStatus() bool {
         demo_p += 1;
         const len = @intFromPtr(demo_p) - @intFromPtr(demobuffer);
         _ = M_WriteFile(demoname, demobuffer[0..len]);
-        Z_Free(demobuffer);
+        z_zone.free(demobufferslice);
         demorecording = false;
         I_Error("Demo %s recorded", &demonamebuf);
     }

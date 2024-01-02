@@ -61,7 +61,6 @@ const W_GetNumForName = w_wad.W_GetNumForName;
 
 const z_zone = @import("z_zone.zig");
 const Z_ChangeTag = z_zone.Z_ChangeTag;
-const Z_Malloc = z_zone.Z_Malloc;
 
 const doomdef = @import("doomdef.zig");
 const MAXPLAYERS = doomdef.MAXPLAYERS;
@@ -1275,5 +1274,5 @@ fn ST_Stop() void {
 
 pub fn ST_Init() void {
     ST_loadData();
-    v_video.screens[4] = @ptrCast(Z_Malloc(ST_WIDTH*ST_HEIGHT, .Static, null));
+    v_video.screens[4] = z_zone.alloc(u8, ST_WIDTH*ST_HEIGHT, .Static, null).ptr;
 }

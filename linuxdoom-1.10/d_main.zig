@@ -26,7 +26,9 @@ const fmt = std.fmt;
 const os = std.os;
 const M_CheckParm = @import("m_argv.zig").M_CheckParm;
 const M_LoadDefaults = @import("m_misc.zig").M_LoadDefaults;
-const Z_Tag = @import("z_zone.zig").Z_Tag;
+const z_zone = @import("z_zone.zig");
+const Z_Init = z_zone.Z_Init;
+const Z_Tag = z_zone.Z_Tag;
 
 const am_map = @import("am_map.zig");
 const AM_Drawer = am_map.AM_Drawer;
@@ -697,7 +699,6 @@ extern var forwardmove: [2]c_int;
 extern var sidemove: [2]c_int;
 extern var statcopy: *anyopaque;
 
-extern fn Z_Init() void;
 extern fn R_Init() void;
 extern fn P_Init() void;
 
