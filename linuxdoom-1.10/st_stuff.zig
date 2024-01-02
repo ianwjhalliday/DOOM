@@ -4,7 +4,6 @@ pub const c = @cImport({
     @cInclude("d_event.h");
     @cInclude("d_player.h");
     @cInclude("tables.h");
-    @cInclude("am_map.h");
     @cInclude("p_inter.h");
     @cInclude("r_main.h");
     @cInclude("sounds.h");
@@ -14,6 +13,8 @@ pub const c = @cImport({
 const player_t = @import("p_user.zig").player_t;
 
 const fmt = @import("std").fmt;
+
+const am_map = @import("am_map.zig");
 
 const d_main = @import("d_main.zig");
 const Event = d_main.Event;
@@ -396,15 +397,15 @@ extern fn P_GivePower([*c]player_t, c_int) c.boolean;
 
 // Respond to keyboard input events,
 //  intercept cheats.
-pub export fn ST_Responder(ev: *Event) c.boolean {
+pub fn ST_Responder(ev: *const Event) bool {
   // Filter automap on/off.
   if (ev.type == .KeyUp
-      and (@as(c_uint, @bitCast(ev.data1)) & 0xffff0000) == c.AM_MSGHEADER) {
+      and (@as(c_uint, @bitCast(ev.data1)) & 0xffff0000) == am_map.AM_MSGHEADER) {
     switch (ev.data1) {
-      c.AM_MSGENTERED => {
+      am_map.AM_MSGENTERED => {
         st_firsttime = true;
       },
-      c.AM_MSGEXITED => {
+      am_map.AM_MSGEXITED => {
         //      fprintf(stderr, "AM exited\n");
       },
       else => {},
@@ -418,7 +419,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
       // if (gameskill != sk_nightmare)
 
       // 'dqd' cheat for toggleable god mode
-      if (cht_CheckCheat(&cheat_god, @intCast(ev.data1)) != 0) {
+      if (cht_CheckCheat(&cheat_god, @intCast(ev.data1))) {
         plyr.cheats ^= c.CF_GODMODE;
         if (plyr.cheats & c.CF_GODMODE != 0)
         {
@@ -434,7 +435,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
         }
       }
       // 'fa' cheat for killer fucking arsenal
-      else if (cht_CheckCheat(&cheat_ammonokey, @intCast(ev.data1)) != 0) {
+      else if (cht_CheckCheat(&cheat_ammonokey, @intCast(ev.data1))) {
         plyr.armorpoints = 200;
         plyr.armortype = 2;
 
@@ -449,7 +450,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
         plyr.message = c.STSTR_FAADDED;
       }
       // 'kfa' cheat for key full ammo
-      else if (cht_CheckCheat(&cheat_ammo, @intCast(ev.data1)) != 0) {
+      else if (cht_CheckCheat(&cheat_ammo, @intCast(ev.data1))) {
         plyr.armorpoints = 200;
         plyr.armortype = 2;
 
@@ -468,7 +469,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
         plyr.message = c.STSTR_KFAADDED;
       }
       // 'mus' cheat for changing music
-      else if (cht_CheckCheat(&cheat_mus, @intCast(ev.data1)) != 0) {
+      else if (cht_CheckCheat(&cheat_mus, @intCast(ev.data1))) {
         var buf = [_]u8{0} ** 3;
 
         plyr.message = c.STSTR_MUS;
@@ -497,8 +498,8 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
       }
       // Simplified, accepting both "noclip" and "idspispopd".
       // no clipping mode cheat
-      else if (cht_CheckCheat(&cheat_noclip, @intCast(ev.data1)) != 0
-               or cht_CheckCheat(&cheat_commercial_noclip, @intCast(ev.data1)) != 0)
+      else if (cht_CheckCheat(&cheat_noclip, @intCast(ev.data1))
+               or cht_CheckCheat(&cheat_commercial_noclip, @intCast(ev.data1)))
       {
         plyr.cheats ^= c.CF_NOCLIP;
 
@@ -510,7 +511,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
       }
       // 'behold?' power-up cheats
       for (cheat_powerup[0..6], 0..) |*cheat, i| {
-        if (cht_CheckCheat(cheat, @intCast(ev.data1)) != 0)
+        if (cht_CheckCheat(cheat, @intCast(ev.data1)))
         {
           // TODO: Convert `powers` to bool
           if (plyr.powers[i] == 0) {
@@ -526,19 +527,19 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
       }
 
       // 'behold' power-up menu
-      if (cht_CheckCheat(&cheat_powerup[6], @intCast(ev.data1)) != 0)
+      if (cht_CheckCheat(&cheat_powerup[6], @intCast(ev.data1)))
       {
         plyr.message = c.STSTR_BEHOLD;
       }
       // 'choppers' invulnerability & chainsaw
-      else if (cht_CheckCheat(&cheat_choppers, @intCast(ev.data1)) != 0)
+      else if (cht_CheckCheat(&cheat_choppers, @intCast(ev.data1)))
       {
         plyr.weaponowned[@intFromEnum(WeaponType.Chainsaw)] = c.true;
         plyr.powers[@intFromEnum(PowerType.Invulnerability)] = c.true;
         plyr.message = c.STSTR_CHOPPERS;
       }
       // 'mypos' for player position
-      else if (cht_CheckCheat(&cheat_mypos, @intCast(ev.data1)) != 0)
+      else if (cht_CheckCheat(&cheat_mypos, @intCast(ev.data1)))
       {
         const S = struct {
             var buf: [ST_MSGWIDTH]u8 = undefined;
@@ -553,7 +554,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
     }
 
     // 'clev' change-level cheat
-    if (cht_CheckCheat(&cheat_clev, @intCast(ev.data1)) != 0)
+    if (cht_CheckCheat(&cheat_clev, @intCast(ev.data1)))
     {
       var buf = [_]u8{0} ** 3;
       var epsd: c_int = undefined;
@@ -574,32 +575,32 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
 
       // Catch invalid maps.
       if (epsd < 1) {
-        return c.false;
+        return false;
       }
 
       if (map < 1) {
-        return c.false;
+        return false;
       }
 
       // Ohmygod - this is not going to work.
       if ((doomstat.gamemode == .Retail)
           and ((epsd > 4) or (map > 9))) {
-        return c.false;
+        return false;
       }
 
       if ((doomstat.gamemode == .Registered)
           and ((epsd > 3) or (map > 9))) {
-        return c.false;
+        return false;
       }
 
       if ((doomstat.gamemode == .Shareware)
           and ((epsd > 1) or (map > 9))) {
-        return c.false;
+        return false;
       }
 
       if ((doomstat.gamemode == .Commercial)
         and (( epsd > 1) or (map > 34))) {
-        return c.false;
+        return false;
       }
 
       // So be it.
@@ -607,7 +608,7 @@ pub export fn ST_Responder(ev: *Event) c.boolean {
       G_DeferedInitNew(g_game.gameskill, epsd, map);
     }
   }
-  return c.false;
+  return false;
 }
 
 

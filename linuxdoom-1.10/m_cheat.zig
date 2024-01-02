@@ -23,10 +23,9 @@ var cheat_xlate_table = init: {
 
 //
 // Called in st_stuff module, which handles the input.
-// Returns a 1 if the cheat was successful, 0 if failed.
-// TODO: Return bool
+// Returns true if the cheat was successful, false if failed.
 //
-pub export fn cht_CheckCheat(cht: *CheatSeq, key: u8) c_int {
+pub fn cht_CheckCheat(cht: *CheatSeq, key: u8) bool {
     if (cht.p == null) {
         cht.p = cht.sequence; // initialize if first time
     }
@@ -44,13 +43,13 @@ pub export fn cht_CheckCheat(cht: *CheatSeq, key: u8) c_int {
         cht.p.? += 1;
     } else if (cht.p.?[0] == 0xff) { // end of sequence character
         cht.p.? = cht.sequence;
-        return 1;
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
-pub export fn cht_GetParam(cht: *CheatSeq, buffer: [*]u8) void {
+pub fn cht_GetParam(cht: *CheatSeq, buffer: [*]u8) void {
     const p = cht.sequence;
     var i: usize = 0;
 

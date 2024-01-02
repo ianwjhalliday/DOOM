@@ -55,7 +55,7 @@ var finaleflat: []const u8 = undefined;
 pub fn F_StartFinale() void {
     g_game.gameaction = .Nothing;
     g_game.gamestate = .Finale;
-    g_game.viewactive = c.false;
+    g_game.viewactive = false;
     automapactive = c.false;
 
     // Okay - IWAD dependend stuff.

@@ -24,7 +24,6 @@ pub fn build(b: *std.Build) void {
         "tables.c",
         "m_bbox.c",
         "m_swap.c",
-        "am_map.c",
         "p_ceilng.c",
         "p_doors.c",
         "p_enemy.c",

@@ -11,7 +11,6 @@ const c = @cImport({
 
 extern fn W_CheckNumForName(name: [*c]const u8) c_int;
 
-extern fn AM_Drawer() void;
 extern fn R_FillBackScreen() void;
 extern fn R_DrawViewBorder() void;
 const ST_Drawer = @import("st_stuff.zig").ST_Drawer;
@@ -28,6 +27,9 @@ const os = std.os;
 const M_CheckParm = @import("m_argv.zig").M_CheckParm;
 const M_LoadDefaults = @import("m_misc.zig").M_LoadDefaults;
 const Z_Tag = @import("z_zone.zig").Z_Tag;
+
+const am_map = @import("am_map.zig");
+const AM_Drawer = am_map.AM_Drawer;
 
 const d_net = @import("d_net.zig");
 const D_CheckNetGame = d_net.D_CheckNetGame;
@@ -183,7 +185,6 @@ pub fn D_ProcessEvents() void {
 pub var wipegamestate: GameState = .DemoScreen;
 extern var setsizeneeded: c.boolean;
 extern var automapactive: c.boolean;
-extern var viewactive: c.boolean;
 extern fn R_ExecuteSetViewSize() void;
 extern fn R_RenderPlayerView(player: @TypeOf(&g_game.players[0])) void;
 
@@ -279,7 +280,7 @@ fn D_Display() void {
     }
 
     S.menuactivestate = m_menu.menuactive;
-    S.viewactivestate = viewactive != c.false;
+    S.viewactivestate = g_game.viewactive;
     S.inhelpscreensstate = m_menu.inhelpscreens;
     wipegamestate = g_game.gamestate;
     S.oldgamestate = g_game.gamestate;
@@ -695,7 +696,6 @@ fn FindResponseFile() void {
 extern var forwardmove: [2]c_int;
 extern var sidemove: [2]c_int;
 extern var statcopy: *anyopaque;
-extern var singledemo: c.boolean;
 
 extern fn Z_Init() void;
 extern fn R_Init() void;
@@ -976,7 +976,7 @@ pub fn D_DoomMain() noreturn {
 
     p = @intCast(M_CheckParm("-playdemo"));
     if (p != 0 and p < myargc - 1) {
-        singledemo = c.true; // quit after one demo
+        g_game.singledemo = true; // quit after one demo
         G_DeferedPlayDemo(myargv[p + 1]);
         D_DoomLoop(); // never returns
     }

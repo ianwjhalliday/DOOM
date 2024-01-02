@@ -4,7 +4,6 @@ pub const c = @cImport({
     @cInclude("d_event.h");
     @cInclude("d_player.h");
     @cInclude("d_ticcmd.h");
-    @cInclude("am_map.h");
     @cInclude("hu_stuff.h");
     @cInclude("info.h");
     @cInclude("p_local.h");
@@ -29,6 +28,11 @@ const I_Quit = i_system.I_Quit;
 
 const I_PauseMouseCapture = @import("i_video.zig").I_PauseMouseCapture;
 const I_ResumeMouseCapture = @import("i_video.zig").I_ResumeMouseCapture;
+
+const am_map = @import("am_map.zig");
+const AM_Responder = am_map.AM_Responder;
+const AM_Stop = am_map.AM_Stop;
+const AM_Ticker = am_map.AM_Ticker;
 
 const TicCmd = @import("d_ticcmd.zig").TicCmd;
 
@@ -127,7 +131,7 @@ var timingdemo = false;    // if true, exit with report on completion
 pub var nodrawers = false;     // for comparative timing purposes
 var starttime: c_int = 0;               // for comparative timing purposes
 
-pub export var viewactive: c.boolean = c.false;
+pub var viewactive = false;
 
 pub export var deathmatch: c.boolean = c.false;    // only if started as net death
 pub export var netgame: c.boolean = c.false;       // only true if packets are broadcast
@@ -150,7 +154,7 @@ var netdemo = false;
 var demobuffer: [*]u8 = undefined;
 var demo_p: [*]u8 = undefined;
 var demoend: [*]u8 = undefined;
-export var singledemo: c.boolean = c.false;     // quit after playing a demo from cmdline
+pub var singledemo = false;     // quit after playing a demo from cmdline
 
 export var precache: c.boolean = c.true;        // if true, load all graphics at start
 
@@ -493,8 +497,6 @@ export fn G_DoLoadLevel() void {
     }
 }
 
-extern fn AM_Responder(ev: *Event) c.boolean;
-
 //
 // G_Responder
 // Get info needed to make ticcmd_ts for the players.
@@ -503,7 +505,7 @@ pub fn G_Responder(ev: *Event) bool {
     // allow spy mode changes even during the demo
     if (gamestate == .Level and ev.type == .KeyDown
         and ev.data1 == doomdef.KEY_F12
-        and (singledemo != c.false or deathmatch == c.false)) {
+        and (singledemo or deathmatch == c.false)) {
         // spy mode
         displayplayer = @mod(displayplayer + 1, MAXPLAYERS);
         while (playeringame[displayplayer] == c.false and displayplayer != consoleplayer) {
@@ -513,7 +515,7 @@ pub fn G_Responder(ev: *Event) bool {
     }
 
     // any other key pops up menu if in demos
-    if (gameaction == .Nothing and singledemo == c.false and
+    if (gameaction == .Nothing and !singledemo and
         (demoplayback != c.false or gamestate == .DemoScreen)) {
         if (ev.type == .KeyDown or
             (ev.type == .Mouse and ev.data1 != 0) or
@@ -528,10 +530,10 @@ pub fn G_Responder(ev: *Event) bool {
         if (HU_Responder(ev)) {
             return true;        // chat ate the event
         }
-        if (ST_Responder(ev) != c.false) {
+        if (ST_Responder(ev)) {
             return true;        // status window ate it
         }
-        if (AM_Responder(ev) != c.false) {
+        if (AM_Responder(ev)) {
             return true;        // automap ate it
         }
     }
@@ -698,7 +700,7 @@ pub export fn G_Ticker() void {
         .Level => {
             P_Ticker();
             ST_Ticker();
-            c.AM_Ticker();
+            AM_Ticker();
             HU_Ticker();
         },
         .Intermission => WI_Ticker(),
@@ -939,7 +941,7 @@ fn G_DoCompleted() void {
     }
 
     if (c.automapactive != c.false) {
-        c.AM_Stop();
+        AM_Stop();
     }
 
     if (doomstat.gamemode != .Commercial)
@@ -1028,7 +1030,7 @@ fn G_DoCompleted() void {
     }
 
     gamestate = .Intermission;
-    viewactive = c.false;
+    viewactive = false;
     c.automapactive = c.false;
 
     // NOTE: Not supporting statcopy in zig build
@@ -1067,7 +1069,7 @@ fn G_DoWorldDone() void {
     gamemap = wminfo.next+1;
     G_DoLoadLevel();
     gameaction = .Nothing;
-    viewactive = c.true;
+    viewactive = true;
 }
 
 
@@ -1344,12 +1346,12 @@ pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
     paused = false;
     demoplayback = c.false;
     c.automapactive = c.false;
-    viewactive = c.true;
+    viewactive = true;
     gameepisode = episode;
     gamemap = _map;
     gameskill = skill;
 
-    viewactive = c.true;
+    viewactive = true;
 
     // set the sky map for the episode
     if (doomstat.gamemode == .Commercial) {
@@ -1562,7 +1564,7 @@ pub fn G_CheckDemoStatus() bool {
     }
 
     if (demoplayback != c.false) {
-        if (singledemo != c.false) {
+        if (singledemo) {
             I_Quit();
         }
 
