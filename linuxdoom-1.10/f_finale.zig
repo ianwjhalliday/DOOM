@@ -23,19 +23,14 @@ const V_DrawPatch = v_video.c.V_DrawPatch;
 const V_DrawPatchFlipped = v_video.V_DrawPatchFlipped;
 const V_MarkRect = v_video.V_MarkRect;
 const w_wad = @import("w_wad.zig");
-const W_CacheLumpName = w_wad.W_CacheLumpName;
-const W_CacheLumpNum = w_wad.W_CacheLumpNum;
+const W_CacheLumpName = w_wad.W_CacheLumpNameZig;
+const W_CacheLumpNameFmt = w_wad.W_CacheLumpNameFmt;
+const W_CacheLumpNum = w_wad.W_CacheLumpNumZig;
 const Z_Tag = @import("z_zone.zig").Z_Tag;
 
 extern var automapactive: c.boolean;    // in AM_map.c
 
-fn W_CacheLumpNameAsPatch(name: [*]const u8, tag: Z_Tag) *v_video.c.patch_t {
-    return @ptrCast(@alignCast(W_CacheLumpName(name, tag)));
-}
-
-fn W_CacheLumpNumAsPatch(lump: c_int, tag: Z_Tag) *v_video.c.patch_t {
-    return @ptrCast(@alignCast(W_CacheLumpNum(lump, tag)));
-}
+const patch_t = v_video.c.patch_t;
 
 // Stage of animation:
 //  0 = text, 1 = art screen, 2 = character cast
@@ -189,7 +184,7 @@ pub fn F_Ticker() void {
 //
 fn F_TextWrite() void {
     // erase the entire screen to a tiled background
-    const src: [*]u8 = @ptrCast(W_CacheLumpName(finaleflat.ptr, .Cache));
+    const src = W_CacheLumpName([*]const u8, finaleflat, .Cache);
     var dest = v_video.screens[0];
 
     for (0..doomdef.SCREENHEIGHT) |y| {
@@ -479,7 +474,7 @@ fn F_CastPrint(text: []const u8) void {
 // F_CastDrawer
 //
 fn F_CastDrawer() void {
-    V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("BOSSBACK", .Cache));
+    V_DrawPatch(0, 0, 0, W_CacheLumpName(*patch_t, "BOSSBACK", .Cache));
 
     F_CastPrint(castorder[castnum].name);
 
@@ -489,7 +484,7 @@ fn F_CastDrawer() void {
     const lump = sprframe.lump[0];
     const flip = if (sprframe.flip[0] != 0) true else false;
 
-    const patch = W_CacheLumpNumAsPatch(lump + c.firstspritelump, .Cache);
+    const patch = W_CacheLumpNum(*patch_t, lump + c.firstspritelump, .Cache);
 
     if (flip) {
         V_DrawPatchFlipped(160, 170, 0, patch);
@@ -537,8 +532,8 @@ fn F_BunnyScroll() void {
         var laststage: c_int = 0;
     };
 
-    const p1 = W_CacheLumpNameAsPatch("PFUB2", .Level);
-    const p2 = W_CacheLumpNameAsPatch("PFUB1", .Level);
+    const p1 = W_CacheLumpName(*patch_t, "PFUB2", .Level);
+    const p2 = W_CacheLumpName(*patch_t, "PFUB1", .Level);
 
     V_MarkRect(0, 0, doomdef.SCREENWIDTH, doomdef.SCREENHEIGHT);
 
@@ -568,7 +563,7 @@ fn F_BunnyScroll() void {
             @divTrunc(doomdef.SCREENWIDTH - 13 * 8, 2),
             @divTrunc(doomdef.SCREENHEIGHT - 8 * 8, 2),
             0,
-            W_CacheLumpNameAsPatch("END0", .Cache)
+            W_CacheLumpName(*patch_t, "END0", .Cache)
         );
         S.laststage = 0;
         return;
@@ -583,13 +578,11 @@ fn F_BunnyScroll() void {
         S.laststage = stage;
     }
 
-    var namebuffer: [10]u8 = undefined;
-    const name = std.fmt.bufPrintZ(&namebuffer, "END{d}", .{stage}) catch unreachable;
     V_DrawPatch(
         @divTrunc(doomdef.SCREENWIDTH - 13 * 8, 2),
         @divTrunc(doomdef.SCREENHEIGHT - 8 * 8, 2),
         0,
-        W_CacheLumpNameAsPatch(name.ptr, .Cache),
+        W_CacheLumpNameFmt(*patch_t, "END{d}", .{stage}, .Cache),
     );
 }
 
@@ -611,12 +604,12 @@ pub fn F_Drawer() void {
     switch (g_game.gameepisode) {
         1 =>
             if (doomstat.gamemode == .Retail)
-                V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("CREDIT", .Cache))
+                V_DrawPatch(0, 0, 0, W_CacheLumpName(*patch_t, "CREDIT", .Cache))
             else
-                V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("HELP2", .Cache)),
-        2 => V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("VICTORY2", .Cache)),
+                V_DrawPatch(0, 0, 0, W_CacheLumpName(*patch_t, "HELP2", .Cache)),
+        2 => V_DrawPatch(0, 0, 0, W_CacheLumpName(*patch_t, "VICTORY2", .Cache)),
         3 => F_BunnyScroll(),
-        4 => V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("ENDPIC", .Cache)),
+        4 => V_DrawPatch(0, 0, 0, W_CacheLumpName(*patch_t, "ENDPIC", .Cache)),
         else => unreachable,
     }
 }

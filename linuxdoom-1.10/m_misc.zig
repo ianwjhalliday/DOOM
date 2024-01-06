@@ -19,7 +19,7 @@ const m_argv = @import("m_argv.zig");
 const m_menu = @import("m_menu.zig");
 const s_sound = @import("s_sound.zig");
 const v_video = @import("v_video.zig");
-const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpName;
+const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpNameZig;
 const doomdef = @import("doomdef.zig");
 const SCREENWIDTH = doomdef.SCREENWIDTH;
 const SCREENHEIGHT = doomdef.SCREENHEIGHT;
@@ -378,7 +378,7 @@ pub fn M_ScreenShot() void {
         I_Error("M_ScreenShot: Couldn't create a PCX");
     }
 
-    WritePCXfile(name, linear, SCREENWIDTH, SCREENHEIGHT, @ptrCast(W_CacheLumpName("PLAYPAL", .Cache)));
+    WritePCXfile(name, linear, SCREENWIDTH, SCREENHEIGHT, W_CacheLumpName([*]u8, "PLAYPAL", .Cache));
 
     // TODO: message field should be []const u8, remove @constCast here
     g_game.players[g_game.consoleplayer].message = @constCast("screen shot");

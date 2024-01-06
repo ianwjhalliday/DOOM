@@ -91,7 +91,7 @@ const ST_Responder = st_stuff.ST_Responder;
 const v_video = @import("v_video.zig");
 
 const w_wad = @import("w_wad.zig");
-const W_CacheLumpName = w_wad.W_CacheLumpName;
+const W_CacheLumpName = w_wad.W_CacheLumpNameZig;
 const W_CheckNumForName = w_wad.W_CheckNumForName;
 
 const wi_stuff = @import("wi_stuff.zig");
@@ -1481,16 +1481,16 @@ pub fn G_BeginRecording() void {
 // G_PlayDemo
 //
 
-var defdemoname: [*]const u8 = undefined;
+var defdemoname: []const u8 = undefined;
 
-pub fn G_DeferedPlayDemo(name: [*]const u8) void {
+pub fn G_DeferedPlayDemo(name: []const u8) void {
     defdemoname = name;
     gameaction = .PlayDemo;
 }
 
 fn G_DoPlayDemo() void {
     gameaction = .Nothing;
-    demobuffer = @ptrCast(W_CacheLumpName(defdemoname, .Static));
+    demobuffer = W_CacheLumpName([*]u8, defdemoname, .Static);
     demo_p = demobuffer;
     const demoversion = demo_p[0];
     demo_p += 1;
@@ -1540,7 +1540,7 @@ fn G_DoPlayDemo() void {
 //
 // G_TimeDemo
 //
-pub fn G_TimeDemo(name: [*]const u8) void {
+pub fn G_TimeDemo(name: []const u8) void {
     nodrawers = M_CheckParm("-nodraw") != 0;
     timingdemo = true;
     d_main.singletics = true;

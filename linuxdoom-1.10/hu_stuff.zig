@@ -15,7 +15,7 @@ const m_menu = @import("m_menu.zig");
 const s_sound = @import("s_sound.zig");
 const S_StartSound = s_sound.S_StartSound_Zig;
 const w_wad = @import("w_wad.zig");
-const W_CacheLumpName = w_wad.W_CacheLumpName;
+const W_CacheLumpNameFmt = w_wad.W_CacheLumpNameFmt;
 
 //
 // Globally visible constants.
@@ -74,7 +74,9 @@ pub const player_names = [_][]const u8{
 };
 
 
-pub var hu_font: [HU_FONTSIZE]*hu_lib.c.patch_t = undefined;
+const patch_t = hu_lib.c.patch_t;
+
+pub var hu_font: [HU_FONTSIZE]*patch_t = undefined;
 var plr: *@TypeOf(g_game.players[0]) = undefined;
 var w_title: hu_lib.HudTextLine = undefined;
 pub var chat_on = false;
@@ -376,10 +378,8 @@ pub fn HU_Init() void {
             &english_shiftxform;
 
     // load the heads-up font
-    var buffer = [_]u8{0} ** 9;
     for (0..HU_FONTSIZE) |i| {
-        const lumpname = std.fmt.bufPrintZ(&buffer, "STCFN{d:0>3}", .{i + HU_FONTSTART}) catch unreachable;
-        hu_font[i] = @ptrCast(@alignCast(W_CacheLumpName(lumpname.ptr, .Static)));
+        hu_font[i] = W_CacheLumpNameFmt(*patch_t,  "STCFN{d:0>3}", .{i + HU_FONTSTART}, .Static);
     }
 }
 

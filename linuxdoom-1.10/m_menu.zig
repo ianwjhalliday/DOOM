@@ -39,7 +39,7 @@ const S_SetMusicVolume = s_sound.S_SetMusicVolume;
 const S_SetSfxVolume = s_sound.S_SetSfxVolume;
 const S_StartSound = s_sound.S_StartSound_Zig;
 const v_video = @import("v_video.zig");
-const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpName;
+const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpNameZig;
 
 const Event = d_main.Event;
 const Sfx = @import("sounds.zig").Sfx;
@@ -109,10 +109,6 @@ var savegamestrings: [10][SAVESTRINGSIZE-1:0]u8 = undefined;
 
 var endstring: [160]u8 = undefined;
 
-fn W_CacheLumpNameAsPatch(name: [*]const u8, tag: Z_Tag) *c.patch_t {
-    return @ptrCast(@alignCast(W_CacheLumpName(name, tag)));
-}
-
 
 //
 // MENU TYPEDEFS
@@ -121,7 +117,7 @@ const MenuItem = struct {
     // 0 = no cursor here, 1 = ok, 2 = arrows ok
     status: c_short,
 
-    name: [*:0]const u8,
+    name: []const u8,
 
     // choice = menu item #.
     // if status = 2,
@@ -135,6 +131,7 @@ const MenuItem = struct {
 
 
 const Menu = struct {
+    // TODO: Use slice for menuitems and delete numitems
     numitems: u16,              // # of menu items
     prevMenu: ?*Menu,           // previous menu
     menuitems: [*]MenuItem,     // menu items
@@ -149,7 +146,7 @@ var skullAnimCounter: c_short = 0;  // skull animation counter
 var whichSkull: usize = 0;          // which skull to draw
 
 // graphic name of skulls
-const skullName = [2][*:0]const u8{"M_SKULL1","M_SKULL2"};
+const skullName = [2][]const u8{"M_SKULL1","M_SKULL2"};
 
 // current menudef
 var currentMenu: *Menu = &MainDef;
@@ -446,7 +443,7 @@ fn M_ReadSaveStrings() void {
 // M_LoadGame & Cie.
 //
 fn M_DrawLoad() void {
-    c.V_DrawPatch(72, 28, 0, W_CacheLumpNameAsPatch("M_LOADG", .Cache));
+    c.V_DrawPatch(72, 28, 0, W_CacheLumpName(*c.patch_t, "M_LOADG", .Cache));
     for (0..@intFromEnum(LoadEnum.LoadCount)) |i| {
         M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*@as(u16, @intCast(i)));
         M_WriteText(LoadDef.x,LoadDef.y+LINEHEIGHT*@as(u16, @intCast(i)),&savegamestrings[i]);
@@ -459,13 +456,13 @@ fn M_DrawLoad() void {
 // Draw border for the savegame description
 //
 fn M_DrawSaveLoadBorder(x: u16, y: u16) void {
-    c.V_DrawPatch(x-8, y+7, 0, W_CacheLumpNameAsPatch("M_LSLEFT", .Cache));
+    c.V_DrawPatch(x-8, y+7, 0, W_CacheLumpName(*c.patch_t, "M_LSLEFT", .Cache));
 
     for (0..24) |i| {
-        c.V_DrawPatch(x+8*@as(u8, @intCast(i)), y+7, 0, W_CacheLumpNameAsPatch("M_LSCNTR", .Cache));
+        c.V_DrawPatch(x+8*@as(u8, @intCast(i)), y+7, 0, W_CacheLumpName(*c.patch_t, "M_LSCNTR", .Cache));
     }
 
-    c.V_DrawPatch(x+8*24, y+7, 0, W_CacheLumpNameAsPatch("M_LSRGHT", .Cache));
+    c.V_DrawPatch(x+8*24, y+7, 0, W_CacheLumpName(*c.patch_t, "M_LSRGHT", .Cache));
 }
 
 
@@ -505,7 +502,7 @@ fn M_LoadGame(choice: c_int) void {
 //  M_SaveGame & Cie.
 //
 fn M_DrawSave() void {
-    c.V_DrawPatch(72, 28, 0, W_CacheLumpNameAsPatch("M_SAVEG", .Cache));
+    c.V_DrawPatch(72, 28, 0, W_CacheLumpName(*c.patch_t, "M_SAVEG", .Cache));
     for (0..@intFromEnum(LoadEnum.LoadCount)) |i| {
         M_DrawSaveLoadBorder(LoadDef.x, LoadDef.y+LINEHEIGHT*@as(u16, @intCast(i)));
         M_WriteText(LoadDef.x, LoadDef.y+LINEHEIGHT*@as(u16, @intCast(i)), &savegamestrings[i]);
@@ -643,10 +640,10 @@ fn M_DrawReadThis1() void {
     inhelpscreens = true;
     switch (doomstat.gamemode) {
         .Commercial => {
-            c.V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("HELP", .Cache));
+            c.V_DrawPatch(0, 0, 0, W_CacheLumpName(*c.patch_t, "HELP", .Cache));
         },
         .Shareware, .Registered, .Retail => {
-            c.V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("HELP1", .Cache));
+            c.V_DrawPatch(0, 0, 0, W_CacheLumpName(*c.patch_t, "HELP1", .Cache));
         },
         .Indetermined => {},
     }
@@ -662,10 +659,10 @@ fn M_DrawReadThis2() void {
     switch (doomstat.gamemode) {
       .Retail, .Commercial => {
         // This hack keeps us from having to change menus.
-        c.V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("CREDIT", .Cache));
+        c.V_DrawPatch(0, 0, 0, W_CacheLumpName(*c.patch_t, "CREDIT", .Cache));
       },
       .Shareware, .Registered => {
-        c.V_DrawPatch(0, 0, 0, W_CacheLumpNameAsPatch("HELP2", .Cache));
+        c.V_DrawPatch(0, 0, 0, W_CacheLumpName(*c.patch_t, "HELP2", .Cache));
       },
       .Indetermined => {},
     }
@@ -676,7 +673,7 @@ fn M_DrawReadThis2() void {
 // Change Sfx & Music volumes
 //
 fn M_DrawSound() void {
-    c.V_DrawPatch(60, 38, 0, W_CacheLumpNameAsPatch("M_SVOL", .Cache));
+    c.V_DrawPatch(60, 38, 0, W_CacheLumpName(*c.patch_t, "M_SVOL", .Cache));
 
     const sfx_pos = @intFromEnum(SoundEnum.SfxVol);
     const music_pos = @intFromEnum(SoundEnum.MusicVol);
@@ -736,7 +733,7 @@ fn M_MusicVol(choice: c_int) void {
 // M_DrawMainMenu
 //
 fn M_DrawMainMenu() void {
-    c.V_DrawPatch(94, 2, 0, W_CacheLumpNameAsPatch("M_DOOM", .Cache));
+    c.V_DrawPatch(94, 2, 0, W_CacheLumpName(*c.patch_t, "M_DOOM", .Cache));
 }
 
 
@@ -746,8 +743,8 @@ fn M_DrawMainMenu() void {
 // M_NewGame
 //
 fn M_DrawNewGame() void {
-    c.V_DrawPatch(96, 14, 0, W_CacheLumpNameAsPatch("M_NEWG", .Cache));
-    c.V_DrawPatch(54, 38, 0, W_CacheLumpNameAsPatch("M_SKILL", .Cache));
+    c.V_DrawPatch(96, 14, 0, W_CacheLumpName(*c.patch_t, "M_NEWG", .Cache));
+    c.V_DrawPatch(54, 38, 0, W_CacheLumpName(*c.patch_t, "M_SKILL", .Cache));
 }
 
 fn M_NewGame(choice: c_int) void {
@@ -771,7 +768,7 @@ fn M_NewGame(choice: c_int) void {
 var epi: c_int = undefined;
 
 fn M_DrawEpisode() void {
-    c.V_DrawPatch(54, 38, 0, W_CacheLumpNameAsPatch("M_EPISOD", .Cache));
+    c.V_DrawPatch(54, 38, 0, W_CacheLumpName(*c.patch_t, "M_EPISOD", .Cache));
 }
 
 fn M_VerifyNightmare(ch: c_int) void {
@@ -818,12 +815,12 @@ fn M_Episode(choice: c_int) void {
 //
 // M_Options
 //
-const detailNames = [2][*:0]const u8{"M_GDHIGH", "M_GDLOW"};
-const msgNames = [2][*:0]const u8{"M_MSGOFF", "M_MSGON"};
+const detailNames = [2][]const u8{"M_GDHIGH", "M_GDLOW"};
+const msgNames = [2][]const u8{"M_MSGOFF", "M_MSGON"};
 
 
 fn M_DrawOptions() void {
-    c.V_DrawPatch(108, 15, 0, W_CacheLumpNameAsPatch("M_OPTTTL", .Cache));
+    c.V_DrawPatch(108, 15, 0, W_CacheLumpName(*c.patch_t, "M_OPTTTL", .Cache));
 
     const detail_pos = @intFromEnum(OptionsEnum.Detail);
     const messages_pos = @intFromEnum(OptionsEnum.Messages);
@@ -831,10 +828,10 @@ fn M_DrawOptions() void {
     const scrnsize_pos = @intFromEnum(OptionsEnum.ScrnSize);
 
     c.V_DrawPatch(OptionsDef.x + 175, OptionsDef.y+LINEHEIGHT*detail_pos, 0,
-                       W_CacheLumpNameAsPatch(detailNames[@intCast(detailLevel)], .Cache));
+                       W_CacheLumpName(*c.patch_t, detailNames[@intCast(detailLevel)], .Cache));
 
     c.V_DrawPatch(OptionsDef.x + 120, OptionsDef.y+LINEHEIGHT*messages_pos, 0,
-                       W_CacheLumpNameAsPatch(msgNames[@intCast(showMessages)], .Cache));
+                       W_CacheLumpName(*c.patch_t, msgNames[@intCast(showMessages)], .Cache));
 
     M_DrawThermo(OptionsDef.x, OptionsDef.y+LINEHEIGHT*(mousesens_pos+1),
                  10, mouseSensitivity);
@@ -1050,29 +1047,29 @@ fn M_SizeDisplay(choice: c_int) void {
 //
 fn M_DrawThermo(x: c_int, y: c_int, thermWidth: usize, thermDot: c_int) void {
     var xx = x;
-    c.V_DrawPatch(xx, y, 0, W_CacheLumpNameAsPatch("M_THERML", .Cache));
+    c.V_DrawPatch(xx, y, 0, W_CacheLumpName(*c.patch_t, "M_THERML", .Cache));
 
     xx += 8;
     for (0..thermWidth) |_| {
-        c.V_DrawPatch(xx, y, 0, W_CacheLumpNameAsPatch("M_THERMM", .Cache));
+        c.V_DrawPatch(xx, y, 0, W_CacheLumpName(*c.patch_t, "M_THERMM", .Cache));
         xx += 8;
     }
 
-    c.V_DrawPatch(xx, y, 0, W_CacheLumpNameAsPatch("M_THERMR", .Cache));
+    c.V_DrawPatch(xx, y, 0, W_CacheLumpName(*c.patch_t, "M_THERMR", .Cache));
 
-    c.V_DrawPatch(x + 8 + thermDot*8, y, 0, W_CacheLumpNameAsPatch("M_THERMO", .Cache));
+    c.V_DrawPatch(x + 8 + thermDot*8, y, 0, W_CacheLumpName(*c.patch_t, "M_THERMO", .Cache));
 }
 
 
 
 fn M_DrawEmptyCell(menu: *Menu, item: c_int) void {
     c.V_DrawPatch(menu.x - 10, menu.y+item*LINEHEIGHT - 1, 0,
-                      W_CacheLumpNameAsPatch("M_CELL1", .Cache));
+                      W_CacheLumpName(*c.patch_t, "M_CELL1", .Cache));
 }
 
 fn M_DrawSelCell(menu: *Menu, item: c_int) void {
     c.V_DrawPatch(menu.x - 10, menu.y+item*LINEHEIGHT - 1, 0,
-                      W_CacheLumpNameAsPatch("M_CELL2", .Cache));
+                      W_CacheLumpName(*c.patch_t, "M_CELL2", .Cache));
 }
 
 
@@ -1415,7 +1412,7 @@ pub fn M_Responder(ev: *Event) bool {
             v_video.usegamma = 0;
         }
         g_game.players[g_game.consoleplayer].message = gammamsg[@intCast(v_video.usegamma)];
-        I_SetPalette(@ptrCast(W_CacheLumpName("PLAYPAL", .Cache)));
+        I_SetPalette(W_CacheLumpName([*]u8, "PLAYPAL", .Cache));
         return true;
       },
 
@@ -1605,10 +1602,10 @@ pub fn M_Drawer() void {
     const max = currentMenu.numitems;
 
     for (0..max) |i| {
-        if (currentMenu.menuitems[i].name[0] != 0) {
+        if (currentMenu.menuitems[i].name.len > 0) {
             c.V_DrawPatch(
                 x, y, 0,
-                W_CacheLumpNameAsPatch(currentMenu.menuitems[i].name, .Cache)
+                W_CacheLumpName(*c.patch_t, currentMenu.menuitems[i].name, .Cache)
             );
         }
         y += LINEHEIGHT;
@@ -1617,7 +1614,7 @@ pub fn M_Drawer() void {
 
     // DRAW SKULL
     c.V_DrawPatch(x - SKULLXOFF, currentMenu.y - 5 + itemOn*LINEHEIGHT, 0,
-                        W_CacheLumpNameAsPatch(skullName[whichSkull], .Cache));
+                        W_CacheLumpName(*c.patch_t, skullName[whichSkull], .Cache));
 
 }
 

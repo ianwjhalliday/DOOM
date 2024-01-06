@@ -1,7 +1,7 @@
 const mem = @import("std").mem;
 
 const I_Error = @import("i_system.zig").I_Error;
-const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpName;
+const W_CacheLumpName = @import("w_wad.zig").W_CacheLumpNameZig;
 
 const st_stuff = @import("st_stuff.zig");
 const c = st_stuff.c;
@@ -113,7 +113,7 @@ pub const StBinIcon = struct {
 var sttminus: *v_video.c.patch_t = undefined;
 
 pub fn STlib_init() void {
-    sttminus = @ptrCast(@alignCast(W_CacheLumpName("STTMINUS", .Static)));
+    sttminus = W_CacheLumpName(*v_video.c.patch_t, "STTMINUS", .Static);
 }
 
 // TODO: Replace with Zig struct initializer at each callsite, and move these

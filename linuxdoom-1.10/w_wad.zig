@@ -280,6 +280,12 @@ pub export fn W_CheckNumForName(name: [*]const u8) c_int {
     return -1;
 }
 
+pub fn W_GetNumForNameFmt(comptime name_fmt: []const u8, args: anytype) c_int {
+    var namebuf: [9]u8 = undefined;
+    const name = std.fmt.bufPrintZ(&namebuf, name_fmt, args) catch unreachable;
+    return W_GetNumForName(name.ptr);
+}
+
 //
 // W_GetNumForName
 // Calls W_CheckNumForName, but bombs out if not found.
@@ -347,7 +353,7 @@ pub export fn W_ReadLump(lump: c_int, dest: *anyopaque) void {
 //
 // W_CacheLumpNum
 //
-pub export fn W_CacheLumpNum(lump: c_int, tag: Z_Tag) *anyopaque {
+export fn W_CacheLumpNum(lump: c_int, tag: Z_Tag) *anyopaque {
     if (lump >= numlumps) {
         I_Error("W_CacheLumpNum: %i >= numlumps", lump);
     }
@@ -366,10 +372,22 @@ pub export fn W_CacheLumpNum(lump: c_int, tag: Z_Tag) *anyopaque {
     return lumpcache[@intCast(lump)].?;
 }
 
+pub fn W_CacheLumpNumZig(comptime T: type, lump: c_int, tag: Z_Tag) T {
+    return @ptrCast(@alignCast(W_CacheLumpNum(lump, tag)));
+}
+
 
 //
 // W_CacheLumpName
 //
-pub export fn W_CacheLumpName(name: [*]const u8, tag: Z_Tag) *anyopaque {
+export fn W_CacheLumpName(name: [*]const u8, tag: Z_Tag) *anyopaque {
     return W_CacheLumpNum(W_GetNumForName(name), tag);
+}
+
+pub fn W_CacheLumpNameZig(comptime T: type, name: []const u8, tag: Z_Tag) T {
+    return @ptrCast(@alignCast(W_CacheLumpNum(W_GetNumForName(name.ptr), tag)));
+}
+
+pub fn W_CacheLumpNameFmt(comptime T: type, comptime name_fmt: []const u8, args: anytype, tag: Z_Tag) T {
+    return @ptrCast(@alignCast(W_CacheLumpNum(W_GetNumForNameFmt(name_fmt, args), tag)));
 }

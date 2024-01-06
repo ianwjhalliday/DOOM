@@ -30,11 +30,8 @@ const ST_Responder = st_stuff.ST_Responder;
 const v_video = @import("v_video.zig");
 const V_DrawPatch = v_video.V_DrawPatchSigned;
 const w_wad = @import("w_wad.zig");
+const W_CacheLumpNameFmt = w_wad.W_CacheLumpNameFmt;
 const z_zone = @import("z_zone.zig");
-
-fn W_CacheLumpNameAsPatch(name: []const u8, tag: z_zone.Z_Tag) *v_video.c.patch_t {
-    return @ptrCast(@alignCast(w_wad.W_CacheLumpName(name.ptr, tag)));
-}
 
 pub const AM_MSGHEADER = 'a' << 24 | 'm' << 16;
 pub const AM_MSGENTERED = AM_MSGHEADER | 'e' << 8;
@@ -492,9 +489,7 @@ fn AM_initVariables() void {
 //
 fn AM_loadPics() void {
     for (0..10) |i| {
-        var namebuf = [_]u8{0} ** 9;
-        const name = std.fmt.bufPrintZ(&namebuf, "AMMNUM{d}", .{i}) catch unreachable;
-        marknums[i] = W_CacheLumpNameAsPatch(name, .Static);
+        marknums[i] = W_CacheLumpNameFmt(*v_video.c.patch_t, "AMMNUM{d}", .{i}, .Static);
     }
 }
 

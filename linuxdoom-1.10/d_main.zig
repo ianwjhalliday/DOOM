@@ -88,7 +88,7 @@ const V_Init = v_video.V_Init;
 
 const w_wad = @import("w_wad.zig");
 const W_InitMultipleFiles = w_wad.W_InitMultipleFiles;
-const W_CacheLumpName = w_wad.W_CacheLumpName;
+const W_CacheLumpName = w_wad.W_CacheLumpNameZig;
 
 const wi_stuff = @import("wi_stuff.zig");
 const WI_Drawer = wi_stuff.WI_Drawer;
@@ -261,7 +261,7 @@ fn D_Display() void {
 
     // clean up border stuff
     if (g_game.gamestate != S.oldgamestate and g_game.gamestate != .Level) {
-        I_SetPalette(@ptrCast(W_CacheLumpName("PLAYPAL", .Cache)));
+        I_SetPalette(W_CacheLumpName([*]u8, "PLAYPAL", .Cache));
     }
 
     // see if the border needs to be initially drawn
@@ -290,7 +290,7 @@ fn D_Display() void {
     // draw pause pic
     if (g_game.paused) {
         const y = if (automapactive != c.false) 4 else c.viewwindowy + 4;
-        c.V_DrawPatch(c.viewwindowx + @divTrunc(c.scaledviewwidth - 68, 2), y, 0, @ptrCast(@alignCast(W_CacheLumpName("M_PAUSE", .Cache))));
+        c.V_DrawPatch(c.viewwindowx + @divTrunc(c.scaledviewwidth - 68, 2), y, 0, W_CacheLumpName(*c.patch_t, "M_PAUSE", .Cache));
     }
 
     // menus go directly to the screen
@@ -385,7 +385,7 @@ fn D_DoomLoop() noreturn {
 //
 var demosequence: usize = 0;
 var pagetic: c_int = 0;
-var pagename: [*:0]const u8 = undefined;
+var pagename: []const u8 = undefined;
 
 //
 // D_PageTicker
@@ -402,7 +402,7 @@ pub fn D_PageTicker() void {
 // D_PageDrawer
 //
 fn D_PageDrawer() void {
-    c.V_DrawPatch(0, 0, 0, @ptrCast(@alignCast(W_CacheLumpName(pagename, .Cache))));
+    c.V_DrawPatch(0, 0, 0, W_CacheLumpName(*c.patch_t, pagename, .Cache));
 }
 
 //
@@ -978,13 +978,13 @@ pub fn D_DoomMain() noreturn {
     p = @intCast(M_CheckParm("-playdemo"));
     if (p != 0 and p < myargc - 1) {
         g_game.singledemo = true; // quit after one demo
-        G_DeferedPlayDemo(myargv[p + 1]);
+        G_DeferedPlayDemo(std.mem.span(myargv[p + 1]));
         D_DoomLoop(); // never returns
     }
 
     p = @intCast(M_CheckParm("-timedemo"));
     if (p != 0 and p < myargc - 1) {
-        G_TimeDemo(myargv[p + 1]);
+        G_TimeDemo(std.mem.span(myargv[p + 1]));
         D_DoomLoop(); // never returns
     }
 

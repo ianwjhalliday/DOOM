@@ -21,13 +21,13 @@ const v_video = @import("v_video.zig");
 const V_DrawPatch = v_video.V_DrawPatchSigned;
 const V_MarkRect = v_video.V_MarkRect;
 const w_wad = @import("w_wad.zig");
+const W_CacheLumpName = w_wad.W_CacheLumpNameZig;
+const W_CacheLumpNameFmt = w_wad.W_CacheLumpNameFmt;
 const z_zone = @import("z_zone.zig");
 const Z_ChangeTag = z_zone.Z_ChangeTag;
 const Z_Tag = z_zone.Z_Tag;
 
-fn W_CacheLumpNameAsPatch(name: []const u8, tag: Z_Tag) *v_video.c.patch_t {
-    return @ptrCast(@alignCast(w_wad.W_CacheLumpName(name.ptr, tag)));
-}
+const patch_t = v_video.c.patch_t;
 
 //
 // Different vetween registered DOOM (1994) and
@@ -91,8 +91,6 @@ const Point = struct {
     x: c_int,
     y: c_int,
 };
-
-const patch_t = v_video.c.patch_t;
 
 //
 // Animation.
@@ -1351,38 +1349,34 @@ pub fn WI_Ticker() void {
 }
 
 fn WI_loadData() void {
-    var namebuf: [9]u8 = undefined;
-    var name =
-        if (doomstat.gamemode == .Commercial
-            or doomstat.gamemode == .Retail and wbs.epsd == 3)
-            "INTERPIC"
-        else
-            std.fmt.bufPrintZ(&namebuf, "WIMAP{d}", .{wbs.epsd}) catch unreachable;
+    if (doomstat.gamemode == .Commercial
+        or doomstat.gamemode == .Retail and wbs.epsd == 3) {
+        bg = W_CacheLumpName(*patch_t, "INTERPIC", .Cache);
+    } else {
+        bg = W_CacheLumpNameFmt(*patch_t, "WIMAP{d}", .{wbs.epsd}, .Cache);
+    }
 
-    bg = W_CacheLumpNameAsPatch(name, .Cache);
     V_DrawPatch(0, 0, 1, bg);
 
     if (doomstat.gamemode == .Commercial) {
         lnames = z_zone.alloc(*patch_t, NUMCMAPS, .Static, null);
         for (lnames, 0..) |*lname, i| {
-            name = std.fmt.bufPrintZ(&namebuf, "CWILV{d:0>2}", .{i}) catch unreachable;
-            lname.* = W_CacheLumpNameAsPatch(name, .Static);
+            lname.* = W_CacheLumpNameFmt(*patch_t, "CWILV{d:0>2}", .{i}, .Static);
         }
     } else {
         lnames = z_zone.alloc(*patch_t, NUMMAPS, .Static, null);
         for (lnames, 0..) |*lname, i| {
-            name = std.fmt.bufPrintZ(&namebuf, "WILV{d}{d}", .{wbs.epsd, i}) catch unreachable;
-            lname.* = W_CacheLumpNameAsPatch(name, .Static);
+            lname.* = W_CacheLumpNameFmt(*patch_t, "WILV{d}{d}", .{wbs.epsd, i}, .Static);
         }
 
         // you are here
-        yah[0] = W_CacheLumpNameAsPatch("WIURH0", .Static);
+        yah[0] = W_CacheLumpName(*patch_t, "WIURH0", .Static);
 
         // you are here (alt.)
-        yah[1] = W_CacheLumpNameAsPatch("WIURH1", .Static);
+        yah[1] = W_CacheLumpName(*patch_t, "WIURH1", .Static);
 
         // splat
-        splat = W_CacheLumpNameAsPatch("WISPLAT", .Static);
+        splat = W_CacheLumpName(*patch_t, "WISPLAT", .Static);
 
         if (wbs.epsd < 3) {
             for (anims[@intCast(wbs.epsd)], 0..) |*a, j| {
@@ -1390,8 +1384,7 @@ fn WI_loadData() void {
                     // MONDO HACK!
                     if (wbs.epsd != 1 or j != 8) {
                         // animations
-                        name = std.fmt.bufPrintZ(&namebuf, "WIA{d}{d:0>2}{d:0>2}", .{wbs.epsd, j, i}) catch unreachable;
-                        a.p[i] = W_CacheLumpNameAsPatch(name, .Static);
+                        a.p[i] = W_CacheLumpNameFmt(*patch_t, "WIA{d}{d:0>2}{d:0>2}", .{wbs.epsd, j, i}, .Static);
                     } else {
                         // HACK ALERT!
                         a.p[i] = anims[1][4].p[i];
@@ -1402,82 +1395,79 @@ fn WI_loadData() void {
     }
 
     // More hacks on minus sign.
-    wiminus = W_CacheLumpNameAsPatch("WIMINUS", .Static);
+    wiminus = W_CacheLumpName(*patch_t, "WIMINUS", .Static);
 
     for (0..10) |i| {
         // numbers 0-9
-        name = std.fmt.bufPrintZ(&namebuf, "WINUM{d}", .{i}) catch unreachable;
-        num[i] = W_CacheLumpNameAsPatch(name, .Static);
+        num[i] = W_CacheLumpNameFmt(*patch_t, "WINUM{d}", .{i}, .Static);
     }
 
     // percent sign
-    percent = W_CacheLumpNameAsPatch("WIPCNT", .Static);
+    percent = W_CacheLumpName(*patch_t, "WIPCNT", .Static);
 
     // "finished"
-    finished = W_CacheLumpNameAsPatch("WIF", .Static);
+    finished = W_CacheLumpName(*patch_t, "WIF", .Static);
 
     // "entering"
-    entering = W_CacheLumpNameAsPatch("WIENTER", .Static);
+    entering = W_CacheLumpName(*patch_t, "WIENTER", .Static);
 
     // "kills"
-    kills = W_CacheLumpNameAsPatch("WIOSTK", .Static);
+    kills = W_CacheLumpName(*patch_t, "WIOSTK", .Static);
 
     // "scrt"
-    secret = W_CacheLumpNameAsPatch("WIOSTS", .Static);
+    secret = W_CacheLumpName(*patch_t, "WIOSTS", .Static);
 
     // "secret"
-    sp_secret = W_CacheLumpNameAsPatch("WISCRT2", .Static);
+    sp_secret = W_CacheLumpName(*patch_t, "WISCRT2", .Static);
 
     // Yuck.
     if (doomstat.language == .French) {
         // "items"
         if (g_game.netgame != c.false and g_game.deathmatch == c.false) {
-            items = W_CacheLumpNameAsPatch("WIOBJ", .Static);
+            items = W_CacheLumpName(*patch_t, "WIOBJ", .Static);
         } else {
-            items = W_CacheLumpNameAsPatch("WIOSTI", .Static);
+            items = W_CacheLumpName(*patch_t, "WIOSTI", .Static);
         }
     } else {
-        items = W_CacheLumpNameAsPatch("WIOSTI", .Static);
+        items = W_CacheLumpName(*patch_t, "WIOSTI", .Static);
     }
 
     // "frgs"
-    frags = W_CacheLumpNameAsPatch("WIFRGS", .Static);
+    frags = W_CacheLumpName(*patch_t, "WIFRGS", .Static);
 
     // ":"
-    colon = W_CacheLumpNameAsPatch("WICOLON", .Static);
+    colon = W_CacheLumpName(*patch_t, "WICOLON", .Static);
 
     // "time"
-    time = W_CacheLumpNameAsPatch("WITIME", .Static);
+    time = W_CacheLumpName(*patch_t, "WITIME", .Static);
 
     // "sucks"
-    sucks = W_CacheLumpNameAsPatch("WISUCKS", .Static);
+    sucks = W_CacheLumpName(*patch_t, "WISUCKS", .Static);
 
     // "par"
-    par = W_CacheLumpNameAsPatch("WIPAR", .Static);
+    par = W_CacheLumpName(*patch_t, "WIPAR", .Static);
 
     // "killers" (vertical)
-    killers = W_CacheLumpNameAsPatch("WIKILRS", .Static);
+    killers = W_CacheLumpName(*patch_t, "WIKILRS", .Static);
 
     // "victims" (horiz)
-    victims = W_CacheLumpNameAsPatch("WIVCTMS", .Static);
+    victims = W_CacheLumpName(*patch_t, "WIVCTMS", .Static);
 
     // "total"
-    total = W_CacheLumpNameAsPatch("WIMSTT", .Static);
+    total = W_CacheLumpName(*patch_t, "WIMSTT", .Static);
 
     // your face
-    star = W_CacheLumpNameAsPatch("STFST01", .Static);
+    star = W_CacheLumpName(*patch_t, "STFST01", .Static);
 
     // dead face
-    bstar = W_CacheLumpNameAsPatch("STFDEAD0", .Static);
+    bstar = W_CacheLumpName(*patch_t, "STFDEAD0", .Static);
 
     for (0..MAXPLAYERS) |i| {
         // "1,2,3,4"
-        name = std.fmt.bufPrintZ(&namebuf, "STPB{d}", .{i}) catch unreachable;
-        p[i] = W_CacheLumpNameAsPatch(name, .Static);
+        p[i] = W_CacheLumpNameFmt(*patch_t, "STPB{d}", .{i}, .Static);
 
         // "1,2,3,4"
-        name = std.fmt.bufPrintZ(&namebuf, "WIBP{d}", .{i + 1}) catch unreachable;
-        bp[i] = W_CacheLumpNameAsPatch(name, .Static);
+        bp[i] = W_CacheLumpNameFmt(*patch_t, "WIBP{d}", .{i + 1}, .Static);
     }
 }
 

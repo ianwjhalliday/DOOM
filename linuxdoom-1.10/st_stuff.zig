@@ -53,10 +53,12 @@ const G_DeferedInitNew = g_game.G_DeferedInitNew;
 const v_video = @import("v_video.zig");
 const V_CopyRect = v_video.V_CopyRect;
 const V_DrawPatch = v_video.V_DrawPatch;
+const patch_t = v_video.c.patch_t;
 
 const w_wad = @import("w_wad.zig");
-const W_CacheLumpName = w_wad.W_CacheLumpName;
-const W_CacheLumpNum = w_wad.W_CacheLumpNum;
+const W_CacheLumpName = w_wad.W_CacheLumpNameZig;
+const W_CacheLumpNameFmt = w_wad.W_CacheLumpNameFmt;
+const W_CacheLumpNum = w_wad.W_CacheLumpNumZig;
 const W_GetNumForName = w_wad.W_GetNumForName;
 
 const z_zone = @import("z_zone.zig");
@@ -225,31 +227,31 @@ var st_armson = false;
 var st_fragson = false;
 
 // main bar left
-var sbar: *v_video.c.patch_t = undefined;
+var sbar: *patch_t = undefined;
 
 // 0-9, tall numbers
-var tallnum: [10]*v_video.c.patch_t = undefined;
+var tallnum: [10]*patch_t = undefined;
 
 // tall % sign
-var tallpercent: *v_video.c.patch_t = undefined;
+var tallpercent: *patch_t = undefined;
 
 // 0-9, short, yellow (,different!) numbers
-var shortnum: [10]*v_video.c.patch_t = undefined;
+var shortnum: [10]*patch_t = undefined;
 
 // 3 key-cards, 3 skulls
-var keys: [@intFromEnum(Card.NUMCARDS)]*v_video.c.patch_t = undefined;
+var keys: [@intFromEnum(Card.NUMCARDS)]*patch_t = undefined;
 
 // face status patches
-var faces: [ST_NUMFACES]*v_video.c.patch_t = undefined;
+var faces: [ST_NUMFACES]*patch_t = undefined;
 
 // face background
-var faceback: *v_video.c.patch_t = undefined;
+var faceback: *patch_t = undefined;
 
 // main bar right
-var armsbg: *v_video.c.patch_t = undefined;
+var armsbg: *patch_t = undefined;
 
 // weapon ownership patches
-var arms: [6][2]*v_video.c.patch_t = undefined;
+var arms: [6][2]*patch_t = undefined;
 
 // ready-weapon widget
 var w_ready: StNumber = undefined;
@@ -885,7 +887,7 @@ fn ST_doPaletteStuff() void {
 
     if (palette != st_palette) {
         st_palette = palette;
-        const pal = @as([*]u8, @ptrCast(W_CacheLumpNum(lu_palette, .Cache))) + @as(usize, @intCast(palette*768));
+        const pal = W_CacheLumpNum([*]u8, lu_palette, .Cache) + @as(usize, @intCast(palette*768));
         I_SetPalette(pal);
     }
 }
@@ -954,76 +956,56 @@ pub fn ST_Drawer(fullscreen: bool, refresh: bool) void {
 }
 
 fn ST_loadGraphics() void {
-    var namebuf = [_]u8{0} ** 9;
-
     // Load the numbers, tall and short
     for (0..10) |i| {
-        _ = fmt.bufPrintZ(&namebuf, "STTNUM{d}", .{ i }) catch unreachable;
-        tallnum[i] = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));
-
-        _ = fmt.bufPrintZ(&namebuf, "STYSNUM{d}", .{ i }) catch unreachable;
-        shortnum[i] = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));
+        tallnum[i] = W_CacheLumpNameFmt(*patch_t, "STTNUM{d}", .{ i }, .Static);
+        shortnum[i] = W_CacheLumpNameFmt(*patch_t, "STYSNUM{d}", .{ i }, .Static);
     }
 
     // Load percent key.
     //Note: why not load STMINUS here, too?
-    tallpercent = @ptrCast(@alignCast(W_CacheLumpName("STTPRCNT", .Static)));
+    tallpercent = W_CacheLumpName(*patch_t, "STTPRCNT", .Static);
 
     // key cards
     for (0..@intFromEnum(Card.NUMCARDS)) |i| {
-        _ = fmt.bufPrintZ(&namebuf, "STKEYS{d}", .{ i }) catch unreachable;
-        keys[i] = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));
+        keys[i] = W_CacheLumpNameFmt(*patch_t, "STKEYS{d}", .{ i }, .Static);
     }
 
     // arms background
-    armsbg = @ptrCast(@alignCast(W_CacheLumpName("STARMS", .Static)));
+    armsbg = W_CacheLumpName(*patch_t, "STARMS", .Static);
 
     // arms ownership widgets
     for (0..6) |i| {
-        _ = fmt.bufPrintZ(&namebuf, "STGNUM{d}", .{ i+2 }) catch unreachable;
-
         // gray #
-        arms[i][0] = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));
+        arms[i][0] = W_CacheLumpNameFmt(*patch_t, "STGNUM{d}", .{ i+2 }, .Static);
 
         // yellow #
         arms[i][1] = shortnum[i+2];
     }
 
     // face backgrounds for different color players
-    _ = fmt.bufPrintZ(&namebuf, "STFB{d}", .{ g_game.consoleplayer }) catch unreachable;
-    faceback = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));
+    faceback = W_CacheLumpNameFmt(*patch_t, "STFB{d}", .{ g_game.consoleplayer }, .Static);
 
     // status bar background bits
-    sbar = @ptrCast(@alignCast(W_CacheLumpName("STBAR", .Static)));
+    sbar = W_CacheLumpName(*patch_t, "STBAR", .Static);
 
     // face states
     var facenum: usize = 0;
     for (0..ST_NUMPAINFACES) |i| {
         for (0..ST_NUMSTRAIGHTFACES) |j| {
-            _ = fmt.bufPrintZ(&namebuf, "STFST{d}{d}", .{ i, j }) catch unreachable;
-            faces[facenum] = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));
+            faces[facenum] = W_CacheLumpNameFmt(*patch_t, "STFST{d}{d}", .{ i, j }, .Static);
             facenum += 1;
         }
-        _ = fmt.bufPrintZ(&namebuf, "STFTR{d}0", .{ i }) catch unreachable;
-        faces[facenum] = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));        // turn right
-        facenum += 1;
-        _ = fmt.bufPrintZ(&namebuf, "STFTL{d}0", .{ i }) catch unreachable;
-        faces[facenum] = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));        // turn left
-        facenum += 1;
-        _ = fmt.bufPrintZ(&namebuf, "STFOUCH{d}", .{ i }) catch unreachable;
-        faces[facenum] = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));       // ouch!
-        facenum += 1;
-        _ = fmt.bufPrintZ(&namebuf, "STFEVL{d}", .{ i }) catch unreachable;
-        faces[facenum] = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));        // evil grin ;)
-        facenum += 1;
-        _ = fmt.bufPrintZ(&namebuf, "STFKILL{d}", .{ i }) catch unreachable;
-        faces[facenum] = @ptrCast(@alignCast(W_CacheLumpName(&namebuf, .Static)));       // pissed off
-        facenum += 1;
+        faces[facenum+0] = W_CacheLumpNameFmt(*patch_t, "STFTR{d}0", .{ i }, .Static);        // turn right
+        faces[facenum+1] = W_CacheLumpNameFmt(*patch_t, "STFTL{d}0", .{ i }, .Static);        // turn left
+        faces[facenum+2] = W_CacheLumpNameFmt(*patch_t, "STFOUCH{d}", .{ i }, .Static);       // ouch!
+        faces[facenum+3] = W_CacheLumpNameFmt(*patch_t, "STFEVL{d}", .{ i }, .Static);        // evil grin ;)
+        faces[facenum+4] = W_CacheLumpNameFmt(*patch_t, "STFKILL{d}", .{ i }, .Static);       // pissed off
+        facenum += 5;
     }
-    faces[facenum] = @ptrCast(@alignCast(W_CacheLumpName("STFGOD0", .Static)));
-    facenum += 1;
-    faces[facenum] = @ptrCast(@alignCast(W_CacheLumpName("STFDEAD0", .Static)));
-    facenum += 1;
+    faces[facenum+0] = W_CacheLumpName(*patch_t, "STFGOD0", .Static);
+    faces[facenum+1] = W_CacheLumpName(*patch_t, "STFDEAD0", .Static);
+    facenum += 2;
 }
 
 fn ST_loadData() void {
@@ -1268,7 +1250,7 @@ fn ST_Stop() void {
         return;
     }
 
-    I_SetPalette(@ptrCast(W_CacheLumpNum(lu_palette, .Cache)));
+    I_SetPalette(W_CacheLumpNum([*]u8, lu_palette, .Cache));
     st_stopped = true;
 }
 

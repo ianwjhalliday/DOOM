@@ -26,8 +26,8 @@ const Sfx = sounds.Sfx;
 const Music = sounds.Music;
 
 const w_wad = @import("w_wad.zig");
-const W_CacheLumpNum = w_wad.W_CacheLumpNum;
-const W_GetNumForName = w_wad.W_GetNumForName;
+const W_CacheLumpNum = w_wad.W_CacheLumpNumZig;
+const W_GetNumForNameFmt = w_wad.W_GetNumForNameFmt;
 
 const z_zone = @import("z_zone.zig");
 
@@ -248,7 +248,7 @@ fn S_StartSoundAtVolume(origin_p: ?*anyopaque, sfx_id: c_int, volume_p: c_int) v
 
     // cache data if necessary
     if (sfx.data == null) {
-        sfx.data = @ptrCast(W_CacheLumpNum(sfx.lumpnum, .Music));
+        sfx.data = W_CacheLumpNum([*]u8, sfx.lumpnum, .Music);
     }
 
     // increase the usefulness
@@ -409,13 +409,11 @@ pub export fn S_ChangeMusic(musicnum: c_int, looping: c_int) void {
 
     // get lumpnum if neccessary
     if (music.lumpnum == 0) {
-        var namebuf: [9]u8 = undefined;
-        _ = std.fmt.bufPrintZ(&namebuf, "d_{s}", .{music.name}) catch unreachable;
-        music.lumpnum = W_GetNumForName(&namebuf);
+        music.lumpnum = W_GetNumForNameFmt("d_{s}", .{music.name});
     }
 
     // load & register it
-    music.data = @ptrCast(W_CacheLumpNum(music.lumpnum, .Music));
+    music.data = W_CacheLumpNum([*]u8, music.lumpnum, .Music);
     music.handle = c.I_RegisterSong(music.data);
 
     // play it
