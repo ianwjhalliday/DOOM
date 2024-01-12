@@ -15,7 +15,10 @@ const WeaponType = doomdef.WeaponType;
 
 const doomstat = @import("doomstat.zig");
 
-pub const player_t = c.player_t;
+const d_player = @import("d_player.zig");
+const CF_NOCLIP = d_player.CF_NOCLIP;
+const CF_NOMOMENTUM = d_player.CF_NOMOMENTUM;
+const Player = d_player.Player;
 
 const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
@@ -33,11 +36,11 @@ var onground = false;
 // P_Thrust
 // Moves the given origin along a given angle.
 //
-fn P_Thrust(player: *c.player_t, angle: c.angle_t, move: fixed_t) void {
+fn P_Thrust(player: *Player, angle: c.angle_t, move: fixed_t) void {
     const fineangle = angle >> c.ANGLETOFINESHIFT;
 
-    player.mo[0].momx += FixedMul(move, c.finecosine[fineangle]);
-    player.mo[0].momy += FixedMul(move, c.finesine[fineangle]);
+    player.mo.?.momx += FixedMul(move, c.finecosine[fineangle]);
+    player.mo.?.momy += FixedMul(move, c.finesine[fineangle]);
 }
 
 
@@ -45,22 +48,22 @@ fn P_Thrust(player: *c.player_t, angle: c.angle_t, move: fixed_t) void {
 // P_CalcHeight
 // Calculate the walking / running height adjustment
 //
-fn P_CalcHeight(player: *c.player_t) void {
+fn P_CalcHeight(player: *Player) void {
     // Regular movement bobbing
     // (needs to be calculated for gun swing
     // even if not on ground)
     // OPTIMIZE: tablify angle
     // Note: a LUT allows for effects
     //  like a ramp with low health.
-    player.bob = FixedMul(player.mo[0].momx, player.mo[0].momx) + FixedMul(player.mo[0].momy, player.mo[0].momy);
+    player.bob = FixedMul(player.mo.?.momx, player.mo.?.momx) + FixedMul(player.mo.?.momy, player.mo.?.momy);
     player.bob >>= 2;
     player.bob = @min(player.bob, MAXBOB);
 
-    if (player.cheats & c.CF_NOMOMENTUM != 0 or !onground) {
+    if (player.cheats & CF_NOMOMENTUM != 0 or !onground) {
         // BUG: This block is suspicious, setting viewz three different ways
-        player.viewz = player.mo[0].z + c.VIEWHEIGHT;
-        player.viewz = @min(player.viewz, player.mo[0].ceilingz - 4*c.FRACUNIT);
-        player.viewz = player.mo[0].z + player.viewheight;
+        player.viewz = player.mo.?.z + c.VIEWHEIGHT;
+        player.viewz = @min(player.viewz, player.mo.?.ceilingz - 4*c.FRACUNIT);
+        player.viewz = player.mo.?.z + player.viewheight;
         return;
     }
 
@@ -69,7 +72,7 @@ fn P_CalcHeight(player: *c.player_t) void {
 
 
     // move viewheight
-    if (player.playerstate == c.PST_LIVE) {
+    if (player.playerstate == .Live) {
         player.viewheight += player.deltaviewheight;
 
         if (player.viewheight > c.VIEWHEIGHT) {
@@ -91,32 +94,32 @@ fn P_CalcHeight(player: *c.player_t) void {
             }
         }
     }
-    player.viewz = @min(player.mo[0].z + player.viewheight + bob, player.mo[0].ceilingz - 4*c.FRACUNIT);
+    player.viewz = @min(player.mo.?.z + player.viewheight + bob, player.mo.?.ceilingz - 4*c.FRACUNIT);
 }
 
 
 //
 // P_MovePlayer
 //
-fn P_MovePlayer(player: *c.player_t) void {
+fn P_MovePlayer(player: *Player) void {
     const cmd = &player.cmd;
 
-    player.mo[0].angle +%= @bitCast(@as(c_int, cmd.angleturn) << 16);
+    player.mo.?.angle +%= @bitCast(@as(c_int, cmd.angleturn) << 16);
 
     // Do not let the player control movement
     // if not on ground.
-    onground = player.mo[0].z <= player.mo[0].floorz;
+    onground = player.mo.?.z <= player.mo.?.floorz;
 
     if (cmd.forwardmove != 0 and onground) {
-        P_Thrust(player, player.mo[0].angle, @as(c_int, @as(i8, @bitCast(cmd.forwardmove))) * 2048);
+        P_Thrust(player, player.mo.?.angle, @as(c_int, @as(i8, @bitCast(cmd.forwardmove))) * 2048);
     }
 
     if (cmd.sidemove != 0 and onground) {
-        P_Thrust(player, player.mo[0].angle -% c.ANG90, @as(c_int, @as(i8, @bitCast(cmd.sidemove))) * 2048);
+        P_Thrust(player, player.mo.?.angle -% c.ANG90, @as(c_int, @as(i8, @bitCast(cmd.sidemove))) * 2048);
     }
 
-    if ((cmd.forwardmove != 0 or cmd.sidemove != 0) and player.mo[0].state == &c.states[c.S_PLAY]) {
-        _ = c.P_SetMobjState(player.mo, c.S_PLAY_RUN1);
+    if ((cmd.forwardmove != 0 or cmd.sidemove != 0) and player.mo.?.state == &d_player.c.states[c.S_PLAY]) {
+        _ = d_player.c.P_SetMobjState(player.mo, c.S_PLAY_RUN1);
     }
 }
 
@@ -128,8 +131,8 @@ fn P_MovePlayer(player: *c.player_t) void {
 //
 const ANG5 = c.ANG90/18;
 
-fn P_DeathThink(player: *c.player_t) void {
-    c.P_MovePsprites(player);
+fn P_DeathThink(player: *Player) void {
+    c.P_MovePsprites(@ptrCast(player));
 
     // fall to the ground
     if (player.viewheight > 6 * c.FRACUNIT) {
@@ -141,32 +144,32 @@ fn P_DeathThink(player: *c.player_t) void {
     }
 
     player.deltaviewheight = 0;
-    onground = player.mo[0].z <= player.mo[0].floorz;
+    onground = player.mo.?.z <= player.mo.?.floorz;
     P_CalcHeight(player);
 
     if (player.attacker != null and player.attacker != player.mo) {
-        const angle = c.R_PointToAngle2(player.mo[0].x, player.mo[0].y, player.attacker[0].x, player.attacker[0].y);
-        const delta = angle -% player.mo[0].angle;
+        const angle = c.R_PointToAngle2(player.mo.?.x, player.mo.?.y, player.attacker.?.x, player.attacker.?.y);
+        const delta = angle -% player.mo.?.angle;
 
         if (delta < ANG5 or delta > -ANG5) {
             // Looking at killer,
             //  so fade damage flash down.
-            player.mo[0].angle = angle;
+            player.mo.?.angle = angle;
 
             if (player.damagecount != 0) {
                 player.damagecount -= 1;
             }
         } else if (delta < c.ANG180) {
-            player.mo[0].angle += ANG5;
+            player.mo.?.angle += ANG5;
         } else {
-            player.mo[0].angle -%= ANG5;
+            player.mo.?.angle -%= ANG5;
         }
     } else if (player.damagecount != 0) {
         player.damagecount -= 1;
     }
 
     if (player.cmd.buttons & c.BT_USE != 0) {
-        player.playerstate = c.PST_REBORN;
+        player.playerstate = .Reborn;
     }
 }
 
@@ -174,24 +177,24 @@ fn P_DeathThink(player: *c.player_t) void {
 //
 // P_PlayerThink
 //
-pub export fn P_PlayerThink(player: *c.player_t) void {
+pub export fn P_PlayerThink(player: *Player) void {
     // fixme: do this in the cheat code
-    if (player.cheats & c.CF_NOCLIP != 0) {
-        player.mo[0].flags |= c.MF_NOCLIP;
+    if (player.cheats & CF_NOCLIP != 0) {
+        player.mo.?.flags |= c.MF_NOCLIP;
     } else {
-        player.mo[0].flags &= ~c.MF_NOCLIP;
+        player.mo.?.flags &= ~c.MF_NOCLIP;
     }
 
     // chain saw run forward
     const cmd = &player.cmd;
-    if (player.mo[0].flags & c.MF_JUSTATTACKED != 0) {
+    if (player.mo.?.flags & c.MF_JUSTATTACKED != 0) {
         cmd.angleturn = 0;
         cmd.forwardmove = 0xc800/512;
         cmd.sidemove = 0;
-        player.mo[0].flags &= ~c.MF_JUSTATTACKED;
+        player.mo.?.flags &= ~c.MF_JUSTATTACKED;
     }
 
-    if (player.playerstate == c.PST_DEAD) {
+    if (player.playerstate == .Dead) {
         P_DeathThink(player);
         return;
     }
@@ -199,16 +202,16 @@ pub export fn P_PlayerThink(player: *c.player_t) void {
     // Move around.
     // Reactiontime is used to prevent movement
     //  for a bit after a teleport.
-    if (player.mo[0].reactiontime != 0) {
-        player.mo[0].reactiontime -= 1;
+    if (player.mo.?.reactiontime != 0) {
+        player.mo.?.reactiontime -= 1;
     } else {
         P_MovePlayer(player);
     }
 
     P_CalcHeight(player);
 
-    if (player.mo[0].subsector[0].sector[0].special != 0) {
-        c.P_PlayerInSpecialSector(player);
+    if (player.mo.?.subsector[0].sector[0].special != 0) {
+        c.P_PlayerInSpecialSector(@ptrCast(player));
     }
 
     // Check for weapon change.
@@ -226,7 +229,7 @@ pub export fn P_PlayerThink(player: *c.player_t) void {
 
         if (newweapon == .Fist
             and player.weaponowned[@intFromEnum(WeaponType.Chainsaw)] != 0
-            and !(player.readyweapon == @intFromEnum(WeaponType.Chainsaw)
+            and !(player.readyweapon == .Chainsaw
                 and player.powers[@intFromEnum(PowerType.Strength)] != 0)) {
             newweapon = .Chainsaw;
         }
@@ -234,16 +237,16 @@ pub export fn P_PlayerThink(player: *c.player_t) void {
         if (doomstat.gamemode == .Commercial
             and newweapon == .Shotgun
             and player.weaponowned[@intFromEnum(WeaponType.SuperShotgun)] != 0
-            and player.readyweapon != @intFromEnum(WeaponType.SuperShotgun)) {
+            and player.readyweapon != .SuperShotgun) {
             newweapon = .SuperShotgun;
         }
 
         if (player.weaponowned[@intFromEnum(newweapon)] != 0
-            and newweapon != @as(WeaponType, @enumFromInt(player.readyweapon))) {
+            and newweapon != player.readyweapon) {
             // Do not go to plasma or BFG in shareware,
             //  even if cheated.
             if ((newweapon != .Plasma and newweapon != .Bfg) or doomstat.gamemode != .Shareware) {
-                player.pendingweapon = @intFromEnum(newweapon);
+                player.pendingweapon = newweapon;
             }
         }
     }
@@ -251,7 +254,7 @@ pub export fn P_PlayerThink(player: *c.player_t) void {
     // check for use
     if (cmd.buttons & c.BT_USE != 0) {
         if (player.usedown == c.false) {
-            c.P_UseLines(player);
+            c.P_UseLines(@ptrCast(player));
             player.usedown = c.true;
         }
     } else {
@@ -259,7 +262,7 @@ pub export fn P_PlayerThink(player: *c.player_t) void {
     }
 
     // cycle psprites
-    c.P_MovePsprites(player);
+    c.P_MovePsprites(@ptrCast(player));
 
     // Counters, time dependend power ups.
 
@@ -275,7 +278,7 @@ pub export fn P_PlayerThink(player: *c.player_t) void {
     if (player.powers[@intFromEnum(PowerType.Invisibility)] != 0) {
         player.powers[@intFromEnum(PowerType.Invisibility)] -= 1;
         if (player.powers[@intFromEnum(PowerType.Invisibility)] == 0) {
-            player.mo[0].flags &= ~c.MF_SHADOW;
+            player.mo.?.flags &= ~c.MF_SHADOW;
         }
     }
 

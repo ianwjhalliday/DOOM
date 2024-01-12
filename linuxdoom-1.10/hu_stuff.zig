@@ -477,7 +477,7 @@ pub fn HU_Ticker() void {
         // display message if necessary
         if ((plr.message != null and !message_nottobefuckedwith) or
             (plr.message != null and message_dontfuckwithme)) {
-            hu_lib.HUlib_addMessageToSText(&w_message, "", std.mem.span(plr.message));
+            hu_lib.HUlib_addMessageToSText(&w_message, "", std.mem.span(plr.message.?));
             plr.message = null;
             message_on = true;
             message_counter = HU_MSGTIMEOUT;

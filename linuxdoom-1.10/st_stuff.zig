@@ -19,6 +19,9 @@ const am_map = @import("am_map.zig");
 const d_main = @import("d_main.zig");
 const Event = d_main.Event;
 
+const d_player = @import("d_player.zig");
+const Player = d_player.Player;
+
 const m_cheat = @import("m_cheat.zig");
 const CheatSeq = m_cheat.CheatSeq;
 const cht_CheckCheat = m_cheat.cht_CheckCheat;
@@ -206,7 +209,7 @@ const ST_MAXAMMO3Y = 185;
 const ST_MSGWIDTH = 52;
 
 // main player in game
-var plyr: *player_t = undefined;
+var plyr: *Player = undefined;
 
 // ST_Start() has just been called
 var st_firsttime = false;
@@ -290,7 +293,7 @@ var st_fragscount: c_int = 0;
 var st_oldhealth: c_int = -1;
 
 // used for evil grin
-// TODO: Convert to bool when player_t::weaponowned is converted to bool
+// TODO: Convert to bool when Player.weaponowned is converted to bool
 var oldweaponsowned = [_]c.boolean{c.false} ** @intFromEnum(WeaponType.NUMWEAPONS);
 
 // count until face changes
@@ -394,7 +397,7 @@ fn ST_refreshBackground() void {
     }
 }
 
-extern fn P_GivePower([*c]player_t, c_int) c.boolean;
+extern fn P_GivePower([*c]Player, c_int) c.boolean;
 
 // Respond to keyboard input events,
 //  intercept cheats.
@@ -425,7 +428,7 @@ pub fn ST_Responder(ev: *const Event) bool {
         if (plyr.cheats & c.CF_GODMODE != 0)
         {
           if (plyr.mo != null) {
-            plyr.mo[0].health = 100;
+            plyr.mo.?.health = 100;
           }
 
           plyr.health = 100;
@@ -543,12 +546,12 @@ pub fn ST_Responder(ev: *const Event) bool {
       else if (cht_CheckCheat(&cheat_mypos, @intCast(ev.data1)))
       {
         const S = struct {
-            var buf: [ST_MSGWIDTH]u8 = undefined;
+            var buf: [ST_MSGWIDTH-1:0]u8 = undefined;
         };
         _ = fmt.bufPrintZ(&S.buf, "ang=0x{x};x,y=(0x{x},0x{x})", .{
-            @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo[0].angle)),
-            @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo[0].x)),
-            @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo[0].y)),
+            @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo.?.angle)),
+            @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo.?.x)),
+            @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo.?.y)),
         }) catch unreachable;
         plyr.message = &S.buf;
       }
@@ -687,21 +690,21 @@ fn ST_updateFaceWidget() void {
                 st_faceindex = ST_calcPainOffset() + ST_OUCHOFFSET;
             } else {
                 const badguyangle = c.R_PointToAngle2(
-                    plyr.mo[0].x,
-                    plyr.mo[0].y,
-                    plyr.attacker[0].x,
-                    plyr.attacker[0].y
+                    plyr.mo.?.x,
+                    plyr.mo.?.y,
+                    plyr.attacker.?.x,
+                    plyr.attacker.?.y
                 );
                 var diffang: c.angle_t = undefined;
                 var lookright = false;
 
-                if (badguyangle > plyr.mo[0].angle) {
+                if (badguyangle > plyr.mo.?.angle) {
                     // whether right or left
-                    diffang = badguyangle - plyr.mo[0].angle;
+                    diffang = badguyangle - plyr.mo.?.angle;
                     lookright = diffang > c.ANG180;
                 } else {
                     // whether left or right
-                    diffang = plyr.mo[0].angle - badguyangle;
+                    diffang = plyr.mo.?.angle - badguyangle;
                     lookright = diffang <= c.ANG180;
                 } // confusing, aint it?
 
@@ -789,10 +792,10 @@ fn ST_updateWidgets() void {
     // must redirect the pointer if the ready weapon has changed.
     //  if (w_ready.data != plyr.readyweapon)
     //  {
-    if (d_items.weaponinfo[plyr.readyweapon].ammo == .NoAmmo) {
+    if (d_items.weaponinfo[@intFromEnum(plyr.readyweapon)].ammo == .NoAmmo) {
         w_ready.num = &S.largeammo;
     } else {
-        w_ready.num = &plyr.ammo[@intFromEnum(d_items.weaponinfo[plyr.readyweapon].ammo)];
+        w_ready.num = &plyr.ammo[@intFromEnum(d_items.weaponinfo[@intFromEnum(plyr.readyweapon)].ammo)];
     }
     //{
     // static int tic=0;
@@ -803,7 +806,7 @@ fn ST_updateWidgets() void {
     //   dir = 1;
     // tic++;
     // }
-    w_ready.data = @intCast(plyr.readyweapon);
+    w_ready.data = @intCast(@intFromEnum(plyr.readyweapon));
 
     // if (*w_ready.on)
     //  STlib_updateNum(&w_ready, true);
@@ -1077,18 +1080,18 @@ fn ST_initData() void {
 
 fn ST_createWidgets() void {
     // ready weapon ammo
-    if (d_items.weaponinfo[plyr.readyweapon].ammo != .NoAmmo) {
+    if (d_items.weaponinfo[@intFromEnum(plyr.readyweapon)].ammo != .NoAmmo) {
         STlib_initNum(&w_ready,
                       ST_AMMOX,
                       ST_AMMOY,
                       &tallnum,
-                      &plyr.ammo[@intFromEnum(d_items.weaponinfo[plyr.readyweapon].ammo)],
+                      &plyr.ammo[@intFromEnum(d_items.weaponinfo[@intFromEnum(plyr.readyweapon)].ammo)],
                       &st_statusbaron,
                       ST_AMMOWIDTH );
     }
 
     // the last weapon type
-    w_ready.data = @intCast(plyr.readyweapon);
+    w_ready.data = @intCast(@intFromEnum(plyr.readyweapon));
 
     // health percentage
     STlib_initPercent(&w_health,

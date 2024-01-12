@@ -11,6 +11,9 @@ const SCREENHEIGHT = doomdef.SCREENHEIGHT;
 const SCREENWIDTH = doomdef.SCREENWIDTH;
 const TICRATE = doomdef.TICRATE;
 const doomstat = @import("doomstat.zig");
+const d_player = @import("d_player.zig");
+const WbPlayer = d_player.WbPlayer;
+const WbStart = d_player.WbStart;
 const g_game = @import("g_game.zig");
 const m_random = @import("m_random.zig");
 const M_Random = m_random.M_Random;
@@ -266,8 +269,8 @@ var me: usize = undefined;
 var state: State = undefined;
 
 // contains information passed into intermission
-var wbs: *g_game.c.wbstartstruct_t = undefined;
-var plrs: []g_game.c.wbplayerstruct_t = undefined;    // wbs.plyr[]
+var wbs: *WbStart = undefined;
+var plrs: []WbPlayer = undefined;    // wbs.plyr[]
 
 // used for general timing
 var cnt: c_int = undefined;
@@ -1553,7 +1556,7 @@ pub fn WI_Drawer() void {
 }
 
 
-fn WI_initVariables(wbstartstruct: *g_game.c.wbstartstruct_t) void {
+fn WI_initVariables(wbstartstruct: *WbStart) void {
     wbs = wbstartstruct;
 
     acceleratestage = false;
@@ -1581,7 +1584,7 @@ fn WI_initVariables(wbstartstruct: *g_game.c.wbstartstruct_t) void {
     }
 }
 
-pub fn WI_Start(wbstartstruct: *g_game.c.wbstartstruct_t) void {
+pub fn WI_Start(wbstartstruct: *WbStart) void {
     WI_initVariables(wbstartstruct);
     WI_loadData();
 

@@ -418,7 +418,7 @@ pub fn D_AdvanceDemo() void {
 // FIXME - version dependend demo numbers?
 //
 pub fn D_DoAdvanceDemo() void {
-    g_game.players[g_game.consoleplayer].playerstate = c.PST_LIVE; // not reborn
+    g_game.players[g_game.consoleplayer].playerstate = .Live; // not reborn
     advancedemo = false;
     g_game.usergame = false; // no save / end game here
     g_game.paused = false;

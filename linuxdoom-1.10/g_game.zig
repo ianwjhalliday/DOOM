@@ -43,6 +43,10 @@ const D_PageTicker = d_main.D_PageTicker;
 
 const d_net = @import("d_net.zig");
 
+const d_player = @import("d_player.zig");
+const Player = d_player.Player;
+const WbStart = d_player.WbStart;
+
 const f_finale = @import("f_finale.zig");
 const F_StartFinale = f_finale.F_StartFinale;
 const F_Responder = f_finale.F_Responder;
@@ -72,8 +76,6 @@ const P_Random = m_random.P_Random;
 // TODO: import p_tick.zig directly once p_spec is converted to zig
 const p_tick = @import("p_telept.zig").p_tick;
 const P_Ticker = p_tick.P_Ticker;
-
-const player_t = @import("p_user.zig").player_t;
 
 const r_sky = @import("r_sky.zig");
 
@@ -135,7 +137,7 @@ pub var viewactive = false;
 pub export var deathmatch: c.boolean = c.false;    // only if started as net death
 pub export var netgame: c.boolean = c.false;       // only true if packets are broadcast
 pub export var playeringame: [MAXPLAYERS]c.boolean = undefined;
-pub export var players: [MAXPLAYERS]player_t = undefined;
+pub export var players: [MAXPLAYERS]Player = undefined;
 
 pub export var consoleplayer: usize = 0;           // player taking events and displaying
 pub var displayplayer: usize = 0;           // view being displayed
@@ -158,7 +160,7 @@ pub var singledemo = false;     // quit after playing a demo from cmdline
 
 export var precache: c.boolean = c.true;        // if true, load all graphics at start
 
-export var wminfo: c.wbstartstruct_t = undefined;  // parms for world map / intermission
+export var wminfo: WbStart = undefined;  // parms for world map / intermission
 
 export var consistancy: [MAXPLAYERS][d_net.BACKUPTICS]c_short = undefined;
 
@@ -464,8 +466,8 @@ export fn G_DoLoadLevel() void {
     gamestate = .Level;
 
     for (playeringame, &players) |pig, *player| {
-        if (pig != c.false and player.*.playerstate == c.PST_DEAD) {
-            player.*.playerstate = c.PST_REBORN;
+        if (pig != c.false and player.*.playerstate == .Dead) {
+            player.*.playerstate = .Reborn;
         }
         for (&player.frags) |*frags| {
             frags.* = 0;
@@ -596,7 +598,7 @@ extern var rndindex: c_int;
 pub export fn G_Ticker() void {
     // do player reborns if needed
     for (playeringame, players, 0..) |pig, player, i| {
-        if (pig != c.false and player.playerstate == c.PST_REBORN) {
+        if (pig != c.false and player.playerstate == .Reborn) {
             G_DoReborn(@intCast(i));
         }
     }
@@ -631,19 +633,17 @@ pub export fn G_Ticker() void {
             cmd.* = @as(*@TypeOf(players[i].cmd), @ptrCast(&d_net.netcmds[i][buf])).*;
 
             if (demoplayback != c.false) {
-                // TODO: Remove cast after player_t is ported to zig and .cmd has TicCmd type
-                G_ReadDemoTiccmd(@ptrCast(cmd));
+                G_ReadDemoTiccmd(cmd);
             }
             if (demorecording) {
-                // TODO: Remove cast after player_t is ported to zig and .cmd has TicCmd type
-                G_WriteDemoTiccmd(@ptrCast(cmd));
+                G_WriteDemoTiccmd(cmd);
             }
 
             // check for turbo cheats
             if (cmd.forwardmove > TURBOTHRESHOLD
                 and (gametic&31) == 0 and ((gametic>>5)&3) == i) {
                 const S = struct {
-                    var turbomessage: [80]u8 = undefined;
+                    var turbomessage: [79:0]u8 = undefined;
                 };
                 _ = fmt.bufPrintZ(&S.turbomessage, "{s} is turbo!", .{hu_stuff.player_names[i]}) catch unreachable;
                 players[consoleplayer].message = &S.turbomessage;
@@ -656,7 +656,7 @@ pub export fn G_Ticker() void {
                             cmd.consistancy, consistancy[i][buf]);
                 }
                 if (players[i].mo != null) {
-                    consistancy[i][buf] = @truncate(players[i].mo[0].x);
+                    consistancy[i][buf] = @truncate(players[i].mo.?.x);
                 } else {
                     consistancy[i][buf] = @truncate(rndindex);
                 }
@@ -729,7 +729,7 @@ export fn G_PlayerFinishLevel(player: usize) void {
     for (&p.cards) |*card| {
         card.* = 0;
     }
-    p.mo[0].flags &= ~c.MF_SHADOW;      // cancel invisibility
+    p.mo.?.flags &= ~c.MF_SHADOW;       // cancel invisibility
     p.extralight = 0;                   // cancel gun flashes
     p.fixedcolormap = 0;                // cancel ir gogles
     p.damagecount = 0;                  // no palette changes
@@ -749,7 +749,7 @@ export fn G_PlayerReborn(player: c_int) void {
     const secretcount = players[@intCast(player)].secretcount;
 
     const p = &players[@intCast(player)];
-    p.* = mem.zeroes(player_t);
+    p.* = mem.zeroes(Player);
 
     players[@intCast(player)].frags = frags;
     players[@intCast(player)].killcount = killcount;
@@ -758,10 +758,10 @@ export fn G_PlayerReborn(player: c_int) void {
 
     p.usedown = c.true;
     p.attackdown = c.true;    // don't do anything immediately
-    p.playerstate = c.PST_LIVE;
+    p.playerstate = .Live;
     p.health = c.MAXHEALTH;
-    p.readyweapon = @intFromEnum(WeaponType.Pistol);
-    p.pendingweapon = @intFromEnum(WeaponType.Pistol);
+    p.readyweapon = WeaponType.Pistol;
+    p.pendingweapon = WeaponType.Pistol;
     p.weaponowned[@intFromEnum(WeaponType.Fist)] = c.true;
     p.weaponowned[@intFromEnum(WeaponType.Pistol)] = c.true;
     p.ammo[c.am_clip] = 50;
@@ -781,8 +781,8 @@ export fn G_CheckSpot(playernum: c_int, mthing: *c.mapthing_t) bool {
     if (players[@intCast(playernum)].mo == null) {
         // first spawn of level, before corpses
         for (0..@intCast(playernum)) |i| {
-            if (players[i].mo[0].x == @as(c.fixed_t, mthing.x) << c.FRACBITS
-                and players[i].mo[0].y == @as(c.fixed_t, mthing.y) << c.FRACBITS) {
+            if (players[i].mo.?.x == @as(c.fixed_t, mthing.x) << c.FRACBITS
+                and players[i].mo.?.y == @as(c.fixed_t, mthing.y) << c.FRACBITS) {
                 return false;
             }
         }
@@ -858,7 +858,7 @@ fn G_DoReborn(playernum: c_int) void {
         // respawn at the start
 
         // first dissasociate the corpse
-        players[@intCast(playernum)].mo[0].player = null;
+        players[@intCast(playernum)].mo.?.player = null;
 
         // spawn at random spot if in death match
         if (deathmatch != c.false) {
@@ -1339,7 +1339,7 @@ pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
 
     // force players to be initialized upon first level load
     for (&players) |*p| {
-        p.playerstate = c.PST_REBORN;
+        p.playerstate = .Reborn;
     }
 
     usergame = true;                // will be set false if a demo

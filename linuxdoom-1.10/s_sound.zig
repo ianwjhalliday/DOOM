@@ -31,6 +31,8 @@ const W_GetNumForNameFmt = w_wad.W_GetNumForNameFmt;
 
 const z_zone = @import("z_zone.zig");
 
+const mobj_t = @TypeOf(g_game.players[0].mo.?.*);
+
 // when to clip out sounds
 // Does not fit the large outdoor areas.
 const S_CLIPPING_DIST = 1200 * 0x10000;
@@ -200,12 +202,12 @@ fn S_StartSoundAtVolume(origin_p: ?*anyopaque, sfx_id: c_int, volume_p: c_int) v
 
     // Check to see if it is audible,
     //  and if not, modify the params
-    const origin: ?*c.mobj_t = @ptrCast(@alignCast(origin_p));
+    const origin: ?*mobj_t = @ptrCast(@alignCast(origin_p));
     var sep: c_int = NORM_SEP;
 
-    if (origin != null and origin != @as(*c.mobj_t, @ptrCast(&g_game.players[g_game.consoleplayer].mo[0]))) {
+    if (origin != null and origin != g_game.players[g_game.consoleplayer].mo) {
         const rc = S_AdjustSoundParams(
-            @ptrCast(&g_game.players[g_game.consoleplayer].mo[0]),
+            g_game.players[g_game.consoleplayer].mo.?,
             origin.?,
             &volume,
             &sep,
@@ -216,8 +218,8 @@ fn S_StartSoundAtVolume(origin_p: ?*anyopaque, sfx_id: c_int, volume_p: c_int) v
             return;
         }
 
-        if (origin.?.x == g_game.players[g_game.consoleplayer].mo[0].x
-            and origin.?.y == g_game.players[g_game.consoleplayer].mo[0].y) {
+        if (origin.?.x == g_game.players[g_game.consoleplayer].mo.?.x
+            and origin.?.y == g_game.players[g_game.consoleplayer].mo.?.y) {
             sep = NORM_SEP;
         }
     }
@@ -338,7 +340,7 @@ pub fn S_UpdateSounds(listener_p: ?*anyopaque) void {
                 // check non-local sounds for distance clipping
                 //  or modify their params
                 if (ch.origin != null and listener_p != ch.origin) {
-                    const listener: *c.mobj_t = @ptrCast(@alignCast(listener_p));
+                    const listener: *mobj_t = @ptrCast(@alignCast(listener_p));
                     const audible = S_AdjustSoundParams(
                         listener,
                         @ptrCast(@alignCast(ch.origin)),
@@ -464,7 +466,7 @@ fn S_StopChannel(cnum: c_int) void {
 // If the sound is not audible, returns a 0.
 // Otherwise, modifies parameters and returns 1.
 //
-fn S_AdjustSoundParams(listener: *c.mobj_t, source: *c.mobj_t, vol: *c_int, sep: *c_int, pitch: *c_int) bool {
+fn S_AdjustSoundParams(listener: *mobj_t, source: *mobj_t, vol: *c_int, sep: *c_int, pitch: *c_int) bool {
     _ = pitch;
     // calculate the distance to sound origin
     //  and clip it if necessary

@@ -7,13 +7,13 @@ const c = @cImport({
     @cInclude("r_state.h");
 });
 
-const player_t = @import("p_user.zig").player_t;
-
 const std = @import("std");
 
 const doomdef = @import("doomdef.zig");
 const d_main = @import("d_main.zig");
 const Event = d_main.Event;
+const d_player = @import("d_player.zig");
+const Player = d_player.Player;
 const g_game = @import("g_game.zig");
 const m_cheat = @import("m_cheat.zig");
 const CheatSeq = m_cheat.CheatSeq;
@@ -279,7 +279,7 @@ var scale_mtof: fixed_t = @intFromFloat(INITSCALEMTOF);
 // used by FTOM to scale from frame-buffer-to-map coords (=1/scale_mtof)
 var scale_ftom: fixed_t = undefined;
 
-var plr: *player_t = undefined;
+var plr: *Player = undefined;
 
 var marknums: [10]*v_video.c.patch_t = undefined; // numbers used for marking by the automap
 var markpoints: [AM_NUMMARKPOINTS]mpoint_t = undefined; // where the points are
@@ -348,8 +348,8 @@ fn AM_restoreScaleAndLoc() void {
         m_x = old_m_x;
         m_y = old_m_y;
     } else {
-        m_x = plr.mo[0].x - @divTrunc(m_w, 2);
-        m_y = plr.mo[0].y - @divTrunc(m_h, 2);
+        m_x = plr.mo.?.x - @divTrunc(m_w, 2);
+        m_y = plr.mo.?.y - @divTrunc(m_h, 2);
     }
 
     m_x2 = m_x + m_w;
@@ -469,8 +469,8 @@ fn AM_initVariables() void {
     }
 
     plr = &g_game.players[pnum];
-    m_x = plr.mo[0].x - @divTrunc(m_w, 2);
-    m_y = plr.mo[0].y - @divTrunc(m_h, 2);
+    m_x = plr.mo.?.x - @divTrunc(m_w, 2);
+    m_y = plr.mo.?.y - @divTrunc(m_h, 2);
     AM_changeWindowLoc();
 
     // for saving & restoring
@@ -588,7 +588,7 @@ fn AM_maxOutWindowScale() void {
 pub fn AM_Responder(ev: *Event) bool {
     const S = struct {
         var bigstate = false;
-        var buffer: [20]u8 = undefined;
+        var buffer: [19:0]u8 = undefined;
     };
 
     var rc = false;
@@ -746,13 +746,13 @@ fn AM_changeWindowScale() void {
 //
 //
 fn AM_doFollowPlayer() void {
-    if (f_oldloc.x != plr.mo[0].x or f_oldloc.y != plr.mo[0].y) {
-        m_x = FTOM(MTOF(plr.mo[0].x)) - @divTrunc(m_w, 2);
-        m_y = FTOM(MTOF(plr.mo[0].y)) - @divTrunc(m_h, 2);
+    if (f_oldloc.x != plr.mo.?.x or f_oldloc.y != plr.mo.?.y) {
+        m_x = FTOM(MTOF(plr.mo.?.x)) - @divTrunc(m_w, 2);
+        m_y = FTOM(MTOF(plr.mo.?.y)) - @divTrunc(m_h, 2);
         m_x2 = m_x + m_w;
         m_y2 = m_y + m_h;
-        f_oldloc.x = plr.mo[0].x;
-        f_oldloc.y = plr.mo[0].y;
+        f_oldloc.x = plr.mo.?.x;
+        f_oldloc.y = plr.mo.?.y;
     }
 }
 
@@ -1163,7 +1163,7 @@ fn AM_drawLineCharacter(
 fn AM_drawPlayers() void {
     if (g_game.netgame == c.false) {
         const arrow = if (cheating != 0) &cheat_player_arrow else &player_arrow;
-        AM_drawLineCharacter(arrow, 0, plr.mo[0].angle, WHITE, plr.mo[0].x, plr.mo[0].y);
+        AM_drawLineCharacter(arrow, 0, plr.mo.?.angle, WHITE, plr.mo.?.x, plr.mo.?.y);
         return;
     }
 
@@ -1183,7 +1183,7 @@ fn AM_drawPlayers() void {
             else
                 their_color;
 
-        AM_drawLineCharacter(&player_arrow, 0, p.mo[0].angle, color, p.mo[0].x, p.mo[0].y);
+        AM_drawLineCharacter(&player_arrow, 0, p.mo.?.angle, color, p.mo.?.x, p.mo.?.y);
     }
 }
 
