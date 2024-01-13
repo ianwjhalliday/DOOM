@@ -94,6 +94,21 @@ pub fn free(slice: anytype) void {
     Z_Free(@ptrCast(slice.ptr));
 }
 
+pub fn create(comptime T: type, tag: Z_Tag, user: ?*?*anyopaque) *T {
+    const requested_size = @sizeOf(T);
+    const bytes = Z_Malloc(@intCast(requested_size), tag, user);
+    return @ptrCast(@alignCast(bytes));
+}
+
+pub fn destroy(ptr: anytype) void {
+    const ArgType = @TypeOf(ptr);
+    const info = @typeInfo(ArgType).Pointer;
+    if (info.size != .One) {
+        @compileError("expected single pointer argument, found " ++ @typeName(ArgType));
+    }
+    Z_Free(@ptrCast(ptr));
+}
+
 /// You can pass `null` user if the tag is < Z_Tag.PurgeLevel
 export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopaque {
     // TODO: `requested_size` should be `usize` once all code is zig

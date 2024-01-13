@@ -9,7 +9,9 @@ const c = @cImport({
 });
 
 const S_StartSound = @import("s_sound.zig").S_StartSound_Zig;
-
+const p_mobj = @import("p_mobj.zig");
+const MF_MISSILE = p_mobj.MF_MISSILE;
+const P_SpawnMobj = p_mobj.P_SpawnMobj;
 pub const p_tick = @import("p_tick.zig");
 
 
@@ -19,7 +21,7 @@ pub const p_tick = @import("p_tick.zig");
 pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *c.mobj_t) c_int {
 
     // don't teleport missiles
-    if (thing.flags & c.MF_MISSILE != 0) {
+    if (thing.flags & MF_MISSILE != 0) {
         return 0;
     }
 
@@ -65,10 +67,10 @@ pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *c.mobj_t) c_int 
             }
 
             // spawn teleport fog at source and destination
-            const fog1 = c.P_SpawnMobj(oldx, oldy, oldz, c.MT_TFOG);
+            const fog1 = P_SpawnMobj(oldx, oldy, oldz, c.MT_TFOG);
             S_StartSound(fog1, .telept);
             const an = m.angle >> c.ANGLETOFINESHIFT;
-            const fog2 = c.P_SpawnMobj(m.x + 20 * c.finecosine[an], m.y + 20 * c.finesine[an], thing.z, c.MT_TFOG);
+            const fog2 = P_SpawnMobj(m.x + 20 * c.finecosine[an], m.y + 20 * c.finesine[an], thing.z, c.MT_TFOG);
 
             // emit sound, where?
             S_StartSound(fog2, .telept);

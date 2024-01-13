@@ -7,7 +7,6 @@ pub const c = @cImport({
     @cInclude("hu_stuff.h");
     @cInclude("info.h");
     @cInclude("p_local.h");
-    @cInclude("p_mobj.h");
     @cInclude("p_saveg.h");
     @cInclude("p_setup.h");
     @cInclude("r_data.h");
@@ -72,6 +71,14 @@ const m_random = @import("m_random.zig");
 const M_ClearRandom = m_random.M_ClearRandom;
 const P_Random = m_random.P_Random;
 
+const p_mobj = @import("p_mobj.zig");
+const MF_SHADOW = p_mobj.MF_SHADOW;
+const MObj = p_mobj.MObj;
+const P_RemoveMobj = p_mobj.P_RemoveMobj;
+const P_SpawnMobj = p_mobj.P_SpawnMobj;
+const P_SpawnPlayer = p_mobj.P_SpawnPlayer;
+
+
 // HACK: importing p_tick from p_telept.zig to work around duplicate export issue
 // TODO: import p_tick.zig directly once p_spec is converted to zig
 const p_tick = @import("p_telept.zig").p_tick;
@@ -119,7 +126,7 @@ const SAVESTRINGSIZE = 24;
 pub var gameaction: GameAction = undefined;
 pub var gamestate: GameState = undefined;
 pub export var gameskill: Skill = undefined;
-export var respawnmonsters: c.boolean = c.false;
+pub var respawnmonsters = false;
 pub export var gameepisode: c_int = 0;
 pub export var gamemap: c_int = 0;
 
@@ -142,8 +149,8 @@ pub export var players: [MAXPLAYERS]Player = undefined;
 pub export var consoleplayer: usize = 0;           // player taking events and displaying
 pub var displayplayer: usize = 0;           // view being displayed
 pub export var gametic: c_int = 0;
-export var totalkills: c_int = 0;              // for intermission
-export var totalitems: c_int = 0;              // for intermission
+pub export var totalkills: c_int = 0;          // for intermission
+pub export var totalitems: c_int = 0;          // for intermission
 export var totalsecret: c_int = 0;             // for intermission
 
 export var demonamebuf: [32]u8 = undefined;
@@ -227,7 +234,7 @@ var joyxmove: c_int = 0;
 var joyymove: c_int = 0;
 var joyarray: [5]bool = undefined;
 // TODO: Unclear why "allow [-1]" is done here, I don't see a use of it. Simplify to just `joyarray` and get rid of the extra element?
-var joybuttons : [*]bool = joyarray[1..].ptr;   // allow [-1]
+var joybuttons: [*]bool = joyarray[1..].ptr;   // allow [-1]
 
 var savegameslot: c_int = 0;
 var savedescription = [_]u8{0} ** SAVESTRINGSIZE;
@@ -235,7 +242,7 @@ var savedescription = [_]u8{0} ** SAVESTRINGSIZE;
 
 const BODYQUESIZE = 32;
 
-var bodyque: [BODYQUESIZE]@TypeOf(players[0].mo) = undefined;
+var bodyque: [BODYQUESIZE]*MObj = undefined;
 export var bodyqueslot: c_int = 0;
 
 // TODO: Remove `statcopy` from codebase
@@ -729,7 +736,7 @@ export fn G_PlayerFinishLevel(player: usize) void {
     for (&p.cards) |*card| {
         card.* = 0;
     }
-    p.mo.?.flags &= ~c.MF_SHADOW;       // cancel invisibility
+    p.mo.?.flags &= ~MF_SHADOW;         // cancel invisibility
     p.extralight = 0;                   // cancel gun flashes
     p.fixedcolormap = 0;                // cancel ir gogles
     p.damagecount = 0;                  // no palette changes
@@ -742,19 +749,19 @@ export fn G_PlayerFinishLevel(player: usize) void {
 // Called after a player dies
 // almost everything is cleared and initialized
 //
-export fn G_PlayerReborn(player: c_int) void {
-    const frags = players[@intCast(player)].frags;
-    const killcount = players[@intCast(player)].killcount;
-    const itemcount = players[@intCast(player)].itemcount;
-    const secretcount = players[@intCast(player)].secretcount;
+pub fn G_PlayerReborn(player: c_uint) void {
+    const frags = players[player].frags;
+    const killcount = players[player].killcount;
+    const itemcount = players[player].itemcount;
+    const secretcount = players[player].secretcount;
 
-    const p = &players[@intCast(player)];
+    const p = &players[player];
     p.* = mem.zeroes(Player);
 
-    players[@intCast(player)].frags = frags;
-    players[@intCast(player)].killcount = killcount;
-    players[@intCast(player)].itemcount = itemcount;
-    players[@intCast(player)].secretcount = secretcount;
+    players[player].frags = frags;
+    players[player].killcount = killcount;
+    players[player].itemcount = itemcount;
+    players[player].secretcount = secretcount;
 
     p.usedown = c.true;
     p.attackdown = c.true;    // don't do anything immediately
@@ -769,7 +776,6 @@ export fn G_PlayerReborn(player: c_int) void {
 }
 
 extern fn P_CheckPosition(thing: @TypeOf(players[0].mo), x: c.fixed_t, y: c.fixed_t) c.boolean;
-extern fn P_RemoveMobj(th: @TypeOf(players[0].mo)) void;
 
 //
 // G_CheckSpot
@@ -801,16 +807,19 @@ export fn G_CheckSpot(playernum: c_int, mthing: *c.mapthing_t) bool {
     if (bodyqueslot >= BODYQUESIZE) {
         P_RemoveMobj(bodyque[slot]);
     }
-    bodyque[slot] = players[@intCast(playernum)].mo;
+    bodyque[slot] = players[@intCast(playernum)].mo.?;
     bodyqueslot += 1;
 
     // spawn a teleport fog
     const ss = c.R_PointInSubsector(x,y);
     const an: usize = @intCast((c.ANG45 *% @divTrunc(mthing.angle, 45)) >> c.ANGLETOFINESHIFT);
 
-    const mo = c.P_SpawnMobj(x+20*c.finecosine[an], y+20*c.finesine[an]
-                      , ss[0].sector[0].floorheight
-                      , c.MT_TFOG);
+    const mo = P_SpawnMobj(
+        x+20*c.finecosine[an],
+        y+20*c.finesine[an],
+        ss[0].sector[0].floorheight,
+        c.MT_TFOG,
+    );
 
     if (players[consoleplayer].viewz != 1) {
         S_StartSound(mo, .telept);  // don't start sound on first frame
@@ -825,8 +834,6 @@ export fn G_CheckSpot(playernum: c_int, mthing: *c.mapthing_t) bool {
 // Spawns a player at one of the random death match spots
 // called at level load and each death
 //
-extern fn P_SpawnPlayer(mthing: *c.mapthing_t) void;
-
 export fn G_DeathMatchSpawnPlayer(playernum: c_int) void {
     const selections = @divTrunc(@intFromPtr(c.deathmatch_p) - @intFromPtr(&c.deathmatchstarts[0]), @sizeOf(c.mapthing_t));
     if (selections < 4) {
@@ -838,13 +845,13 @@ export fn G_DeathMatchSpawnPlayer(playernum: c_int) void {
         if (G_CheckSpot(playernum, &c.deathmatchstarts[i]))
         {
             c.deathmatchstarts[i].type = @intCast(playernum+1);
-            P_SpawnPlayer(&c.deathmatchstarts[i]);
+            P_SpawnPlayer(&p_mobj.c.deathmatchstarts[i]);
             return;
         }
     }
 
     // no good spot, so the player will probably get stuck
-    P_SpawnPlayer(&c.playerstarts[@intCast(playernum)]);
+    P_SpawnPlayer(&p_mobj.c.playerstarts[@intCast(playernum)]);
 }
 
 //
@@ -867,7 +874,7 @@ fn G_DoReborn(playernum: c_int) void {
         }
 
         if (G_CheckSpot(playernum, &c.playerstarts[@intCast(playernum)])) {
-            P_SpawnPlayer(&c.playerstarts[@intCast(playernum)]);
+            P_SpawnPlayer(&p_mobj.c.playerstarts[@intCast(playernum)]);
             return;
         }
 
@@ -875,13 +882,13 @@ fn G_DoReborn(playernum: c_int) void {
         for (0..MAXPLAYERS) |i| {
             if (G_CheckSpot(playernum, &c.playerstarts[i])) {
                 c.playerstarts[i].type = @intCast(playernum+1);     // fake as other player
-                P_SpawnPlayer(&c.playerstarts[i]);
+                P_SpawnPlayer(&p_mobj.c.playerstarts[i]);
                 c.playerstarts[i].type = @intCast(i+1);             // restore
                 return;
             }
             // he's going to be inside something.  Too bad.
         }
-        P_SpawnPlayer(&c.playerstarts[@intCast(playernum)]);
+        P_SpawnPlayer(&p_mobj.c.playerstarts[@intCast(playernum)]);
     }
 }
 
@@ -1264,7 +1271,7 @@ fn G_DoNewGame() void {
     }
     d_main.respawnparm = false;
     c.fastparm = c.false;
-    d_main.nomonsters = c.false;
+    d_main.nomonsters = false;
     consoleplayer = 0;
     G_InitNew(d_skill, d_episode, d_map);
     gameaction = .Nothing;
@@ -1315,9 +1322,9 @@ pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
     M_ClearRandom();
 
     if (skill == .Nightmare or d_main.respawnparm) {
-        respawnmonsters = c.true;
+        respawnmonsters = true;
     } else {
-        respawnmonsters = c.false;
+        respawnmonsters = false;
     }
 
     if (c.fastparm != c.false or (skill == .Nightmare and gameskill != .Nightmare)) {
@@ -1465,7 +1472,7 @@ pub fn G_BeginRecording() void {
     demo_p += 1;
     demo_p[0] = @intCast(c.fastparm);
     demo_p += 1;
-    demo_p[0] = @intCast(d_main.nomonsters);
+    demo_p[0] = @intFromBool(d_main.nomonsters);
     demo_p += 1;
     demo_p[0] = @intCast(consoleplayer);
     demo_p += 1;
@@ -1513,7 +1520,7 @@ fn G_DoPlayDemo() void {
     demo_p += 1;
     c.fastparm = demo_p[0];
     demo_p += 1;
-    d_main.nomonsters = demo_p[0];
+    d_main.nomonsters = demo_p[0] != 0;
     demo_p += 1;
     consoleplayer = demo_p[0];
     demo_p += 1;
@@ -1579,7 +1586,7 @@ pub fn G_CheckDemoStatus() bool {
         playeringame[3] = c.false;
         d_main.respawnparm = false;
         c.fastparm = c.false;
-        d_main.nomonsters = c.false;
+        d_main.nomonsters = false;
         consoleplayer = 0;
         D_AdvanceDemo();
         return true;

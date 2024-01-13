@@ -110,7 +110,7 @@ var wadfiles = [_][]const u8{undefined} ** MAXWADFILES;
 var numwadfiles: usize = 0;
 
 pub var devparm = false; // started game with -devparm
-pub export var nomonsters: c.boolean = c.false; // checkparm of -nomonsters
+pub var nomonsters = false; // checkparm of -nomonsters
 pub var respawnparm = false;    // checkparm of -respawn
 pub export var fastparm: c.boolean = c.false; // checkparm of -fast
 
@@ -713,7 +713,7 @@ pub fn D_DoomMain() noreturn {
 
     doomstat.modifiedgame = c.false;
 
-    nomonsters = toDoomBoolean(M_CheckParm("-nomonsters") != 0);
+    nomonsters = M_CheckParm("-nomonsters") != 0;
     respawnparm = M_CheckParm("-respawn") != 0;
     fastparm = toDoomBoolean(M_CheckParm("-fast") != 0);
     devparm = M_CheckParm("-devparm") != 0;

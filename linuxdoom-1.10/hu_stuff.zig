@@ -387,7 +387,7 @@ fn HU_Stop() void {
     headsupactive = false;
 }
 
-pub export fn HU_Start() void {
+pub fn HU_Start() void {
     if (headsupactive) {
         HU_Stop();
     }

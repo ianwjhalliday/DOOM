@@ -38,7 +38,6 @@ pub fn build(b: *std.Build) void {
         "p_sight.c",
         "p_spec.c",
         "p_switch.c",
-        "p_mobj.c",
         "p_saveg.c",
         "r_bsp.c",
         "r_data.c",

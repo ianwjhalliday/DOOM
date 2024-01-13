@@ -1,4 +1,4 @@
-pub const c = @cImport({
+const c = @cImport({
     // The player data structure depends on a number
     // of other structs: items (internal inventory),
     // animation states (closely tied to the sprites
@@ -9,12 +9,6 @@ pub const c = @cImport({
     // In addition, the player is just a special
     // case of the generic moving object/actor.
     @cInclude("r_defs.h"); // required for subsector type
-    @cInclude("p_mobj.h");
-
-    // Only needed for re-exporting globals and functions
-    // that depend on the mobj_t type
-    @cInclude("info.h");
-    @cInclude("p_local.h");
 });
 
 // Finally, for odd reasons, the player input
@@ -30,6 +24,8 @@ const d_ticcmd = @import("d_ticcmd.zig");
 const TicCmd = d_ticcmd.TicCmd;
 const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
+const p_mobj = @import("p_mobj.zig");
+const MObj = p_mobj.MObj;
 
 
 
@@ -58,7 +54,7 @@ pub const CF_NOMOMENTUM = 4;
 // Extended player object info: player_t
 //
 pub const Player = extern struct {
-    mo: ?*c.mobj_t,
+    mo: ?*MObj,
     playerstate: PlayerState,
     cmd: TicCmd,
 
@@ -120,7 +116,7 @@ pub const Player = extern struct {
     bonuscount: c_int,
 
     // Who did damage (NULL for floors/ceilings).
-    attacker: ?*c.mobj_t,
+    attacker: ?*MObj,
 
     // So gun flashes light up areas.
     extralight: c_int,

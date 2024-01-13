@@ -19,6 +19,9 @@ const FRACBITS = m_fixed.FRACBITS;
 
 const M_Random = @import("m_random.zig").M_Random;
 
+const p_mobj = @import("p_mobj.zig");
+const MObj = p_mobj.MObj;
+
 const sounds = @import("sounds.zig");
 const SfxInfo = sounds.SfxInfo;
 const MusicInfo = sounds.MusicInfo;
@@ -272,7 +275,7 @@ fn S_StartSoundAtVolume(origin_p: ?*anyopaque, sfx_id: c_int, volume_p: c_int) v
 }
 
 
-pub fn S_StartSound_Zig(origin: ?*anyopaque, sfx_id: Sfx) void {
+pub fn S_StartSound_Zig(origin: ?*MObj, sfx_id: Sfx) void {
     S_StartSound(origin, @intFromEnum(sfx_id));
 }
 

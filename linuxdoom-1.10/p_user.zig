@@ -24,6 +24,10 @@ const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
 const FixedMul = m_fixed.FixedMul;
 
+const p_mobj = @import("p_mobj.zig");
+const MF_SHADOW = p_mobj.MF_SHADOW;
+const P_SetMobjState = p_mobj.P_SetMobjState;
+
 // Index of the special effects (INVUL inverse) map.
 const INVERSECOLORMAP = 32;
 
@@ -118,8 +122,8 @@ fn P_MovePlayer(player: *Player) void {
         P_Thrust(player, player.mo.?.angle -% c.ANG90, @as(c_int, @as(i8, @bitCast(cmd.sidemove))) * 2048);
     }
 
-    if ((cmd.forwardmove != 0 or cmd.sidemove != 0) and player.mo.?.state == &d_player.c.states[c.S_PLAY]) {
-        _ = d_player.c.P_SetMobjState(player.mo, c.S_PLAY_RUN1);
+    if ((cmd.forwardmove != 0 or cmd.sidemove != 0) and player.mo.?.state == &p_mobj.c.states[c.S_PLAY]) {
+        _ = P_SetMobjState(player.mo.?, c.S_PLAY_RUN1);
     }
 }
 
@@ -210,7 +214,7 @@ pub export fn P_PlayerThink(player: *Player) void {
 
     P_CalcHeight(player);
 
-    if (player.mo.?.subsector[0].sector[0].special != 0) {
+    if (player.mo.?.subsector.sector[0].special != 0) {
         c.P_PlayerInSpecialSector(@ptrCast(player));
     }
 
@@ -278,7 +282,7 @@ pub export fn P_PlayerThink(player: *Player) void {
     if (player.powers[@intFromEnum(PowerType.Invisibility)] != 0) {
         player.powers[@intFromEnum(PowerType.Invisibility)] -= 1;
         if (player.powers[@intFromEnum(PowerType.Invisibility)] == 0) {
-            player.mo.?.flags &= ~c.MF_SHADOW;
+            player.mo.?.flags &= ~MF_SHADOW;
         }
     }
 

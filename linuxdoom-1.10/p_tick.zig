@@ -3,19 +3,17 @@ const c = @cImport({
 });
 
 extern fn P_UpdateSpecials() void;
-extern fn P_RespawnSpecials() void;
 
+const P_RespawnSpecials = @import("p_mobj.zig").P_RespawnSpecials;
 const player_t = @import("p_user.zig").player_t;
 const P_PlayerThink = @import("p_user.zig").P_PlayerThink;
 const MAXPLAYERS = @import("doomdef.zig").MAXPLAYERS;
 
 const g_game = @import("g_game.zig");
 const m_menu = @import("m_menu.zig");
+const z_zone = @import("z_zone.zig");
 
-// TODO: import free from z_zone
-extern fn Z_Free(ptr: *anyopaque) void;
-
-export var leveltime: c_int = 0;
+pub export var leveltime: c_int = 0;
 
 //
 // THINKERS
@@ -95,7 +93,7 @@ fn P_RunThinkers() void {
             // time to remove it
             currentthinker.next.?.prev = currentthinker.prev;
             currentthinker.prev.?.next = currentthinker.next;
-            Z_Free(currentthinker);
+            z_zone.destroy(currentthinker);
         } else {
             if (currentthinker.function.acp1 != null) {
                 currentthinker.function.acp1.?(currentthinker);

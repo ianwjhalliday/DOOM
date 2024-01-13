@@ -570,7 +570,7 @@ fn D_ArbitrateNetStart() void {
                 }
                 d_main.startskill = @enumFromInt(netbuffer.retransmitfrom & 15);
                 g_game.deathmatch = (netbuffer.retransmitfrom & 0xc0) >> 6;
-                d_main.nomonsters = d_main.toDoomBoolean(netbuffer.retransmitfrom & 0x20 > 0);
+                d_main.nomonsters = netbuffer.retransmitfrom & 0x20 > 0;
                 d_main.respawnparm = netbuffer.retransmitfrom & 0x10 > 0;
                 d_main.startmap = netbuffer.starttic & 0x3f;
                 d_main.startepisode = netbuffer.starttic >> 6;
@@ -590,7 +590,7 @@ fn D_ArbitrateNetStart() void {
                 if (g_game.deathmatch != 0) {
                     netbuffer.retransmitfrom |= @intCast(g_game.deathmatch<<6);
                 }
-                if (d_main.nomonsters != c.false) {
+                if (d_main.nomonsters) {
                     netbuffer.retransmitfrom |= 0x20;
                 }
                 if (d_main.respawnparm) {

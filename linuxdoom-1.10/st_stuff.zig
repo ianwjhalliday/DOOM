@@ -1238,7 +1238,7 @@ fn ST_createWidgets() void {
 
 var st_stopped = true;
 
-pub export fn ST_Start() void {
+pub fn ST_Start() void {
     if (!st_stopped) {
         ST_Stop();
     }
