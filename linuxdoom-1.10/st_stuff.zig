@@ -4,7 +4,6 @@ pub const c = @cImport({
     @cInclude("d_event.h");
     @cInclude("d_player.h");
     @cInclude("tables.h");
-    @cInclude("p_inter.h");
     @cInclude("r_main.h");
     @cInclude("sounds.h");
     @cInclude("s_sound.h");
@@ -52,6 +51,9 @@ const d_items = @import("d_items.zig");
 
 const g_game = @import("g_game.zig");
 const G_DeferedInitNew = g_game.G_DeferedInitNew;
+
+const p_inter = @import("p_inter.zig");
+const P_GivePower = p_inter.P_GivePower;
 
 const v_video = @import("v_video.zig");
 const V_CopyRect = v_video.V_CopyRect;
@@ -397,8 +399,6 @@ fn ST_refreshBackground() void {
     }
 }
 
-extern fn P_GivePower([*c]Player, c_int) c.boolean;
-
 // Respond to keyboard input events,
 //  intercept cheats.
 pub fn ST_Responder(ev: *const Event) bool {
@@ -519,7 +519,7 @@ pub fn ST_Responder(ev: *const Event) bool {
         {
           // TODO: Convert `powers` to bool
           if (plyr.powers[i] == 0) {
-            _ = P_GivePower(plyr, @intCast(i));
+            _ = P_GivePower(plyr, @enumFromInt(i));
           } else if (i != @intFromEnum(PowerType.Strength)) {
             plyr.powers[i] = 1;
           } else {

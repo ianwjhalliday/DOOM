@@ -28,7 +28,6 @@ pub fn build(b: *std.Build) void {
         "p_doors.c",
         "p_enemy.c",
         "p_floor.c",
-        "p_inter.c",
         "p_lights.c",
         "p_map.c",
         "p_maputl.c",

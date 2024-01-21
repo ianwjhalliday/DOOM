@@ -181,11 +181,11 @@ pub const PowerType = enum(c_uint) {
 //  how many seconds till expiration,
 //  assuming TICRATE is 35 ticks/second.
 //
-pub const PowerDuration = enum(c_uint) {
-    InvulnTics  = (30*TICRATE),
-    InvisTics   = (60*TICRATE),
-    InfraTics   = (120*TICRATE),
-    IronTics    = (60*TICRATE)
+pub const PowerDuration = struct {
+    pub const InvulnTics    = 30*TICRATE;
+    pub const InvisTics     = 60*TICRATE;
+    pub const InfraTics     = 120*TICRATE;
+    pub const IronTics      = 60*TICRATE;
 };
 
 
