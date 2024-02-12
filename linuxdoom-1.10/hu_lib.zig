@@ -2,13 +2,17 @@ pub const c = @cImport({
     @cInclude("r_defs.h");
     @cInclude("r_main.h");
     @cInclude("r_draw.h");
-    @cInclude("v_video.h");
 });
 
 const std = @import("std");
 
 const doomdef = @import("doomdef.zig");
 const SCREENWIDTH = doomdef.SCREENWIDTH;
+const m_swap = @import("m_swap.zig");
+const SHORT = m_swap.SHORT;
+const v_video = @import("v_video.zig");
+const V_DrawPatch = v_video.V_DrawPatch;
+const patch_t = v_video.c.patch_t;
 
 
 // background and foreground screen numbers
@@ -30,7 +34,7 @@ pub const HudTextLine = struct {
     x: c_int,
     y: c_int,
 
-    f: []*c.patch_t,            // font
+    f: []*patch_t,              // font
     sc: c_int,                  // start character
     l: [HU_MAXLINELENGTH+1:0]u8,  // line of text
     len: usize,                 // current line length
@@ -77,7 +81,7 @@ fn HUlib_clearTextLine(t: *HudTextLine) void {
     t.needsupdate = 1; // "true"
 }
 
-pub fn HUlib_initTextLine(t: *HudTextLine, x: c_int, y: c_int, f: []*c.patch_t, sc: c_int) void {
+pub fn HUlib_initTextLine(t: *HudTextLine, x: c_int, y: c_int, f: []*patch_t, sc: c_int) void {
     t.x = x;
     t.y = y;
     t.f = f;
@@ -114,11 +118,11 @@ pub fn HUlib_drawTextLine(l: *HudTextLine, drawcursor: bool) void {
     for (0..l.len) |i| {
         const ch = std.ascii.toUpper(l.l[i]);
         if (ch != ' ' and ch >= l.sc and ch <= '_') {
-            const w = std.mem.littleToNative(c_short, l.f[@intCast(ch - l.sc)].width);
+            const w = SHORT(l.f[@intCast(ch - l.sc)].width);
             if (x + w > SCREENWIDTH) {
                 break;
             }
-            c.V_DrawPatch(x, l.y, FG, l.f[@intCast(ch - l.sc)]);
+            V_DrawPatch(@intCast(x), @intCast(l.y), FG, l.f[@intCast(ch - l.sc)]);
             x += w;
         } else {
             x += 4;
@@ -129,8 +133,8 @@ pub fn HUlib_drawTextLine(l: *HudTextLine, drawcursor: bool) void {
     }
 
     // draw the cursor if requested
-    if (drawcursor and x + std.mem.littleToNative(c_short, l.f[@intCast('_' - l.sc)].width) <= SCREENWIDTH) {
-        c.V_DrawPatch(x, l.y, FG, l.f[@intCast('_' - l.sc)]);
+    if (drawcursor and x + SHORT(l.f[@intCast('_' - l.sc)].width) <= SCREENWIDTH) {
+        V_DrawPatch(@intCast(x), @intCast(l.y), FG, l.f[@intCast('_' - l.sc)]);
     }
 }
 
@@ -142,7 +146,7 @@ pub fn HUlib_eraseTextLine(l: *HudTextLine) void {
     // (because of a recent change back from the automap)
 
     if (automapactive == c.false and c.viewwindowx != 0 and l.needsupdate != 0) {
-        const lh = std.mem.littleToNative(c_short, l.f[0].height) + 1;
+        const lh = SHORT(l.f[0].height) + 1;
         for (@intCast(l.y)..@intCast(l.y + lh)) |y| {
             const yoffset = y * SCREENWIDTH;
             if (y < c.viewwindowy or y >= c.viewwindowy + c.viewheight) {
@@ -160,13 +164,13 @@ pub fn HUlib_eraseTextLine(l: *HudTextLine) void {
     }
 }
 
-pub fn HUlib_initSText(s: *HudSText, x: c_int, y: c_int, h: u32, font: []*c.patch_t, startchar: c_int, on: *bool) void {
+pub fn HUlib_initSText(s: *HudSText, x: c_int, y: c_int, h: u32, font: []*patch_t, startchar: c_int, on: *bool) void {
     s.h = h;
     s.on = on;
     s.laston = true;
     s.cl = 0;
 
-    const fh = std.mem.littleToNative(c_short, font[0].height) + 1;
+    const fh = SHORT(font[0].height) + 1;
     for (0..h) |i| {
         HUlib_initTextLine(&s.l[i], x, y - @as(c_int, @intCast(i)) * fh, font, startchar);
     }
@@ -229,7 +233,7 @@ pub fn HUlib_eraseSText(s: *HudSText) void {
     s.laston = s.on.*;
 }
 
-pub fn HUlib_initIText(it: *HudIText, x: c_int, y: c_int, font: []*c.patch_t, startchar: c_int, on: *bool) void {
+pub fn HUlib_initIText(it: *HudIText, x: c_int, y: c_int, font: []*patch_t, startchar: c_int, on: *bool) void {
     it.lm = 0; // default left margin is start of text
     it.on = on;
     it.laston = true;

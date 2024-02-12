@@ -34,6 +34,8 @@ const I_PauseMouseCapture = i_video.I_PauseMouseCapture;
 const I_ResumeMouseCapture = i_video.I_ResumeMouseCapture;
 const I_SetPalette = i_video.I_SetPalette;
 const M_CheckParm = @import("m_argv.zig").M_CheckParm;
+const m_swap = @import("m_swap.zig");
+const SHORT = m_swap.SHORT;
 const s_sound = @import("s_sound.zig");
 const S_SetMusicVolume = s_sound.S_SetMusicVolume;
 const S_SetSfxVolume = s_sound.S_SetSfxVolume;
@@ -1104,7 +1106,7 @@ fn M_StringWidth(string: [*:0]const u8) u16 {
             if (fc < 0 or fc >= HU_FONTSIZE)
                 4
             else
-                @intCast(mem.littleToNative(c_short, hu_stuff.hu_font[@intCast(fc)].width));
+                @intCast(SHORT(hu_stuff.hu_font[@intCast(fc)].width));
     }
 
     return w;
@@ -1116,7 +1118,7 @@ fn M_StringWidth(string: [*:0]const u8) u16 {
 //      Find string height from hu_font chars
 //
 fn M_StringHeight(string: [*:0]const u8) c_int {
-    const height = mem.littleToNative(c_short, hu_stuff.hu_font[0].height);
+    const height = SHORT(hu_stuff.hu_font[0].height);
 
     var h = height;
     for (mem.span(string)) |ch| {
@@ -1149,7 +1151,7 @@ fn M_WriteText(x: u16, y: u16, string: [*:0]const u8) void {
             continue;
         }
 
-        const w: u16 = @intCast(mem.littleToNative(c_short, hu_stuff.hu_font[@intCast(fch)].width));
+        const w: u16 = @intCast(SHORT(hu_stuff.hu_font[@intCast(fch)].width));
         if (cx + w > SCREENWIDTH) {
             break;
         }
@@ -1585,7 +1587,7 @@ pub fn M_Drawer() void {
 
             const x: u16 = @intCast(160 - @divTrunc(M_StringWidth(&stringbuf), 2));
             M_WriteText(x, y, &stringbuf);
-            y += @intCast(mem.littleToNative(c_short, hu_stuff.hu_font[0].height));
+            y += @intCast(SHORT(hu_stuff.hu_font[0].height));
         }
         return;
     }

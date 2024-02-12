@@ -17,6 +17,8 @@ const WbStart = d_player.WbStart;
 const g_game = @import("g_game.zig");
 const m_random = @import("m_random.zig");
 const M_Random = m_random.M_Random;
+const m_swap = @import("m_swap.zig");
+const SHORT = m_swap.SHORT;
 const s_sound = @import("s_sound.zig");
 const S_ChangeMusic = s_sound.S_ChangeMusicEnum;
 const S_StartSound = s_sound.S_StartSound_Zig;
@@ -57,7 +59,7 @@ const SP_TIMEY = doomdef.SCREENHEIGHT - 32;
 const NG_STATSY = 50;
 fn NG_STATSX() c_short {
     const nodofragoffset: c_short = if (!dofrags) 32 else 0;
-    return 32 + @divTrunc(std.mem.littleToNative(c_short, star.width), 2) + nodofragoffset;
+    return 32 + @divTrunc(SHORT(star.width), 2) + nodofragoffset;
 }
 
 const NG_SPACINGX = 64;
@@ -368,7 +370,7 @@ fn WI_drawLF() void {
 
     // draw <LevelName>.
     V_DrawPatch(
-        @divTrunc(SCREENWIDTH - std.mem.littleToNative(c_short, lname.width), 2),
+        @divTrunc(SCREENWIDTH - SHORT(lname.width), 2),
         WI_TITLEY,
         FB,
         lname,
@@ -376,8 +378,8 @@ fn WI_drawLF() void {
 
     // draw "Finished!"
     V_DrawPatch(
-        @divTrunc(SCREENWIDTH - std.mem.littleToNative(c_short, finished.width), 2),
-        WI_TITLEY + @divTrunc(5 * std.mem.littleToNative(c_short, lname.height), 4),
+        @divTrunc(SCREENWIDTH - SHORT(finished.width), 2),
+        WI_TITLEY + @divTrunc(5 * SHORT(lname.height), 4),
         FB,
         finished,
     );
@@ -389,7 +391,7 @@ fn WI_drawEL() void {
 
     // draw <LevelName>.
     V_DrawPatch(
-        @divTrunc(SCREENWIDTH - std.mem.littleToNative(c_short, entering.width), 2),
+        @divTrunc(SCREENWIDTH - SHORT(entering.width), 2),
         WI_TITLEY,
         FB,
         entering,
@@ -397,8 +399,8 @@ fn WI_drawEL() void {
 
     // draw "Finished!"
     V_DrawPatch(
-        @divTrunc(SCREENWIDTH - std.mem.littleToNative(c_short, lname.width), 2),
-        WI_TITLEY + @divTrunc(5 * std.mem.littleToNative(c_short, lname.height), 4),
+        @divTrunc(SCREENWIDTH - SHORT(lname.width), 2),
+        WI_TITLEY + @divTrunc(5 * SHORT(lname.height), 4),
         FB,
         lname,
     );
@@ -411,10 +413,10 @@ fn WI_drawOnLnode(n: usize, cp: [*]*patch_t) void {
     var fits = false;
 
     while (!fits and i != 2) {
-        const left = lnode.x - std.mem.littleToNative(c_short, cp[i].leftoffset);
-        const top = lnode.y - std.mem.littleToNative(c_short, cp[i].topoffset);
-        const right = left + std.mem.littleToNative(c_short, cp[i].width);
-        const bottom = top + std.mem.littleToNative(c_short, cp[i].height);
+        const left = lnode.x - SHORT(cp[i].leftoffset);
+        const top = lnode.y - SHORT(cp[i].topoffset);
+        const right = left + SHORT(cp[i].width);
+        const bottom = top + SHORT(cp[i].height);
 
         if (left >= 0
             and right < SCREENWIDTH
@@ -529,7 +531,7 @@ fn WI_drawAnimatedBack() void {
 // Returns new x position.
 //
 fn WI_drawNum(_x: c_int, y: c_int, _n: c_int, _digits: c_int) c_int {
-    const fontwidth = std.mem.littleToNative(c_short, num[0].width);
+    const fontwidth = SHORT(num[0].width);
 
     var x = _x;
     var n = _n;
@@ -605,7 +607,7 @@ fn WI_drawTime(_x: c_int, y: c_int, t: c_int) void {
 
         while (@divTrunc(t, div) != 0) {
             const n = @mod(@divTrunc(t, div), 60);
-            x = WI_drawNum(x, y, n, 2) - std.mem.littleToNative(c_short, colon.width);
+            x = WI_drawNum(x, y, n, 2) - SHORT(colon.width);
             div *= 60;
 
             // draw
@@ -615,7 +617,7 @@ fn WI_drawTime(_x: c_int, y: c_int, t: c_int) void {
         }
     } else {
         // "sucks"
-        V_DrawPatch(x - std.mem.littleToNative(c_short, sucks.width), y, FB, sucks);
+        V_DrawPatch(x - SHORT(sucks.width), y, FB, sucks);
     }
 }
 
@@ -848,7 +850,7 @@ fn WI_drawDeathmatchStats() void {
 
     // draw stat titles (top line)
     V_DrawPatch(
-        DM_TOTALSX - @divTrunc(std.mem.littleToNative(c_short, total.width), 2),
+        DM_TOTALSX - @divTrunc(SHORT(total.width), 2),
         DM_MATRIXY - WI_SPACINGY + 10,
         FB,
         total,
@@ -863,7 +865,7 @@ fn WI_drawDeathmatchStats() void {
 
     for (0..MAXPLAYERS) |i| {
         if (g_game.playeringame[i] != c.false) {
-            const pwhalf = @divTrunc(std.mem.littleToNative(c_short, p[i].width), 2);
+            const pwhalf = @divTrunc(SHORT(p[i].width), 2);
 
             V_DrawPatch(x - pwhalf, DM_MATRIXY - WI_SPACINGY, FB, p[i]);
             V_DrawPatch(DM_MATRIXX - pwhalf, y, FB, p[i]);
@@ -880,7 +882,7 @@ fn WI_drawDeathmatchStats() void {
 
     // draw stats
     y = DM_MATRIXY + 10;
-    const w = std.mem.littleToNative(c_short, num[0].width);
+    const w = SHORT(num[0].width);
 
     for (0..MAXPLAYERS) |i| {
         x = DM_MATRIXX + DM_SPACINGX;
@@ -1090,21 +1092,21 @@ fn WI_drawNetgameStats() void {
 
     // draw stat titles (top line)
     V_DrawPatch(
-        NG_STATSX() + NG_SPACINGX - std.mem.littleToNative(c_short, kills.width),
+        NG_STATSX() + NG_SPACINGX - SHORT(kills.width),
         NG_STATSY,
         FB,
         kills,
     );
 
     V_DrawPatch(
-        NG_STATSX() + 2 * NG_SPACINGX - std.mem.littleToNative(c_short, items.width),
+        NG_STATSX() + 2 * NG_SPACINGX - SHORT(items.width),
         NG_STATSY,
         FB,
         items,
     );
 
     V_DrawPatch(
-        NG_STATSX() + 3 * NG_SPACINGX - std.mem.littleToNative(c_short, secret.width),
+        NG_STATSX() + 3 * NG_SPACINGX - SHORT(secret.width),
         NG_STATSY,
         FB,
         secret,
@@ -1112,7 +1114,7 @@ fn WI_drawNetgameStats() void {
 
     if (dofrags) {
         V_DrawPatch(
-            NG_STATSX() + 4 * NG_SPACINGX - std.mem.littleToNative(c_short, frags.width),
+            NG_STATSX() + 4 * NG_SPACINGX - SHORT(frags.width),
             NG_STATSY,
             FB,
             frags,
@@ -1120,8 +1122,8 @@ fn WI_drawNetgameStats() void {
     }
 
     // draw stats
-    var y = NG_STATSY + std.mem.littleToNative(c_short, kills.height);
-    const pwidth = std.mem.littleToNative(c_short, percent.width);
+    var y = NG_STATSY + SHORT(kills.height);
+    const pwidth = SHORT(percent.width);
 
     for (0..MAXPLAYERS) |i| {
         if (g_game.playeringame[i] == c.false) {
@@ -1129,10 +1131,10 @@ fn WI_drawNetgameStats() void {
         }
 
         var x = NG_STATSX();
-        V_DrawPatch(x - std.mem.littleToNative(c_short, p[i].width), y, FB, p[i]);
+        V_DrawPatch(x - SHORT(p[i].width), y, FB, p[i]);
 
         if (i == me) {
-            V_DrawPatch(x - std.mem.littleToNative(c_short, p[i].width), y, FB, star);
+            V_DrawPatch(x - SHORT(p[i].width), y, FB, star);
         }
 
         x += NG_SPACINGX;
@@ -1259,7 +1261,7 @@ fn WI_updateStats() void {
 
 fn WI_drawStats() void {
     // line height
-    const lh = @divTrunc(3 * std.mem.littleToNative(c_short, num[0].height), 2);
+    const lh = @divTrunc(3 * SHORT(num[0].height), 2);
 
     WI_slamBackground();
 

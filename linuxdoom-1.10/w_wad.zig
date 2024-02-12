@@ -1,4 +1,6 @@
 const std = @import("std");
+const m_swap = @import("m_swap.zig");
+const LONG = m_swap.LONG;
 const I_Error = @import("i_system.zig").I_Error;
 const z_zone = @import("z_zone.zig");
 const Z_ChangeTag = z_zone.Z_ChangeTag;
@@ -131,8 +133,8 @@ pub fn W_AddFile(_filename: []const u8) void {
             // ???modifiedgame = true;
         }
 
-        header.numlumps = std.mem.littleToNative(c_int, header.numlumps);
-        header.infotableofs = std.mem.littleToNative(c_int, header.infotableofs);
+        header.numlumps = LONG(header.numlumps);
+        header.infotableofs = LONG(header.infotableofs);
         fileinfo = allocator.alloc(FileLump, @intCast(header.numlumps)) catch {
             I_Error("W_AddFile: Alloc lumps failed. numlumps = %d", header.numlumps);
         };
@@ -157,8 +159,8 @@ pub fn W_AddFile(_filename: []const u8) void {
 
     for (startlump..numlumps) |i| {
         lumpinfo_slice[i].handle = storehandle;
-        lumpinfo_slice[i].position = std.mem.littleToNative(c_int, fileinfo[i - startlump].filepos);
-        lumpinfo_slice[i].size = std.mem.littleToNative(c_int, fileinfo[i - startlump].size);
+        lumpinfo_slice[i].position = LONG(fileinfo[i - startlump].filepos);
+        lumpinfo_slice[i].size = LONG(fileinfo[i - startlump].size);
         @memcpy(&lumpinfo_slice[i].name, &fileinfo[i - startlump].name);
     }
 
@@ -187,8 +189,8 @@ pub export fn W_Reload() void {
         I_Error("W_Reload: Failed to read WAD header");
     };
     var header = std.mem.bytesAsValue(WadInfo, &header_bytes);
-    header.numlumps = std.mem.littleToNative(c_int, header.numlumps);
-    header.infotableofs = std.mem.littleToNative(c_int, header.infotableofs);
+    header.numlumps = LONG(header.numlumps);
+    header.infotableofs = LONG(header.infotableofs);
 
     var arena = std.heap.ArenaAllocator.init(std.heap.raw_c_allocator);
     defer arena.deinit();
@@ -210,8 +212,8 @@ pub export fn W_Reload() void {
             Z_Free(lumpcache[i].?);
         }
 
-        lumpinfo_slice[i].position = std.mem.littleToNative(c_int, fileinfo[i - reloadlump].filepos);
-        lumpinfo_slice[i].size = std.mem.littleToNative(c_int, fileinfo[i - reloadlump].size);
+        lumpinfo_slice[i].position = LONG(fileinfo[i - reloadlump].filepos);
+        lumpinfo_slice[i].size = LONG(fileinfo[i - reloadlump].size);
     }
 
     std.os.close(handle);

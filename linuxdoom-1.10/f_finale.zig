@@ -12,6 +12,9 @@ const d_main = @import("d_main.zig");
 const Event = d_main.Event;
 const g_game = @import("g_game.zig");
 const hu_stuff = @import("hu_stuff.zig");
+const m_swap = @import("m_swap.zig");
+const LONG = m_swap.LONG;
+const SHORT = m_swap.SHORT;
 const sounds = @import("sounds.zig");
 const Sfx = sounds.Sfx;
 const s_sound = @import("s_sound.zig");
@@ -222,7 +225,7 @@ fn F_TextWrite() void {
         }
         const chidx = chup - hu_stuff.HU_FONTSTART;
 
-        const w = std.mem.littleToNative(c_short, hu_stuff.hu_font[chidx].width);
+        const w = SHORT(hu_stuff.hu_font[chidx].width);
         if (cx + w > doomdef.SCREENWIDTH) {
             break;
         }
@@ -447,7 +450,7 @@ fn F_CastPrint(text: []const u8) void {
         }
 
         const chidx: usize = @intCast(chup - hu_stuff.HU_FONTSTART);
-        const w = std.mem.littleToNative(c_short, hu_stuff.hu_font[chidx].width);
+        const w = SHORT(hu_stuff.hu_font[chidx].width);
         width += @intCast(w);
     }
 
@@ -464,7 +467,7 @@ fn F_CastPrint(text: []const u8) void {
 
         const chidx: usize = @intCast(chup - hu_stuff.HU_FONTSTART);
         V_DrawPatch(@intCast(cx), 180, 0, @ptrCast(hu_stuff.hu_font[chidx]));
-        const w = std.mem.littleToNative(c_short, hu_stuff.hu_font[chidx].width);
+        const w = SHORT(hu_stuff.hu_font[chidx].width);
         cx += @intCast(w);
     }
 }
@@ -500,7 +503,7 @@ fn F_CastDrawer() void {
 fn F_DrawPatchCol(x: c_int, patch: *v_video.c.patch_t, col: c_int) void {
     const patchAsBytes = @as([*]u8, @ptrCast(patch));
     const columnofs = @as([*]c_int, @ptrCast(&patch.columnofs[0]));
-    const colofs: usize = @intCast(std.mem.littleToNative(c_int, columnofs[@intCast(col)]));
+    const colofs: usize = @intCast(LONG(columnofs[@intCast(col)]));
 
     var column: *c.column_t = @ptrCast(patchAsBytes + colofs);
     const desttop = v_video.screens[0] + @as(usize, @intCast(x));

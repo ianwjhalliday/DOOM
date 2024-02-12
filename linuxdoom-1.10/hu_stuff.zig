@@ -12,8 +12,11 @@ const Event = d_main.Event;
 const g_game = @import("g_game.zig");
 const hu_lib = @import("hu_lib.zig");
 const m_menu = @import("m_menu.zig");
+const m_swap = @import("m_swap.zig");
+const SHORT = m_swap.SHORT;
 const s_sound = @import("s_sound.zig");
 const S_StartSound = s_sound.S_StartSound_Zig;
+const v_video = @import("v_video.zig");
 const w_wad = @import("w_wad.zig");
 const W_CacheLumpNameFmt = w_wad.W_CacheLumpNameFmt;
 
@@ -45,11 +48,11 @@ fn HU_TITLEP() []const u8 { return mapnamesp[@intCast(g_game.gamemap-1)]; }
 fn HU_TITLET() []const u8 { return mapnamest[@intCast(g_game.gamemap-1)]; }
 const HU_TITLEHEIGHT = 1;
 const HU_TITLEX = 0;
-fn HU_TITLEY() c_short { return 167 - std.mem.littleToNative(c_short, hu_font[0].height); }
+fn HU_TITLEY() c_short { return 167 - SHORT(hu_font[0].height); }
 
 const HU_INPUTTOGGLE = 't';
 const HU_INPUTX = HU_MSGX;
-fn HU_INPUTY() c_short { return HU_MSGY + HU_MSGHEIGHT*(std.mem.littleToNative(c_short, hu_font[0].height) + 1); }
+fn HU_INPUTY() c_short { return HU_MSGY + HU_MSGHEIGHT*(SHORT(hu_font[0].height) + 1); }
 const HU_INPUTWIDTH = 64;
 const HU_INPUTHEIGHT = 1;
 
@@ -74,7 +77,7 @@ pub const player_names = [_][]const u8{
 };
 
 
-const patch_t = hu_lib.c.patch_t;
+const patch_t = v_video.c.patch_t;
 
 pub var hu_font: [HU_FONTSIZE]*patch_t = undefined;
 var plr: *@TypeOf(g_game.players[0]) = undefined;

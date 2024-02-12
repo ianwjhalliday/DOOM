@@ -8,6 +8,9 @@ const doomdef = @import("doomdef.zig");
 const i_system = @import("i_system.zig");
 const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
+const m_swap = @import("m_swap.zig");
+const LONG = m_swap.LONG;
+const SHORT = m_swap.SHORT;
 const I_AllocLow = i_system.I_AllocLow;
 
 // Each screen is [SCREENWIDTH*SCREENHEIGHT]; 
@@ -164,11 +167,11 @@ pub fn V_DrawPatchSigned(x: c_int, y: c_int, scrn: u32, patch: *c.patch_t) void 
 }
 
 pub export fn V_DrawPatch(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
-    var y: u32 = @intCast(@as(i64, _y) - std.mem.littleToNative(c_short, patch.topoffset));
-    var x: u32 = @intCast(@as(i64, _x) - std.mem.littleToNative(c_short, patch.leftoffset));
+    var y: u32 = @intCast(@as(i64, _y) - SHORT(patch.topoffset));
+    var x: u32 = @intCast(@as(i64, _x) - SHORT(patch.leftoffset));
 
-    const w = @as(u32, @intCast(std.mem.littleToNative(c_short, patch.width)));
-    const h = @as(u32, @intCast(std.mem.littleToNative(c_short, patch.height)));
+    const w = @as(u32, @intCast(SHORT(patch.width)));
+    const h = @as(u32, @intCast(SHORT(patch.height)));
 
     if (scrn == 0) {
         V_MarkRect(x, y, w, h);
@@ -180,7 +183,7 @@ pub export fn V_DrawPatch(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
 
     for (0..w) |col| {
         const columnofs = @as([*]c_int, @ptrCast(&patch.columnofs[0]));
-        const colofs: usize = @intCast(std.mem.littleToNative(c_int, columnofs[@intCast(col)]));
+        const colofs: usize = @intCast(LONG(columnofs[@intCast(col)]));
         var column: *c.column_t = @ptrCast(patchAsBytes + colofs);
 
         // step through the posts in a column.
@@ -208,11 +211,11 @@ pub export fn V_DrawPatch(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
 // Flips horizontally, e.g. to mirror face.
 //
 pub fn V_DrawPatchFlipped(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
-    var y: u32 = @intCast(@as(i64, _y) - std.mem.littleToNative(c_short, patch.topoffset));
-    var x: u32 = @intCast(@as(i64, _x) - std.mem.littleToNative(c_short, patch.leftoffset));
+    var y: u32 = @intCast(@as(i64, _y) - SHORT(patch.topoffset));
+    var x: u32 = @intCast(@as(i64, _x) - SHORT(patch.leftoffset));
 
-    const w = @as(u32, @intCast(std.mem.littleToNative(c_short, patch.width)));
-    const h = @as(u32, @intCast(std.mem.littleToNative(c_short, patch.height)));
+    const w = @as(u32, @intCast(SHORT(patch.width)));
+    const h = @as(u32, @intCast(SHORT(patch.height)));
 
     if (scrn == 0) {
         V_MarkRect(x, y, w, h);
@@ -224,7 +227,7 @@ pub fn V_DrawPatchFlipped(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
 
     for (0..w) |col| {
         const columnofs = @as([*]c_int, @ptrCast(&patch.columnofs[0]));
-        const colofs: usize = @intCast(std.mem.littleToNative(c_int, columnofs[@intCast(w - 1 - col)]));
+        const colofs: usize = @intCast(LONG(columnofs[@intCast(w - 1 - col)]));
         var column: *c.column_t = @ptrCast(patchAsBytes + colofs);
 
         // step through the posts in a column.
