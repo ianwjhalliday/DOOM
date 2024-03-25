@@ -176,7 +176,7 @@ pub fn W_AddFile(_filename: []const u8) void {
 // Flushes any of the reloadable lumps in memory
 //  and reloads the directory.
 //
-pub export fn W_Reload() void {
+pub fn W_Reload() void {
     if (reloadname == null) return;
 
     const handle = std.os.open(reloadname.?, std.os.O.RDONLY, 0) catch {
@@ -306,12 +306,16 @@ pub export fn W_GetNumForName(name: [*]const u8) c_int {
 // W_LumpLength
 // Returns the buffer size needed to load the given lump.
 //
-pub export fn W_LumpLength(lump: c_int) c_int {
+export fn W_LumpLength(lump: c_int) c_int {
     if (lump >= numlumps) {
         I_Error("W_LumpLength: %i >= numlumps", lump);
     }
 
     return lumpinfo_slice[@intCast(lump)].size;
+}
+
+pub fn W_LumpLengthZig(lump: c_int) usize {
+    return @intCast(W_LumpLength(lump));
 }
 
 //

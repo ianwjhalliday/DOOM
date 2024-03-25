@@ -8,7 +8,6 @@ pub const c = @cImport({
     @cInclude("info.h");
     @cInclude("p_local.h");
     @cInclude("p_saveg.h");
-    @cInclude("p_setup.h");
     @cInclude("r_data.h");
     @cInclude("r_draw.h");
     @cInclude("r_main.h");
@@ -78,6 +77,9 @@ const P_RemoveMobj = p_mobj.P_RemoveMobj;
 const P_SpawnMobj = p_mobj.P_SpawnMobj;
 const P_SpawnPlayer = p_mobj.P_SpawnPlayer;
 
+const p_setup = @import("p_setup.zig");
+const P_SetupLevel = p_setup.P_SetupLevel;
+
 
 // HACK: importing p_tick from p_telept.zig to work around duplicate export issue
 // TODO: import p_tick.zig directly once p_spec is converted to zig
@@ -146,12 +148,12 @@ pub export var netgame: c.boolean = c.false;       // only true if packets are b
 pub export var playeringame: [MAXPLAYERS]c.boolean = undefined;
 pub export var players: [MAXPLAYERS]Player = undefined;
 
-pub export var consoleplayer: usize = 0;           // player taking events and displaying
+pub var consoleplayer: usize = 0;           // player taking events and displaying
 pub var displayplayer: usize = 0;           // view being displayed
 pub export var gametic: c_int = 0;
-pub export var totalkills: c_int = 0;          // for intermission
-pub export var totalitems: c_int = 0;          // for intermission
-export var totalsecret: c_int = 0;             // for intermission
+pub var totalkills: c_int = 0;          // for intermission
+pub var totalitems: c_int = 0;          // for intermission
+pub export var totalsecret: c_int = 0;             // for intermission
 
 export var demonamebuf: [32]u8 = undefined;
 var demoname: []const u8 = undefined;
@@ -165,9 +167,9 @@ var demo_p: [*]u8 = undefined;
 var demoend: [*]u8 = undefined;
 pub var singledemo = false;     // quit after playing a demo from cmdline
 
-export var precache: c.boolean = c.true;        // if true, load all graphics at start
+pub var precache = true;        // if true, load all graphics at start
 
-export var wminfo: WbStart = undefined;  // parms for world map / intermission
+pub var wminfo: WbStart = undefined;  // parms for world map / intermission
 
 export var consistancy: [MAXPLAYERS][d_net.BACKUPTICS]c_short = undefined;
 
@@ -243,7 +245,7 @@ var savedescription = [_]u8{0} ** SAVESTRINGSIZE;
 const BODYQUESIZE = 32;
 
 var bodyque: [BODYQUESIZE]*MObj = undefined;
-export var bodyqueslot: c_int = 0;
+pub var bodyqueslot: c_int = 0;
 
 // TODO: Remove `statcopy` from codebase
 export var statcopy: *anyopaque = undefined;           // for statistics driver
@@ -481,7 +483,7 @@ export fn G_DoLoadLevel() void {
         }
     }
 
-    c.P_SetupLevel(gameepisode, gamemap, 0, @intFromEnum(gameskill));
+    P_SetupLevel(gameepisode, gamemap);
     displayplayer = consoleplayer;  // view the guy you are playing
     starttime = I_GetTime();
     gameaction = .Nothing;
@@ -606,7 +608,7 @@ pub export fn G_Ticker() void {
     // do player reborns if needed
     for (playeringame, players, 0..) |pig, player, i| {
         if (pig != c.false and player.playerstate == .Reborn) {
-            G_DoReborn(@intCast(i));
+            G_DoReborn(i);
         }
     }
 
@@ -783,10 +785,10 @@ extern fn P_CheckPosition(thing: @TypeOf(players[0].mo), x: c.fixed_t, y: c.fixe
 // at the given mapthing_t spot
 // because something is occupying it
 //
-export fn G_CheckSpot(playernum: c_int, mthing: *c.mapthing_t) bool {
-    if (players[@intCast(playernum)].mo == null) {
+fn G_CheckSpot(playernum: usize, mthing: *p_setup.c.mapthing_t) bool {
+    if (players[playernum].mo == null) {
         // first spawn of level, before corpses
-        for (0..@intCast(playernum)) |i| {
+        for (0..playernum) |i| {
             if (players[i].mo.?.x == @as(c.fixed_t, mthing.x) << c.FRACBITS
                 and players[i].mo.?.y == @as(c.fixed_t, mthing.y) << c.FRACBITS) {
                 return false;
@@ -798,7 +800,7 @@ export fn G_CheckSpot(playernum: c_int, mthing: *c.mapthing_t) bool {
     const x: c.fixed_t = @as(c.fixed_t, mthing.x) << c.FRACBITS;
     const y: c.fixed_t = @as(c.fixed_t, mthing.y) << c.FRACBITS;
 
-    if (P_CheckPosition(players[@intCast(playernum)].mo, x, y) == c.false) {
+    if (P_CheckPosition(players[playernum].mo, x, y) == c.false) {
         return false;
     }
 
@@ -807,7 +809,7 @@ export fn G_CheckSpot(playernum: c_int, mthing: *c.mapthing_t) bool {
     if (bodyqueslot >= BODYQUESIZE) {
         P_RemoveMobj(bodyque[slot]);
     }
-    bodyque[slot] = players[@intCast(playernum)].mo.?;
+    bodyque[slot] = players[playernum].mo.?;
     bodyqueslot += 1;
 
     // spawn a teleport fog
@@ -834,30 +836,30 @@ export fn G_CheckSpot(playernum: c_int, mthing: *c.mapthing_t) bool {
 // Spawns a player at one of the random death match spots
 // called at level load and each death
 //
-export fn G_DeathMatchSpawnPlayer(playernum: c_int) void {
-    const selections = @divTrunc(@intFromPtr(c.deathmatch_p) - @intFromPtr(&c.deathmatchstarts[0]), @sizeOf(c.mapthing_t));
+pub fn G_DeathMatchSpawnPlayer(playernum: usize) void {
+    const selections = @divTrunc(@intFromPtr(p_setup.deathmatch_p) - @intFromPtr(&p_setup.deathmatchstarts[0]), @sizeOf(c.mapthing_t));
     if (selections < 4) {
         I_Error("Only %i deathmatch spots, 4 required", selections);
     }
 
     for (0..20) |_| {
         const i = @as(usize, @intCast(P_Random())) % selections;
-        if (G_CheckSpot(playernum, &c.deathmatchstarts[i]))
+        if (G_CheckSpot(playernum, &p_setup.deathmatchstarts[i]))
         {
-            c.deathmatchstarts[i].type = @intCast(playernum+1);
-            P_SpawnPlayer(&p_mobj.c.deathmatchstarts[i]);
+            p_setup.deathmatchstarts[i].type = @intCast(playernum+1);
+            P_SpawnPlayer(&p_setup.deathmatchstarts[i]);
             return;
         }
     }
 
     // no good spot, so the player will probably get stuck
-    P_SpawnPlayer(&p_mobj.c.playerstarts[@intCast(playernum)]);
+    P_SpawnPlayer(&p_setup.playerstarts[playernum]);
 }
 
 //
 // G_DoReborn
 //
-fn G_DoReborn(playernum: c_int) void {
+fn G_DoReborn(playernum: usize) void {
     if (c.netgame == c.false) {
         // reload the level from scratch
         gameaction = .LoadLevel;
@@ -865,7 +867,7 @@ fn G_DoReborn(playernum: c_int) void {
         // respawn at the start
 
         // first dissasociate the corpse
-        players[@intCast(playernum)].mo.?.player = null;
+        players[playernum].mo.?.player = null;
 
         // spawn at random spot if in death match
         if (deathmatch != c.false) {
@@ -873,22 +875,22 @@ fn G_DoReborn(playernum: c_int) void {
             return;
         }
 
-        if (G_CheckSpot(playernum, &c.playerstarts[@intCast(playernum)])) {
-            P_SpawnPlayer(&p_mobj.c.playerstarts[@intCast(playernum)]);
+        if (G_CheckSpot(playernum, &p_setup.playerstarts[playernum])) {
+            P_SpawnPlayer(&p_setup.playerstarts[playernum]);
             return;
         }
 
         // try to spawn at one of the other players spots
         for (0..MAXPLAYERS) |i| {
-            if (G_CheckSpot(playernum, &c.playerstarts[i])) {
-                c.playerstarts[i].type = @intCast(playernum+1);     // fake as other player
-                P_SpawnPlayer(&p_mobj.c.playerstarts[i]);
-                c.playerstarts[i].type = @intCast(i+1);             // restore
+            if (G_CheckSpot(playernum, &p_setup.playerstarts[i])) {
+                p_setup.playerstarts[i].type = @intCast(playernum+1);     // fake as other player
+                P_SpawnPlayer(&p_setup.playerstarts[i]);
+                p_setup.playerstarts[i].type = @intCast(i+1);             // restore
                 return;
             }
             // he's going to be inside something.  Too bad.
         }
-        P_SpawnPlayer(&p_mobj.c.playerstarts[@intCast(playernum)]);
+        P_SpawnPlayer(&p_setup.playerstarts[playernum]);
     }
 }
 
@@ -1536,9 +1538,9 @@ fn G_DoPlayDemo() void {
     }
 
     // don't spend a lot of time in loadlevel
-    precache = c.false;
+    precache = false;
     G_InitNew(skill, episode, map);
-    precache = c.true;
+    precache = true;
 
     usergame = false;
     demoplayback = c.true;

@@ -39,6 +39,7 @@ const hu_stuff = @import("hu_stuff.zig");
 const HU_Start = hu_stuff.HU_Start;
 const m_random = @import("m_random.zig");
 const P_Random = m_random.P_Random;
+const p_setup = @import("p_setup.zig");
 const p_tick = @import("p_tick.zig");
 const P_AddThinker = p_tick.P_AddThinker;
 const P_RemoveThinker = p_tick.P_RemoveThinker;
@@ -282,7 +283,7 @@ pub const MObj = extern struct {
     lastlook: c_int,
 
     // For nightmare respawn.
-    spawnpoint: c.mapthing_t,
+    spawnpoint: p_setup.c.mapthing_t,
 
     // Thing being chased/attacked for tracers.
     tracer: ?*MObj,
@@ -744,10 +745,10 @@ pub export fn P_SpawnMobj(x: fixed_t, y: fixed_t, z: fixed_t, motype: c.mobjtype
 //
 // P_RemoveMobj
 //
-var itemrespawnque: [c.ITEMQUESIZE]c.mapthing_t = undefined;
+var itemrespawnque: [c.ITEMQUESIZE]p_setup.c.mapthing_t = undefined;
 var itemrespawntime: [c.ITEMQUESIZE]c_int = undefined;
-export var iquehead: usize = 0;
-export var iquetail: usize = 0;
+pub var iquehead: usize = 0;
+pub var iquetail: usize = 0;
 
 
 pub export fn P_RemoveMobj(mobj: *MObj) void {
@@ -831,7 +832,7 @@ pub fn P_RespawnSpecials() void {
 // Most of the player structure stays unchanged
 //  between levels.
 //
-pub fn P_SpawnPlayer(mthing: *c.mapthing_t) void {
+pub fn P_SpawnPlayer(mthing: *p_setup.c.mapthing_t) void {
     const typeidx = @as(u32, @intCast(mthing.type - 1));
 
     // not playing?
@@ -894,12 +895,12 @@ pub fn P_SpawnPlayer(mthing: *c.mapthing_t) void {
 // The fields of the mapthing should
 // already be in host byte order.
 //
-pub export fn P_SpawnMapThing(mthing: *c.mapthing_t) void {
+pub fn P_SpawnMapThing(mthing: *p_setup.c.mapthing_t) void {
     // count deathmatch start positions
     if (mthing.type == 11) {
-        if (c.deathmatch_p <= &c.deathmatchstarts[9]) {
-            c.deathmatch_p.* = mthing.*;
-            c.deathmatch_p += 1;
+        if (@intFromPtr(p_setup.deathmatch_p) <= @intFromPtr(&p_setup.deathmatchstarts[9])) {
+            p_setup.deathmatch_p[0] = mthing.*;
+            p_setup.deathmatch_p += 1;
         }
         return;
     }
@@ -907,7 +908,7 @@ pub export fn P_SpawnMapThing(mthing: *c.mapthing_t) void {
     // check for players specially
     if (mthing.type <= 4) {
         // save spots for respawning in network games
-        c.playerstarts[@intCast(mthing.type - 1)] = mthing.*;
+        p_setup.playerstarts[@intCast(mthing.type - 1)] = mthing.*;
         if (g_game.deathmatch == 0) {
             P_SpawnPlayer(mthing);
         }

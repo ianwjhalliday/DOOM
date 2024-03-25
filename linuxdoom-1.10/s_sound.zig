@@ -130,7 +130,7 @@ pub fn S_Init(sfxVolume: c_int, musicVolume: c_int) void {
 // Kills playing sounds at start of level,
 //  determines music if any, changes music.
 //
-export fn S_Start() void {
+pub fn S_Start() void {
     // kill all playing sounds at start of level
     //  (trust me - a good idea)
     for (channels, 0..) |ch, cnum| {

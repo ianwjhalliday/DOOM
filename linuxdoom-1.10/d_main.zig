@@ -75,6 +75,9 @@ const M_Init = m_menu.M_Init;
 const M_Responder = m_menu.M_Responder;
 const M_Ticker = m_menu.M_Ticker;
 
+const p_setup = @import("p_setup.zig");
+const P_Init = p_setup.P_Init;
+
 const s_sound = @import("s_sound.zig");
 const S_Init = s_sound.S_Init;
 const S_StartMusic = s_sound.S_StartMusic;
@@ -121,7 +124,7 @@ pub var startepisode: c_int = 0;
 pub export var startmap: c_int = 0;
 pub var autostart = false;
 
-pub export var debugfile: ?*std.c.FILE = null;
+pub var debugfile: ?*std.c.FILE = null;
 
 pub var advancedemo = false;
 
@@ -700,7 +703,6 @@ extern var sidemove: [2]c_int;
 extern var statcopy: *anyopaque;
 
 extern fn R_Init() void;
-extern fn P_Init() void;
 
 pub fn toDoomBoolean(b: bool) c.boolean {
     return if (b) c.true else c.false;

@@ -25,6 +25,7 @@ const FixedMod = m_fixed.FixedMod;
 const FixedMul = m_fixed.FixedMul;
 const FRACBITS = m_fixed.FRACBITS;
 const FRACUNIT = m_fixed.FRACUNIT;
+const p_setup = @import("p_setup.zig");
 const st_stuff = @import("st_stuff.zig");
 const ST_Responder = st_stuff.ST_Responder;
 const v_video = @import("v_video.zig");
@@ -380,17 +381,17 @@ fn AM_findMinMaxBoundries() void {
     max_x = MININT;
     max_y = MININT;
 
-    for (0..@intCast(c.numvertexes)) |i| {
-        if (c.vertexes[i].x < min_x) {
-            min_x = c.vertexes[i].x;
-        } else if (c.vertexes[i].x > max_x) {
-            max_x = c.vertexes[i].x;
+    for (p_setup.vertexes) |vertex| {
+        if (vertex.x < min_x) {
+            min_x = vertex.x;
+        } else if (vertex.x > max_x) {
+            max_x = vertex.x;
         }
 
-        if (c.vertexes[i].y < min_y) {
-            min_y = c.vertexes[i].y;
-        } else if (c.vertexes[i].y > max_y) {
-            max_y = c.vertexes[i].y;
+        if (vertex.y < min_y) {
+            min_y = vertex.y;
+        } else if (vertex.y > max_y) {
+            max_y = vertex.y;
         }
     }
 

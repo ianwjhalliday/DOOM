@@ -277,7 +277,7 @@ pub export fn Z_ChangeTag(ptr: *anyopaque, tag: Z_Tag) void {
     block.tag = tag;
 }
 
-export fn Z_FreeTags(lowtag: Z_Tag, hightag: Z_Tag) void {
+pub fn Z_FreeTags(lowtag: Z_Tag, hightag: Z_Tag) void {
     var block = mainzone.blocklist.next;
     var next: *MemBlock = undefined;
 
@@ -388,7 +388,7 @@ pub fn Z_CheckHeap() void {
 }
 
 // TODO: Zig converted Z_FreeMemory is untested
-export fn Z_FreeMemory() c_int {
+pub fn Z_FreeMemory() c_int {
     var free_count: c_int = 0;
 
     var block = mainzone.blocklist.next;
