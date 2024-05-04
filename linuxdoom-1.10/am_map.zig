@@ -1,5 +1,4 @@
 const c = @cImport({
-    @cInclude("doomdata.h");
     @cInclude("doomstat.h");
     @cInclude("dstrings.h");
     @cInclude("tables.h");
@@ -9,6 +8,7 @@ const c = @cImport({
 
 const std = @import("std");
 
+const doomdata = @import("doomdata.zig");
 const doomdef = @import("doomdef.zig");
 const d_main = @import("d_main.zig");
 const Event = d_main.Event;
@@ -1082,8 +1082,8 @@ fn AM_drawWalls() void {
         l.b.x = line.v2[0].x;
         l.b.y = line.v2[0].y;
 
-        if (cheating != 0 or line.flags & c.ML_MAPPED != 0) {
-            if (line.flags & c.ML_DONTDRAW != 0 and cheating == 0) {
+        if (cheating != 0 or line.flags & doomdata.ML_MAPPED != 0) {
+            if (line.flags & doomdata.ML_DONTDRAW != 0 and cheating == 0) {
                 continue;
             }
 
@@ -1093,7 +1093,7 @@ fn AM_drawWalls() void {
                 if (line.special == 39) {
                     // teleporters
                     AM_drawMline(&l, WALLCOLORS + WALLRANGE / 2);
-                } else if (line.flags & c.ML_SECRET != 0) { // secret door
+                } else if (line.flags & doomdata.ML_SECRET != 0) { // secret door
                     const color: u8 = if (cheating != 0) SECRETWALLCOLORS else WALLCOLORS;
                     AM_drawMline(&l, color + lightlev);
                 } else if (line.backsector[0].floorheight != line.frontsector[0].floorheight) {
@@ -1105,7 +1105,7 @@ fn AM_drawWalls() void {
                 }
             }
         } else if (plr.powers[@intFromEnum(doomdef.PowerType.AllMap)] != 0) {
-            if (line.flags & c.ML_DONTDRAW == 0) {
+            if (line.flags & doomdata.ML_DONTDRAW == 0) {
                 AM_drawMline(&l, GRAYS + 3);
             }
         }

@@ -1,5 +1,4 @@
 pub const c = @cImport({
-    @cInclude("doomdata.h");
     @cInclude("info.h");
     @cInclude("r_data.h");
     @cInclude("r_defs.h");
@@ -14,6 +13,15 @@ pub const c = @cImport({
 const std = @import("std");
 
 const d_main = @import("d_main.zig");
+const doomdata = @import("doomdata.zig");
+const MapLineDef = doomdata.MapLineDef;
+const MapNode = doomdata.MapNode;
+const MapSector = doomdata.MapSector;
+const MapSeg = doomdata.MapSeg;
+const MapSideDef = doomdata.MapSideDef;
+const MapSubSector = doomdata.MapSubSector;
+const MapThing = doomdata.MapThing;
+const MapVertex = doomdata.MapVertex;
 const doomdef = @import("doomdef.zig");
 const MAXPLAYERS = doomdef.MAXPLAYERS;
 const Skill = doomdef.Skill;
@@ -109,9 +117,9 @@ export var rejectmatrix: [*]u8 = undefined;
 // Maintain single and multi player starting spots.
 const MAX_DEATHMATCH_STARTS = 10;
 
-pub var deathmatchstarts: [MAX_DEATHMATCH_STARTS]c.mapthing_t = undefined;
-pub var deathmatch_p: [*]c.mapthing_t = undefined;
-pub var playerstarts: [MAXPLAYERS]c.mapthing_t = undefined;
+pub var deathmatchstarts: [MAX_DEATHMATCH_STARTS]MapThing = undefined;
+pub var deathmatch_p: [*]MapThing = undefined;
+pub var playerstarts: [MAXPLAYERS]MapThing = undefined;
 
 
 
@@ -121,13 +129,13 @@ pub var playerstarts: [MAXPLAYERS]c.mapthing_t = undefined;
 fn P_LoadVertexes(lump: c_int) void {
     // Determine number of lumps:
     //  total lump length / vertex record length.
-    const numvertexes = @divTrunc(W_LumpLength(lump), @sizeOf(c.mapvertex_t));
+    const numvertexes = @divTrunc(W_LumpLength(lump), @sizeOf(MapVertex));
 
     // Allocate zone memory for buffer.
     vertexes = z_zone.alloc(c.vertex_t, numvertexes, .Level, null);
 
     // Load data into cache.
-    const ml = W_CacheLumpNum([*]c.mapvertex_t, lump, .Static);
+    const ml = W_CacheLumpNum([*]MapVertex, lump, .Static);
     defer z_zone.Z_Free(ml);
 
     // Copy and convert vertex coordinates,
@@ -143,13 +151,13 @@ fn P_LoadVertexes(lump: c_int) void {
 // P_LoadSegs
 //
 fn P_LoadSegs(lump: c_int) void {
-    const numsegs = @divTrunc(W_LumpLength(lump), @sizeOf(c.mapseg_t));
+    const numsegs = @divTrunc(W_LumpLength(lump), @sizeOf(MapSeg));
 
     segs_slice = z_zone.alloc(c.seg_t, numsegs, .Level, null);
     @memset(segs_slice, std.mem.zeroes(c.seg_t));
     segs = segs_slice.ptr;
 
-    const ml = W_CacheLumpNum([*]c.mapseg_t, lump, .Static);
+    const ml = W_CacheLumpNum([*]MapSeg, lump, .Static);
     defer z_zone.Z_Free(ml);
 
     for (segs_slice, 0..) |*li, i| {
@@ -166,7 +174,7 @@ fn P_LoadSegs(lump: c_int) void {
         li.*.sidedef = &sides[@intCast(ldef.sidenum[@intCast(side)])];
         li.*.frontsector = sides[@intCast(ldef.sidenum[@intCast(side)])].sector;
 
-        if (ldef.flags & c.ML_TWOSIDED != 0) {
+        if (ldef.flags & doomdata.ML_TWOSIDED != 0) {
             li.*.backsector = sides[@intCast(ldef.sidenum[@intCast(side ^ 1)])].sector;
         } else {
             li.*.backsector = 0;
@@ -179,13 +187,13 @@ fn P_LoadSegs(lump: c_int) void {
 // P_LoadSubsectors
 //
 fn P_LoadSubsectors(lump: c_int) void {
-    numsubsectors = @intCast(@divTrunc(W_LumpLength(lump), @sizeOf(c.mapsubsector_t)));
+    numsubsectors = @intCast(@divTrunc(W_LumpLength(lump), @sizeOf(MapSubSector)));
 
     subsectors_slice = z_zone.alloc(c.subsector_t, @intCast(numsubsectors), .Level, null);
     @memset(subsectors_slice, std.mem.zeroes(c.subsector_t));
     subsectors = subsectors_slice.ptr;
 
-    const ms = W_CacheLumpNum([*]c.mapsubsector_t, lump, .Static);
+    const ms = W_CacheLumpNum([*]MapSubSector, lump, .Static);
     defer z_zone.Z_Free(ms);
 
     for (subsectors_slice, 0..) |*ss, i| {
@@ -199,13 +207,13 @@ fn P_LoadSubsectors(lump: c_int) void {
 // P_LoadSectors
 //
 fn P_LoadSectors(lump: c_int) void {
-    numsectors = @intCast(@divTrunc(W_LumpLength(lump), @sizeOf(c.mapsector_t)));
+    numsectors = @intCast(@divTrunc(W_LumpLength(lump), @sizeOf(MapSector)));
 
     sectors_slice = z_zone.alloc(c.sector_t, @intCast(numsectors), .Level, null);
     @memset(sectors_slice, std.mem.zeroes(c.sector_t));
     sectors = sectors_slice.ptr;
 
-    const ms = W_CacheLumpNum([*]c.mapsector_t, lump, .Static);
+    const ms = W_CacheLumpNum([*]MapSector, lump, .Static);
     defer z_zone.Z_Free(ms);
 
     for (sectors_slice, 0..) |*ss, i| {
@@ -226,12 +234,12 @@ fn P_LoadSectors(lump: c_int) void {
 // P_LoadNodes
 //
 fn P_LoadNodes(lump: c_int) void {
-    numnodes = @intCast(@divTrunc(W_LumpLength(lump), @sizeOf(c.mapnode_t)));
+    numnodes = @intCast(@divTrunc(W_LumpLength(lump), @sizeOf(MapNode)));
 
     nodes_slice = z_zone.alloc(c.node_t, @intCast(numnodes), .Level, null);
     nodes = nodes_slice.ptr;
 
-    const mn = W_CacheLumpNum([*]c.mapnode_t, lump, .Static);
+    const mn = W_CacheLumpNum([*]MapNode, lump, .Static);
     defer z_zone.Z_Free(mn);
 
     for (nodes_slice, 0..) |*no, i| {
@@ -253,8 +261,8 @@ fn P_LoadNodes(lump: c_int) void {
 // P_LoadThings
 //
 fn P_LoadThings(lump: c_int) void {
-    const numthings = @divTrunc(W_LumpLength(lump), @sizeOf(c.mapthing_t));
-    const mt = W_CacheLumpNum([*]c.mapthing_t, lump, .Static);
+    const numthings = @divTrunc(W_LumpLength(lump), @sizeOf(MapThing));
+    const mt = W_CacheLumpNum([*]MapThing, lump, .Static);
     defer z_zone.Z_Free(mt);
 
     for (0..numthings) |i| {
@@ -299,12 +307,12 @@ fn P_LoadThings(lump: c_int) void {
 // Also counts secret lines for intermissions.
 //
 fn P_LoadLineDefs(lump: c_int) void {
-    numlines = @intCast(@divTrunc(W_LumpLength(lump), @sizeOf(c.maplinedef_t)));
+    numlines = @intCast(@divTrunc(W_LumpLength(lump), @sizeOf(MapLineDef)));
     lines_slice = z_zone.alloc(c.line_t, @intCast(numlines), .Level, null);
     @memset(lines_slice, std.mem.zeroes(c.line_t));
     lines = lines_slice.ptr;
 
-    const mld = W_CacheLumpNum([*]c.maplinedef_t, lump, .Static);
+    const mld = W_CacheLumpNum([*]MapLineDef, lump, .Static);
     defer z_zone.Z_Free(mld);
 
     for (lines_slice, 0..) |*ld, i| {
@@ -364,12 +372,12 @@ fn P_LoadLineDefs(lump: c_int) void {
 // P_LoadSideDefs
 //
 fn P_LoadSideDefs(lump: c_int) void {
-    numsides = @intCast(@divTrunc(W_LumpLength(lump), @sizeOf(c.mapsidedef_t)));
+    numsides = @intCast(@divTrunc(W_LumpLength(lump), @sizeOf(MapSideDef)));
     sides_slice = z_zone.alloc(c.side_t, @intCast(numsides), .Level, null);
     @memset(sides_slice, std.mem.zeroes(c.side_t));
     sides = sides_slice.ptr;
 
-    const msd = W_CacheLumpNum([*]c.mapsidedef_t, lump, .Static);
+    const msd = W_CacheLumpNum([*]MapSideDef, lump, .Static);
     defer z_zone.Z_Free(msd);
 
     for (sides_slice, 0..) |*sd, i| {
@@ -522,22 +530,22 @@ pub fn P_SetupLevel(episode: c_int, map: c_int) void {
     p_tick.leveltime = 0;
 
     // note: most of this ordering is important
-    P_LoadBlockMap(lumpnum + c.ML_BLOCKMAP);
-    P_LoadVertexes(lumpnum + c.ML_VERTEXES);
-    P_LoadSectors(lumpnum + c.ML_SECTORS);
-    P_LoadSideDefs(lumpnum + c.ML_SIDEDEFS);
+    P_LoadBlockMap(lumpnum + doomdata.ML_BLOCKMAP);
+    P_LoadVertexes(lumpnum + doomdata.ML_VERTEXES);
+    P_LoadSectors(lumpnum + doomdata.ML_SECTORS);
+    P_LoadSideDefs(lumpnum + doomdata.ML_SIDEDEFS);
 
-    P_LoadLineDefs(lumpnum + c.ML_LINEDEFS);
-    P_LoadSubsectors(lumpnum + c.ML_SSECTORS);
-    P_LoadNodes(lumpnum + c.ML_NODES);
-    P_LoadSegs(lumpnum + c.ML_SEGS);
+    P_LoadLineDefs(lumpnum + doomdata.ML_LINEDEFS);
+    P_LoadSubsectors(lumpnum + doomdata.ML_SSECTORS);
+    P_LoadNodes(lumpnum + doomdata.ML_NODES);
+    P_LoadSegs(lumpnum + doomdata.ML_SEGS);
 
-    rejectmatrix = W_CacheLumpNum([*]u8, lumpnum + c.ML_REJECT, .Level);
+    rejectmatrix = W_CacheLumpNum([*]u8, lumpnum + doomdata.ML_REJECT, .Level);
     P_GroupLines();
 
     g_game.bodyqueslot = 0;
     deathmatch_p = &deathmatchstarts;
-    P_LoadThings(lumpnum + c.ML_THINGS);
+    P_LoadThings(lumpnum + doomdata.ML_THINGS);
 
     // if deatchmatch, randomly spawn the active players
     if (g_game.deathmatch != 0) {

@@ -113,6 +113,9 @@ const z_zone = @import("z_zone.zig");
 const Z_ChangeTag = z_zone.Z_ChangeTag;
 const Z_CheckHeap = z_zone.Z_CheckHeap;
 
+const doomdata = @import("doomdata.zig");
+const MapThing = doomdata.MapThing;
+
 const doomdef = @import("doomdef.zig");
 const MAXPLAYERS = doomdef.MAXPLAYERS;
 const GameAction = doomdef.GameAction;
@@ -782,10 +785,10 @@ extern fn P_CheckPosition(thing: @TypeOf(players[0].mo), x: c.fixed_t, y: c.fixe
 //
 // G_CheckSpot
 // Returns false if the player cannot be respawned
-// at the given mapthing_t spot
+// at the given MapThing spot
 // because something is occupying it
 //
-fn G_CheckSpot(playernum: usize, mthing: *p_setup.c.mapthing_t) bool {
+fn G_CheckSpot(playernum: usize, mthing: *MapThing) bool {
     if (players[playernum].mo == null) {
         // first spawn of level, before corpses
         for (0..playernum) |i| {
@@ -837,7 +840,7 @@ fn G_CheckSpot(playernum: usize, mthing: *p_setup.c.mapthing_t) bool {
 // called at level load and each death
 //
 pub fn G_DeathMatchSpawnPlayer(playernum: usize) void {
-    const selections = @divTrunc(@intFromPtr(p_setup.deathmatch_p) - @intFromPtr(&p_setup.deathmatchstarts[0]), @sizeOf(c.mapthing_t));
+    const selections = @divTrunc(@intFromPtr(p_setup.deathmatch_p) - @intFromPtr(&p_setup.deathmatchstarts[0]), @sizeOf(MapThing));
     if (selections < 4) {
         I_Error("Only %i deathmatch spots, 4 required", selections);
     }

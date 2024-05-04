@@ -2,10 +2,6 @@ pub const c = @cImport({
     // Basics.
     @cInclude("tables.h");
 
-    // We need the WAD data structure for Map things,
-    // from the THINGS lump.
-    @cInclude("doomdata.h");
-
     // States are tied to finite states are
     //  tied to animation frames.
     // Needs precompiled tables/data structures.
@@ -19,6 +15,8 @@ pub const c = @cImport({
 
 const std = @import("std");
 
+const doomdata = @import("doomdata.zig");
+const MapThing = doomdata.MapThing;
 const doomdef = @import("doomdef.zig");
 const MAXPLAYERS = doomdef.MAXPLAYERS;
 const MTF_AMBUSH = doomdef.MTF_AMBUSH;
@@ -283,7 +281,7 @@ pub const MObj = extern struct {
     lastlook: c_int,
 
     // For nightmare respawn.
-    spawnpoint: p_setup.c.mapthing_t,
+    spawnpoint: MapThing,
 
     // Thing being chased/attacked for tracers.
     tracer: ?*MObj,
@@ -742,11 +740,14 @@ pub export fn P_SpawnMobj(x: fixed_t, y: fixed_t, z: fixed_t, motype: c.mobjtype
 }
 
 
+// Time interval for item respawning.
+const ITEMQUESIZE = 128;
+
 //
 // P_RemoveMobj
 //
-var itemrespawnque: [c.ITEMQUESIZE]p_setup.c.mapthing_t = undefined;
-var itemrespawntime: [c.ITEMQUESIZE]c_int = undefined;
+var itemrespawnque: [ITEMQUESIZE]MapThing = undefined;
+var itemrespawntime: [ITEMQUESIZE]c_int = undefined;
 pub var iquehead: usize = 0;
 pub var iquetail: usize = 0;
 
@@ -758,11 +759,11 @@ pub export fn P_RemoveMobj(mobj: *MObj) void {
         and mobj.type != c.MT_INS) {
         itemrespawnque[iquehead] = mobj.spawnpoint;
         itemrespawntime[iquehead] = p_tick.leveltime;
-        iquehead = (iquehead + 1) % c.ITEMQUESIZE;
+        iquehead = (iquehead + 1) % ITEMQUESIZE;
 
         // lose one off the end?
         if (iquehead == iquetail) {
-            iquetail = (iquetail + 1) % c.ITEMQUESIZE;
+            iquetail = (iquetail + 1) % ITEMQUESIZE;
         }
     }
 
@@ -822,7 +823,7 @@ pub fn P_RespawnSpecials() void {
     mo.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) * c.ANG45;
 
     // pull it from the que
-    iquetail = (iquetail + 1) % c.ITEMQUESIZE;
+    iquetail = (iquetail + 1) % ITEMQUESIZE;
 }
 
 
@@ -832,7 +833,7 @@ pub fn P_RespawnSpecials() void {
 // Most of the player structure stays unchanged
 //  between levels.
 //
-pub fn P_SpawnPlayer(mthing: *p_setup.c.mapthing_t) void {
+pub fn P_SpawnPlayer(mthing: *MapThing) void {
     const typeidx = @as(u32, @intCast(mthing.type - 1));
 
     // not playing?
@@ -895,7 +896,7 @@ pub fn P_SpawnPlayer(mthing: *p_setup.c.mapthing_t) void {
 // The fields of the mapthing should
 // already be in host byte order.
 //
-pub fn P_SpawnMapThing(mthing: *p_setup.c.mapthing_t) void {
+pub fn P_SpawnMapThing(mthing: *MapThing) void {
     // count deathmatch start positions
     if (mthing.type == 11) {
         if (@intFromPtr(p_setup.deathmatch_p) <= @intFromPtr(&p_setup.deathmatchstarts[9])) {
