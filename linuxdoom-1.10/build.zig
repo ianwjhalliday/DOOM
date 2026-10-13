@@ -15,12 +15,6 @@ pub fn build(b: *std.Build) void {
     // Homebrew installs to /opt/homebrew on Apple Silicon and /usr/local on Intel.
     const homebrew = if (target.result.cpu.arch == .aarch64) "/opt/homebrew" else "/usr/local";
 
-    // Only files that are not imported directly or indirectly need to be listed
-    // here. Otherwise you may get MultipleSymbolDefinitions compile errors.
-    const zig_files = [_][]const u8{
-        "i_main",
-    };
-
     const c_files = [_][]const u8{
         "dstrings.c",
         "i_sound.c",
@@ -56,44 +50,40 @@ pub fn build(b: *std.Build) void {
         "-Wall", // TODO: What is zig's default on C warnings?
     };
 
-    const exe = b.addExecutable(.{
-        .name = "doomzig",
+    // One module holds both the Zig code (rooted at i_main.zig, which reaches
+    // the rest through @import) and the C files that haven't been converted yet.
+    const mod = b.createModule(.{
+        .root_source_file = b.path("i_main.zig"),
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
-
-    exe.root_module.addCMacro("NORMALUNIX", "");
-    exe.root_module.addCMacro("LINUX", "");
-    exe.addCSourceFiles(.{ .files = &c_files, .flags = &cflags });
-    inline for (zig_files) |file| {
-        const o = b.addObject(.{
-            .name = file,
-            .root_source_file = b.path(file ++ ".zig"),
-            .optimize = optimize,
-            .target = target,
-        });
-        o.addIncludePath(b.path("."));
-        o.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{ homebrew, "include" }) });
-        // TODO: Properly find and setup system include paths per platform
-        o.addSystemIncludePath(.{ .cwd_relative = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include" });
-        o.addFrameworkPath(.{ .cwd_relative = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks" });
-
-        exe.addObject(o);
-    }
-    exe.linkLibC();
-    exe.addLibraryPath(.{ .cwd_relative = b.pathJoin(&.{ homebrew, "lib" }) });
-    exe.linkSystemLibrary("glfw3");
+    mod.addCMacro("NORMALUNIX", "");
+    mod.addCMacro("LINUX", "");
+    mod.addCSourceFiles(.{ .files = &c_files, .flags = &cflags });
+    mod.addIncludePath(b.path("."));
+    mod.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{ homebrew, "include" }) });
+    // TODO: Properly find and setup system include paths per platform
+    mod.addSystemIncludePath(.{ .cwd_relative = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include" });
+    mod.addFrameworkPath(.{ .cwd_relative = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks" });
+    mod.addLibraryPath(.{ .cwd_relative = b.pathJoin(&.{ homebrew, "lib" }) });
+    mod.linkSystemLibrary("glfw3", .{});
     // TODO: MacOS only frameworks
-    exe.linkFramework("Cocoa");
-    exe.linkFramework("IOKit");
-    exe.linkFramework("CoreFoundation");
-    exe.linkFramework("OpenGL");
+    mod.linkFramework("Cocoa", .{});
+    mod.linkFramework("IOKit", .{});
+    mod.linkFramework("CoreFoundation", .{});
+    mod.linkFramework("OpenGL", .{});
     // miniaudio's default runtime linking dlopens "CoreFoundation.framework/CoreFoundation"
     // by relative path, which newer macOS no longer resolves, so it silently falls back
     // to the Null backend (no sound). Link the audio frameworks directly instead.
-    exe.root_module.addCMacro("MA_NO_RUNTIME_LINKING", "");
-    exe.linkFramework("CoreAudio");
-    exe.linkFramework("AudioToolbox");
+    mod.addCMacro("MA_NO_RUNTIME_LINKING", "");
+    mod.linkFramework("CoreAudio", .{});
+    mod.linkFramework("AudioToolbox", .{});
+
+    const exe = b.addExecutable(.{
+        .name = "doomzig",
+        .root_module = mod,
+    });
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
