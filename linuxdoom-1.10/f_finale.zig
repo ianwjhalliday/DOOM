@@ -309,7 +309,7 @@ fn F_CastTicker() void {
         moinfo = c.mobjinfo[castorder[castnum].type];
 
         if (moinfo.seesound != 0) {
-            S_StartSound(null, @enumFromInt(moinfo.seesound));
+            S_StartSound(null, @fromBackingInt(@intCast(moinfo.seesound)));
         }
 
         caststate = &c.states[@intCast(moinfo.seestate)];
@@ -427,7 +427,7 @@ fn F_CastResponder(ev: *Event) bool {
     castframes = 0;
     castattacking = false;
     if (c.mobjinfo[castorder[castnum].type].deathsound != 0) {
-        S_StartSound(null, @enumFromInt(c.mobjinfo[castorder[castnum].type].deathsound));
+        S_StartSound(null, @fromBackingInt(@intCast(c.mobjinfo[castorder[castnum].type].deathsound)));
     }
 
     return true;

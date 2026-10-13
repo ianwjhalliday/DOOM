@@ -147,7 +147,7 @@ export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopa
         }
 
         if (rover.user != null) {
-            if (@intFromEnum(rover.tag) < @intFromEnum(Z_Tag.PurgeLevel)) {
+            if (@backingInt(rover.tag) < @backingInt(Z_Tag.PurgeLevel)) {
                 // hit a block that can't be purged,
                 // so move base past it
                 base = rover.next;
@@ -192,7 +192,7 @@ export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopa
         base.user = user;
         @as(*[*]u8, @ptrCast(user)).* = @as([*]u8, @ptrCast(base)) + @sizeOf(MemBlock);
     } else {
-        if (@intFromEnum(tag) >= @intFromEnum(Z_Tag.PurgeLevel)) {
+        if (@backingInt(tag) >= @backingInt(Z_Tag.PurgeLevel)) {
             I_Error("Z_Malloc: an owner is required for purgable blocks");
         }
 
@@ -270,7 +270,7 @@ pub export fn Z_ChangeTag(ptr: *anyopaque, tag: Z_Tag) void {
         I_Error("Z_ChangeTag: freed a pointer without ZONEID");
     }
 
-    if (@intFromEnum(tag) >= @intFromEnum(Z_Tag.PurgeLevel) and @intFromPtr(block.user) < 0x100) {
+    if (@backingInt(tag) >= @backingInt(Z_Tag.PurgeLevel) and @intFromPtr(block.user) < 0x100) {
         I_Error("Z_ChangeTag: an owner is required for purgable blocks");
     }
 
@@ -290,8 +290,8 @@ pub fn Z_FreeTags(lowtag: Z_Tag, hightag: Z_Tag) void {
             continue;
         }
 
-        if (@intFromEnum(block.tag) >= @intFromEnum(lowtag)
-            and @intFromEnum(block.tag) <= @intFromEnum(hightag)) {
+        if (@backingInt(block.tag) >= @backingInt(lowtag)
+            and @backingInt(block.tag) <= @backingInt(hightag)) {
             Z_Free(block.toOpaquePtr());
         }
     }
@@ -308,8 +308,8 @@ export fn Z_DumpHeap(lowtag: Z_Tag, hightag: Z_Tag) void {
 
     var block = mainzone.blocklist.next;
     while (true) : (block = block.next) {
-        if (@intFromEnum(block.tag) >= @intFromEnum(lowtag)
-            and @intFromEnum(block.tag) <= @intFromEnum(hightag)) {
+        if (@backingInt(block.tag) >= @backingInt(lowtag)
+            and @backingInt(block.tag) <= @backingInt(hightag)) {
             print("block:{}    size:{:7}    user:{?}    tag:{:3}\n",
                 .{block, block.size, block.user, block.tag});
         }
@@ -344,7 +344,7 @@ export fn Z_FileDumpHeap(f: *FILE) void {
     var block = mainzone.blocklist.next;
     while (true) : (block = block.next) {
         _ = fprintf(f, "block:%p    size:%7i    user:%p    tag:%3i\n",
-            block, block.size, block.user, @intFromEnum(block.tag));
+            block, block.size, block.user, @backingInt(block.tag));
 
         if (block.next == &mainzone.blocklist) {
             // all blocks have been hit
@@ -393,7 +393,7 @@ pub fn Z_FreeMemory() c_int {
 
     var block = mainzone.blocklist.next;
     while (block != &mainzone.blocklist) : (block = block.next) {
-        if (block.user == null or @intFromEnum(block.tag) >= @intFromEnum(Z_Tag.PurgeLevel)) {
+        if (block.user == null or @backingInt(block.tag) >= @backingInt(Z_Tag.PurgeLevel)) {
             free_count += block.size;
         }
     }

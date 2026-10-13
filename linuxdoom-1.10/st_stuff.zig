@@ -235,7 +235,7 @@ var tallpercent: *patch_t = undefined;
 var shortnum: [10]*patch_t = undefined;
 
 // 3 key-cards, 3 skulls
-var keys: [@intFromEnum(Card.NUMCARDS)]*patch_t = undefined;
+var keys: [@backingInt(Card.NUMCARDS)]*patch_t = undefined;
 
 // face status patches
 var faces: [ST_NUMFACES]*patch_t = undefined;
@@ -287,7 +287,7 @@ var st_oldhealth: c_int = -1;
 
 // used for evil grin
 // TODO: Convert to bool when Player.weaponowned is converted to bool
-var oldweaponsowned: [@intFromEnum(WeaponType.NUMWEAPONS)]c.boolean = @splat(c.false);
+var oldweaponsowned: [@backingInt(WeaponType.NUMWEAPONS)]c.boolean = @splat(c.false);
 
 // count until face changes
 var st_facecount: c_int = 0;
@@ -510,8 +510,8 @@ pub fn ST_Responder(ev: *const Event) bool {
         {
           // TODO: Convert `powers` to bool
           if (plyr.powers[i] == 0) {
-            _ = P_GivePower(plyr, @enumFromInt(i));
-          } else if (i != @intFromEnum(PowerType.Strength)) {
+            _ = P_GivePower(plyr, @fromBackingInt(@intCast(i)));
+          } else if (i != @backingInt(PowerType.Strength)) {
             plyr.powers[i] = 1;
           } else {
             plyr.powers[i] = 0;
@@ -529,8 +529,8 @@ pub fn ST_Responder(ev: *const Event) bool {
       // 'choppers' invulnerability & chainsaw
       else if (cht_CheckCheat(&cheat_choppers, @intCast(ev.data1)))
       {
-        plyr.weaponowned[@intFromEnum(WeaponType.Chainsaw)] = c.true;
-        plyr.powers[@intFromEnum(PowerType.Invulnerability)] = c.true;
+        plyr.weaponowned[@backingInt(WeaponType.Chainsaw)] = c.true;
+        plyr.powers[@backingInt(PowerType.Invulnerability)] = c.true;
         plyr.message = c.STSTR_CHOPPERS;
       }
       // 'mypos' for player position
@@ -755,7 +755,7 @@ fn ST_updateFaceWidget() void {
     {
         // invulnerability
         if ((plyr.cheats & c.CF_GODMODE) != 0
-            or plyr.powers[@intFromEnum(PowerType.Invulnerability)] != 0)
+            or plyr.powers[@backingInt(PowerType.Invulnerability)] != 0)
         {
             S.priority = 4;
 
@@ -783,10 +783,10 @@ fn ST_updateWidgets() void {
     // must redirect the pointer if the ready weapon has changed.
     //  if (w_ready.data != plyr.readyweapon)
     //  {
-    if (d_items.weaponinfo[@intFromEnum(plyr.readyweapon)].ammo == .NoAmmo) {
+    if (d_items.weaponinfo[@backingInt(plyr.readyweapon)].ammo == .NoAmmo) {
         w_ready.num = &S.largeammo;
     } else {
-        w_ready.num = &plyr.ammo[@intFromEnum(d_items.weaponinfo[@intFromEnum(plyr.readyweapon)].ammo)];
+        w_ready.num = &plyr.ammo[@backingInt(d_items.weaponinfo[@backingInt(plyr.readyweapon)].ammo)];
     }
     //{
     // static int tic=0;
@@ -797,7 +797,7 @@ fn ST_updateWidgets() void {
     //   dir = 1;
     // tic++;
     // }
-    w_ready.data = @intCast(@intFromEnum(plyr.readyweapon));
+    w_ready.data = @intCast(@backingInt(plyr.readyweapon));
 
     // if (*w_ready.on)
     //  STlib_updateNum(&w_ready, true);
@@ -846,9 +846,9 @@ var st_palette: c_int = 0;
 fn ST_doPaletteStuff() void {
     var cnt = plyr.damagecount;
 
-    if (plyr.powers[@intFromEnum(PowerType.Strength)] != 0) {
+    if (plyr.powers[@backingInt(PowerType.Strength)] != 0) {
         // slowly fade the berzerk out
-        const bzc = 12 - (plyr.powers[@intFromEnum(PowerType.Strength)]>>6);
+        const bzc = 12 - (plyr.powers[@backingInt(PowerType.Strength)]>>6);
 
         if (bzc > cnt) {
             cnt = bzc;
@@ -872,8 +872,8 @@ fn ST_doPaletteStuff() void {
         }
 
         palette += STARTBONUSPALS;
-    } else if (plyr.powers[@intFromEnum(PowerType.IronFeet)] > 4*32
-              or plyr.powers[@intFromEnum(PowerType.IronFeet)]&8 != 0) {
+    } else if (plyr.powers[@backingInt(PowerType.IronFeet)] > 4*32
+              or plyr.powers[@backingInt(PowerType.IronFeet)]&8 != 0) {
         palette = RADIATIONPAL;
     } else {
         palette = 0;
@@ -961,7 +961,7 @@ fn ST_loadGraphics() void {
     tallpercent = W_CacheLumpName(*patch_t, "STTPRCNT", .Static);
 
     // key cards
-    for (0..@intFromEnum(Card.NUMCARDS)) |i| {
+    for (0..@backingInt(Card.NUMCARDS)) |i| {
         keys[i] = W_CacheLumpNameFmt(*patch_t, "STKEYS{d}", .{ i }, .Static);
     }
 
@@ -1071,18 +1071,18 @@ fn ST_initData() void {
 
 fn ST_createWidgets() void {
     // ready weapon ammo
-    if (d_items.weaponinfo[@intFromEnum(plyr.readyweapon)].ammo != .NoAmmo) {
+    if (d_items.weaponinfo[@backingInt(plyr.readyweapon)].ammo != .NoAmmo) {
         STlib_initNum(&w_ready,
                       ST_AMMOX,
                       ST_AMMOY,
                       &tallnum,
-                      &plyr.ammo[@intFromEnum(d_items.weaponinfo[@intFromEnum(plyr.readyweapon)].ammo)],
+                      &plyr.ammo[@backingInt(d_items.weaponinfo[@backingInt(plyr.readyweapon)].ammo)],
                       &st_statusbaron,
                       ST_AMMOWIDTH );
     }
 
     // the last weapon type
-    w_ready.data = @intCast(@intFromEnum(plyr.readyweapon));
+    w_ready.data = @intCast(@backingInt(plyr.readyweapon));
 
     // health percentage
     STlib_initPercent(&w_health,

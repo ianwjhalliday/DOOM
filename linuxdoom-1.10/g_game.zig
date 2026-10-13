@@ -343,7 +343,7 @@ pub fn G_BuildTiccmd(cmd: *TicCmd) void {
     }
 
     // chainsaw overrides
-    for (0..@intFromEnum(WeaponType.NUMWEAPONS)-1) |i| {
+    for (0..@backingInt(WeaponType.NUMWEAPONS)-1) |i| {
         if (gamekeydown['1'+i]) {
             cmd.buttons |= @intCast(c.BT_CHANGE);
             cmd.buttons |= @intCast(i<<c.BT_WEAPONSHIFT);
@@ -760,8 +760,8 @@ pub fn G_PlayerReborn(player: c_uint) void {
     p.health = c.MAXHEALTH;
     p.readyweapon = WeaponType.Pistol;
     p.pendingweapon = WeaponType.Pistol;
-    p.weaponowned[@intFromEnum(WeaponType.Fist)] = c.true;
-    p.weaponowned[@intFromEnum(WeaponType.Pistol)] = c.true;
+    p.weaponowned[@backingInt(WeaponType.Fist)] = c.true;
+    p.weaponowned[@backingInt(WeaponType.Pistol)] = c.true;
     p.ammo[c.am_clip] = 50;
     p.maxammo = c.maxammo;
 }
@@ -1109,7 +1109,7 @@ fn G_DoLoadGame() void {
         return;
     }
 
-    gameskill = @enumFromInt(reader.takeByte() catch unreachable);
+    gameskill = @fromBackingInt(reader.takeByte() catch unreachable);
     gameepisode = reader.takeByte() catch unreachable;
     gamemap = reader.takeByte() catch unreachable;
     for (0..MAXPLAYERS) |j| {
@@ -1194,7 +1194,7 @@ fn G_DoSaveGame() void {
     _ = fmt.bufPrintSentinel(&version, "version {d}", .{c.VERSION}, 0) catch unreachable;
     writer.writeAll(&version) catch unreachable;
 
-    writer.writeByte(@intCast(@intFromEnum(gameskill))) catch unreachable;
+    writer.writeByte(@intCast(@backingInt(gameskill))) catch unreachable;
     writer.writeByte(@intCast(gameepisode)) catch unreachable;
     writer.writeByte(@intCast(gamemap)) catch unreachable;
     for (0..MAXPLAYERS) |i| {
@@ -1449,7 +1449,7 @@ pub fn G_BeginRecording() void {
 
     demo_p[0] = c.VERSION;
     demo_p += 1;
-    demo_p[0] = @intCast(@intFromEnum(gameskill));
+    demo_p[0] = @intCast(@backingInt(gameskill));
     demo_p += 1;
     demo_p[0] = @intCast(gameepisode);
     demo_p += 1;
@@ -1498,7 +1498,7 @@ fn G_DoPlayDemo() void {
         return;
     }
 
-    const skill: Skill = @enumFromInt(demo_p[0]);
+    const skill: Skill = @fromBackingInt(demo_p[0]);
     demo_p += 1;
     const episode: c_int = demo_p[0];
     demo_p += 1;

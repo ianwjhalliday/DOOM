@@ -603,7 +603,7 @@ fn D_ArbitrateNetStart() void {
                 if (netbuffer.player != VERSION) {
                     I_Error("Different DOOM versions cannot play a net game!");
                 }
-                d_main.startskill = @enumFromInt(netbuffer.retransmitfrom & 15);
+                d_main.startskill = @fromBackingInt(netbuffer.retransmitfrom & 15);
                 g_game.deathmatch = (netbuffer.retransmitfrom & 0xc0) >> 6;
                 d_main.nomonsters = netbuffer.retransmitfrom & 0x20 > 0;
                 d_main.respawnparm = netbuffer.retransmitfrom & 0x10 > 0;
@@ -621,7 +621,7 @@ fn D_ArbitrateNetStart() void {
             CheckAbort();
             i = 0;
             while (i < doomcom.numnodes) : (i += 1) {
-                netbuffer.retransmitfrom = @intCast(@intFromEnum(d_main.startskill));
+                netbuffer.retransmitfrom = @intCast(@backingInt(d_main.startskill));
                 if (g_game.deathmatch != 0) {
                     netbuffer.retransmitfrom |= @intCast(g_game.deathmatch<<6);
                 }
@@ -691,7 +691,7 @@ pub fn D_CheckNetGame() void {
     var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
     const stdout = &stdout_writer.interface;
     stdout.print("startskill {}  deathmatch: {}  startmap: {}  startepisode: {}\n", .{
-        @intFromEnum(d_main.startskill),
+        @backingInt(d_main.startskill),
         g_game.deathmatch,
         d_main.startmap,
         d_main.startepisode,

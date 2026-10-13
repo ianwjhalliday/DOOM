@@ -220,23 +220,23 @@ pub export fn P_PlayerThink(player: *Player) void {
         // The actual changing of the weapon is done
         //  when the weapon psprite can do it
         //  (read: not in the middle of an attack).
-        var newweapon: WeaponType = @enumFromInt((cmd.buttons & c.BT_WEAPONMASK) >> c.BT_WEAPONSHIFT);
+        var newweapon: WeaponType = @fromBackingInt(@intCast((cmd.buttons & c.BT_WEAPONMASK) >> c.BT_WEAPONSHIFT));
 
         if (newweapon == .Fist
-            and player.weaponowned[@intFromEnum(WeaponType.Chainsaw)] != 0
+            and player.weaponowned[@backingInt(WeaponType.Chainsaw)] != 0
             and !(player.readyweapon == .Chainsaw
-                and player.powers[@intFromEnum(PowerType.Strength)] != 0)) {
+                and player.powers[@backingInt(PowerType.Strength)] != 0)) {
             newweapon = .Chainsaw;
         }
 
         if (doomstat.gamemode == .Commercial
             and newweapon == .Shotgun
-            and player.weaponowned[@intFromEnum(WeaponType.SuperShotgun)] != 0
+            and player.weaponowned[@backingInt(WeaponType.SuperShotgun)] != 0
             and player.readyweapon != .SuperShotgun) {
             newweapon = .SuperShotgun;
         }
 
-        if (player.weaponowned[@intFromEnum(newweapon)] != 0
+        if (player.weaponowned[@backingInt(newweapon)] != 0
             and newweapon != player.readyweapon) {
             // Do not go to plasma or BFG in shareware,
             //  even if cheated.
@@ -262,27 +262,27 @@ pub export fn P_PlayerThink(player: *Player) void {
     // Counters, time dependend power ups.
 
     // Strength counts up to diminish fade.
-    if (player.powers[@intFromEnum(PowerType.Strength)] != 0) {
-        player.powers[@intFromEnum(PowerType.Strength)] += 1;
+    if (player.powers[@backingInt(PowerType.Strength)] != 0) {
+        player.powers[@backingInt(PowerType.Strength)] += 1;
     }
 
-    if (player.powers[@intFromEnum(PowerType.Invulnerability)] != 0) {
-        player.powers[@intFromEnum(PowerType.Invulnerability)] -= 1;
+    if (player.powers[@backingInt(PowerType.Invulnerability)] != 0) {
+        player.powers[@backingInt(PowerType.Invulnerability)] -= 1;
     }
 
-    if (player.powers[@intFromEnum(PowerType.Invisibility)] != 0) {
-        player.powers[@intFromEnum(PowerType.Invisibility)] -= 1;
-        if (player.powers[@intFromEnum(PowerType.Invisibility)] == 0) {
+    if (player.powers[@backingInt(PowerType.Invisibility)] != 0) {
+        player.powers[@backingInt(PowerType.Invisibility)] -= 1;
+        if (player.powers[@backingInt(PowerType.Invisibility)] == 0) {
             player.mo.?.flags &= ~MF_SHADOW;
         }
     }
 
-    if (player.powers[@intFromEnum(PowerType.Infrared)] != 0) {
-        player.powers[@intFromEnum(PowerType.Infrared)] -= 1;
+    if (player.powers[@backingInt(PowerType.Infrared)] != 0) {
+        player.powers[@backingInt(PowerType.Infrared)] -= 1;
     }
 
-    if (player.powers[@intFromEnum(PowerType.IronFeet)] != 0) {
-        player.powers[@intFromEnum(PowerType.IronFeet)] -= 1;
+    if (player.powers[@backingInt(PowerType.IronFeet)] != 0) {
+        player.powers[@backingInt(PowerType.IronFeet)] -= 1;
     }
 
     if (player.damagecount != 0) {
@@ -294,16 +294,16 @@ pub export fn P_PlayerThink(player: *Player) void {
     }
 
     // Handling colormaps.
-    if (player.powers[@intFromEnum(PowerType.Invulnerability)] != 0) {
-        if (player.powers[@intFromEnum(PowerType.Invulnerability)] > 4 * 32
-            or player.powers[@intFromEnum(PowerType.Invulnerability)] & 8 != 0) {
+    if (player.powers[@backingInt(PowerType.Invulnerability)] != 0) {
+        if (player.powers[@backingInt(PowerType.Invulnerability)] > 4 * 32
+            or player.powers[@backingInt(PowerType.Invulnerability)] & 8 != 0) {
             player.fixedcolormap = INVERSECOLORMAP;
         } else {
             player.fixedcolormap = 0;
         }
-    } else if (player.powers[@intFromEnum(PowerType.Infrared)] != 0) {
-        if (player.powers[@intFromEnum(PowerType.Infrared)] > 4 * 32
-            or player.powers[@intFromEnum(PowerType.Infrared)] & 8 != 0) {
+    } else if (player.powers[@backingInt(PowerType.Infrared)] != 0) {
+        if (player.powers[@backingInt(PowerType.Infrared)] > 4 * 32
+            or player.powers[@backingInt(PowerType.Infrared)] & 8 != 0) {
             // almost full bright
             player.fixedcolormap = 1;
         } else {

@@ -141,10 +141,10 @@ pub fn S_Start() void {
 
     const mnum =
         if (doomstat.gamemode == .Commercial)
-            @intFromEnum(Music.runnin) + g_game.gamemap - 1
+            @backingInt(Music.runnin) + g_game.gamemap - 1
         else if (g_game.gameepisode < 4)
-            @intFromEnum(Music.e1m1) + (g_game.gameepisode-1)*9 + g_game.gamemap-1
-        else @intFromEnum(switch (g_game.gamemap - 1) {
+            @backingInt(Music.e1m1) + (g_game.gameepisode-1)*9 + g_game.gamemap-1
+        else @backingInt(switch (g_game.gamemap - 1) {
             // Song - Who? - Where?
             0 => Music.e3m4,    // American     e4m1
             1 => Music.e3m2,    // Romero       e4m2
@@ -170,7 +170,7 @@ fn S_StartSoundAtVolume(origin_p: ?*anyopaque, sfx_id: c_int, volume_p: c_int) v
     //         sfx_id, S_sfx[sfx_id].name );*/
 
     // check for bogus sound #
-    if (sfx_id < 1 or sfx_id >= @intFromEnum(Sfx.NUMSFX)) {
+    if (sfx_id < 1 or sfx_id >= @backingInt(Sfx.NUMSFX)) {
         I_Error("Bad sfx #: %d", sfx_id);
     }
 
@@ -225,10 +225,10 @@ fn S_StartSoundAtVolume(origin_p: ?*anyopaque, sfx_id: c_int, volume_p: c_int) v
     }
 
     // hacks to vary the sfx pitches
-    if (sfx_id >= @intFromEnum(Sfx.sawup) and sfx_id <= @intFromEnum(Sfx.sawhit)) {
+    if (sfx_id >= @backingInt(Sfx.sawup) and sfx_id <= @backingInt(Sfx.sawhit)) {
         pitch += 8 - @mod(M_Random(), 16);
         pitch = @min(@max(pitch , 0), 255);
-    } else if (sfx_id != @intFromEnum(Sfx.itemup) and sfx_id != @intFromEnum(Sfx.tink)) {
+    } else if (sfx_id != @backingInt(Sfx.itemup) and sfx_id != @backingInt(Sfx.tink)) {
         pitch += 16 - @mod(M_Random(), 32);
         pitch = @min(@max(pitch , 0), 255);
     }
@@ -273,7 +273,7 @@ fn S_StartSoundAtVolume(origin_p: ?*anyopaque, sfx_id: c_int, volume_p: c_int) v
 
 
 pub fn S_StartSound_Zig(origin: ?*MObj, sfx_id: Sfx) void {
-    S_StartSound(origin, @intFromEnum(sfx_id));
+    S_StartSound(origin, @backingInt(sfx_id));
 }
 
 export fn S_StartSound(origin: ?*anyopaque, sfx_id: c_int) void {
@@ -391,11 +391,11 @@ pub fn S_StartMusic(music: Music) void {
 }
 
 pub fn S_ChangeMusicEnum(music: Music, looping: bool) void {
-    S_ChangeMusic(@intFromEnum(music), @intFromBool(looping));
+    S_ChangeMusic(@backingInt(music), @intFromBool(looping));
 }
 
 pub export fn S_ChangeMusic(musicnum: c_int, looping: c_int) void {
-    if (musicnum <= @intFromEnum(Music.None) or musicnum >= @intFromEnum(Music.NUMMUSIC)) {
+    if (musicnum <= @backingInt(Music.None) or musicnum >= @backingInt(Music.NUMMUSIC)) {
         I_Error("Bad music number %d", musicnum);
         return;
     }

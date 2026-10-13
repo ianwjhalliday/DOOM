@@ -169,7 +169,7 @@ var MainMenu = [_]MenuItem{
 };
 
 var MainDef = Menu{
-    .numitems = @intFromEnum(MainMenuEnum.MainMenuCount),
+    .numitems = @backingInt(MainMenuEnum.MainMenuCount),
     .prevMenu = null,
     .menuitems = &MainMenu,
     .routine = &M_DrawMainMenu,
@@ -198,13 +198,13 @@ var EpisodeMenu = [_]MenuItem{
 };
 
 var EpiDef = Menu{
-    .numitems = @intFromEnum(Episodes.EpisodesCount),
+    .numitems = @backingInt(Episodes.EpisodesCount),
     .prevMenu = &MainDef,
     .menuitems = &EpisodeMenu,
     .routine = &M_DrawEpisode,
     .x = 48,
     .y = 63,
-    .lastOn = @intFromEnum(Episodes.Ep1),
+    .lastOn = @backingInt(Episodes.Ep1),
 };
 
 
@@ -229,13 +229,13 @@ var NewGameMenu = [_]MenuItem{
 };
 
 var NewDef = Menu{
-    .numitems = @intFromEnum(NewGameEnum.NewGameCount),
+    .numitems = @backingInt(NewGameEnum.NewGameCount),
     .prevMenu = &EpiDef,
     .menuitems = &NewGameMenu,
     .routine = &M_DrawNewGame,
     .x = 48,
     .y = 63,
-    .lastOn = @intFromEnum(NewGameEnum.HurtMe),
+    .lastOn = @backingInt(NewGameEnum.HurtMe),
 };
 
 
@@ -267,7 +267,7 @@ var OptionsMenu = [_]MenuItem{
 };
 
 var OptionsDef = Menu{
-    .numitems = @intFromEnum(OptionsEnum.OptionsCount),
+    .numitems = @backingInt(OptionsEnum.OptionsCount),
     .prevMenu = &MainDef,
     .menuitems = &OptionsMenu,
     .routine = &M_DrawOptions,
@@ -290,7 +290,7 @@ var ReadMenu1 = [_]MenuItem{
 };
 
 var ReadDef1 = Menu{
-    .numitems = @intFromEnum(ReadEnum1.ReadCount),
+    .numitems = @backingInt(ReadEnum1.ReadCount),
     .prevMenu = &MainDef,
     .menuitems = &ReadMenu1,
     .routine = &M_DrawReadThis1,
@@ -309,7 +309,7 @@ var ReadMenu2 = [_]MenuItem{
 };
 
 var ReadDef2 = Menu{
-    .numitems = @intFromEnum(ReadEnum2.ReadCount),
+    .numitems = @backingInt(ReadEnum2.ReadCount),
     .prevMenu = &ReadDef1,
     .menuitems = &ReadMenu2,
     .routine = &M_DrawReadThis2,
@@ -338,7 +338,7 @@ var SoundMenu = [_]MenuItem{
 };
 
 var SoundDef = Menu{
-    .numitems = @intFromEnum(SoundEnum.SoundCount),
+    .numitems = @backingInt(SoundEnum.SoundCount),
     .prevMenu = &OptionsDef,
     .menuitems = &SoundMenu,
     .routine = &M_DrawSound,
@@ -371,7 +371,7 @@ var LoadMenu = [_]MenuItem{
 };
 
 var LoadDef = Menu{
-    .numitems = @intFromEnum(LoadEnum.LoadCount),
+    .numitems = @backingInt(LoadEnum.LoadCount),
     .prevMenu = &MainDef,
     .menuitems = &LoadMenu,
     .routine = &M_DrawLoad,
@@ -394,7 +394,7 @@ var SaveMenu = [_]MenuItem{
 };
 
 var SaveDef = Menu{
-    .numitems = @intFromEnum(LoadEnum.LoadCount),
+    .numitems = @backingInt(LoadEnum.LoadCount),
     .prevMenu = &MainDef,
     .menuitems = &SaveMenu,
     .routine = &M_DrawSave,
@@ -411,7 +411,7 @@ var SaveDef = Menu{
 fn M_ReadSaveStrings() void {
     var namebuf: [256]u8 = undefined;
 
-    for (0..@intFromEnum(LoadEnum.LoadCount)) |i| {
+    for (0..@backingInt(LoadEnum.LoadCount)) |i| {
         const name =
             if (M_CheckParm("-cdrom") != 0)
                 fmt.bufPrintSentinel(&namebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{i}, 0) catch unreachable
@@ -436,7 +436,7 @@ fn M_ReadSaveStrings() void {
 //
 fn M_DrawLoad() void {
     c.V_DrawPatch(72, 28, 0, W_CacheLumpName(*c.patch_t, "M_LOADG", .Cache));
-    for (0..@intFromEnum(LoadEnum.LoadCount)) |i| {
+    for (0..@backingInt(LoadEnum.LoadCount)) |i| {
         M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*@as(u16, @intCast(i)));
         M_WriteText(LoadDef.x,LoadDef.y+LINEHEIGHT*@as(u16, @intCast(i)),&savegamestrings[i]);
     }
@@ -495,7 +495,7 @@ fn M_LoadGame(choice: c_int) void {
 //
 fn M_DrawSave() void {
     c.V_DrawPatch(72, 28, 0, W_CacheLumpName(*c.patch_t, "M_SAVEG", .Cache));
-    for (0..@intFromEnum(LoadEnum.LoadCount)) |i| {
+    for (0..@backingInt(LoadEnum.LoadCount)) |i| {
         M_DrawSaveLoadBorder(LoadDef.x, LoadDef.y+LINEHEIGHT*@as(u16, @intCast(i)));
         M_WriteText(LoadDef.x, LoadDef.y+LINEHEIGHT*@as(u16, @intCast(i)), &savegamestrings[i]);
     }
@@ -667,8 +667,8 @@ fn M_DrawReadThis2() void {
 fn M_DrawSound() void {
     c.V_DrawPatch(60, 38, 0, W_CacheLumpName(*c.patch_t, "M_SVOL", .Cache));
 
-    const sfx_pos = @intFromEnum(SoundEnum.SfxVol);
-    const music_pos = @intFromEnum(SoundEnum.MusicVol);
+    const sfx_pos = @backingInt(SoundEnum.SfxVol);
+    const music_pos = @backingInt(SoundEnum.MusicVol);
 
     M_DrawThermo(SoundDef.x, SoundDef.y+LINEHEIGHT*(sfx_pos+1),
                  16, s_sound.snd_SfxVolume);
@@ -773,7 +773,7 @@ fn M_VerifyNightmare(ch: c_int) void {
 }
 
 fn M_ChooseSkill(choice: c_int) void {
-    const skill: Skill = @enumFromInt(choice);
+    const skill: Skill = @fromBackingInt(@intCast(choice));
     if (skill == .Nightmare)
     {
         M_StartMessage(c.NIGHTMARE, &M_VerifyNightmare, true);
@@ -815,10 +815,10 @@ const msgNames = [2][]const u8{"M_MSGOFF", "M_MSGON"};
 fn M_DrawOptions() void {
     c.V_DrawPatch(108, 15, 0, W_CacheLumpName(*c.patch_t, "M_OPTTTL", .Cache));
 
-    const detail_pos = @intFromEnum(OptionsEnum.Detail);
-    const messages_pos = @intFromEnum(OptionsEnum.Messages);
-    const mousesens_pos = @intFromEnum(OptionsEnum.MouseSens);
-    const scrnsize_pos = @intFromEnum(OptionsEnum.ScrnSize);
+    const detail_pos = @backingInt(OptionsEnum.Detail);
+    const messages_pos = @backingInt(OptionsEnum.Messages);
+    const mousesens_pos = @backingInt(OptionsEnum.MouseSens);
+    const scrnsize_pos = @backingInt(OptionsEnum.ScrnSize);
 
     c.V_DrawPatch(OptionsDef.x + 175, OptionsDef.y+LINEHEIGHT*detail_pos, 0,
                        W_CacheLumpName(*c.patch_t, detailNames[@intCast(detailLevel)], .Cache));
@@ -1359,7 +1359,7 @@ pub fn M_Responder(ev: *Event) bool {
       doomdef.KEY_F4 => {            // Sound Volume
         M_StartControlPanel();
         currentMenu = &SoundDef;
-        itemOn = @intFromEnum(SoundEnum.SfxVol);
+        itemOn = @backingInt(SoundEnum.SfxVol);
         S_StartSound(null, .swtchn);
         return true;
       },
@@ -1670,7 +1670,7 @@ pub fn M_Init() void {
         // This is used because DOOM 2 had only one HELP
         //  page. I use CREDIT as second page now, but
         //  kept this hack for educational purposes.
-        MainMenu[@intFromEnum(MainMenuEnum.ReadThis)] = MainMenu[@intFromEnum(MainMenuEnum.QuitDoom)];
+        MainMenu[@backingInt(MainMenuEnum.ReadThis)] = MainMenu[@backingInt(MainMenuEnum.QuitDoom)];
         MainDef.numitems -= 1;
         MainDef.y += 8;
         NewDef.prevMenu = &MainDef;

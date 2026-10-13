@@ -66,8 +66,8 @@ pub const Player = extern struct {
     armortype: c_int,
 
     // Power ups. invinc and invis are tic counters.
-    powers: [@intFromEnum(PowerType.NUMPOWERS)]c_int,
-    cards: [@intFromEnum(Card.NUMCARDS)]c.boolean,
+    powers: [@backingInt(PowerType.NUMPOWERS)]c_int,
+    cards: [@backingInt(Card.NUMCARDS)]c.boolean,
     backpack: c.boolean,
 
     // Frags, kills of other players.
@@ -77,9 +77,9 @@ pub const Player = extern struct {
     // Is wp_nochange if not changing.
     pendingweapon: WeaponType,
 
-    weaponowned: [@intFromEnum(WeaponType.NUMWEAPONS)]c.boolean,
-    ammo: [@intFromEnum(AmmoType.NUMAMMO)]c_int,
-    maxammo: [@intFromEnum(AmmoType.NUMAMMO)]c_int,
+    weaponowned: [@backingInt(WeaponType.NUMWEAPONS)]c.boolean,
+    ammo: [@backingInt(AmmoType.NUMAMMO)]c_int,
+    maxammo: [@backingInt(AmmoType.NUMAMMO)]c_int,
 
     // True if button down last tic.
     attackdown: c_int,

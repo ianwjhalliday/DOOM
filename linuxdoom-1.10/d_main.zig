@@ -831,7 +831,7 @@ pub fn D_DoomMain() noreturn {
 
     p = @intCast(M_CheckParm("-skill"));
     if (p != 0 and p < myargc - 1) {
-        startskill = @enumFromInt(myargv[p + 1][0] - '1');
+        startskill = @fromBackingInt(myargv[p + 1][0] - '1');
         autostart = true;
     }
 

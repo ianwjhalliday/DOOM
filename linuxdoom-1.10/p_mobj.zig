@@ -331,7 +331,7 @@ fn P_ExplodeMissile(mo: *MObj) void {
     mo.flags &= ~MF_MISSILE;
 
     if (mo.info.deathsound != 0) {
-        S_StartSound(mo, @enumFromInt(mo.info.deathsound));
+        S_StartSound(mo, @fromBackingInt(@intCast(mo.info.deathsound)));
     }
 }
 
@@ -1053,7 +1053,7 @@ pub export fn P_SpawnMissile(source: *MObj, dest: *MObj, motype: c.mobjtype_t) *
     const th = P_SpawnMobj(source.x, source.y, source.z + 4*8*FRACUNIT, motype);
 
     if (th.info.seesound != 0) {
-        S_StartSound(th, @enumFromInt(th.info.seesound));
+        S_StartSound(th, @fromBackingInt(@intCast(th.info.seesound)));
     }
 
     th.target = source;     // where it came from
@@ -1115,7 +1115,7 @@ pub export fn P_SpawnPlayerMissile(source: *MObj, motype: c.mobjtype_t) void {
     const th = P_SpawnMobj(x, y, z, motype);
 
     if (th.info.seesound != 0) {
-        S_StartSound(th, @enumFromInt(th.info.seesound));
+        S_StartSound(th, @fromBackingInt(@intCast(th.info.seesound)));
     }
 
     th.target = source;

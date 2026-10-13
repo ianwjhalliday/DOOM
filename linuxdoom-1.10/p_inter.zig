@@ -49,8 +49,8 @@ const BONUSADD = 6;
 
 // a weapon is found with two clip loads,
 // a big item has five clip loads
-pub export const maxammo = [@intFromEnum(AmmoType.NUMAMMO)]c_int{200, 50, 300, 50};
-const clipammo = [@intFromEnum(AmmoType.NUMAMMO)]c_int{10, 4, 20, 1};
+pub export const maxammo = [@backingInt(AmmoType.NUMAMMO)]c_int{200, 50, 300, 50};
+const clipammo = [@backingInt(AmmoType.NUMAMMO)]c_int{10, 4, 20, 1};
 
 
 //
@@ -68,7 +68,7 @@ fn P_GiveAmmo(player: *Player, ammo: AmmoType, _num: c_int) bool {
         return false;
     }
 
-    const ammoidx: usize = @intCast(@intFromEnum(ammo));
+    const ammoidx: usize = @intCast(@backingInt(ammo));
 
     if (player.ammo[ammoidx] == player.maxammo[ammoidx]) {
         return false;
@@ -105,7 +105,7 @@ fn P_GiveAmmo(player: *Player, ammo: AmmoType, _num: c_int) bool {
     switch (ammo) {
         .Clip => {
             if (player.readyweapon == .Fist) {
-                if (player.weaponowned[@intFromEnum(WeaponType.Chaingun)] != c.false) {
+                if (player.weaponowned[@backingInt(WeaponType.Chaingun)] != c.false) {
                     player.pendingweapon = .Chaingun;
                 } else {
                     player.pendingweapon = .Pistol;
@@ -115,7 +115,7 @@ fn P_GiveAmmo(player: *Player, ammo: AmmoType, _num: c_int) bool {
 
         .Shell => {
             if (player.readyweapon == .Fist or player.readyweapon == .Pistol) {
-                if (player.weaponowned[@intFromEnum(WeaponType.Shotgun)] != c.false) {
+                if (player.weaponowned[@backingInt(WeaponType.Shotgun)] != c.false) {
                     player.pendingweapon = .Shotgun;
                 }
             }
@@ -123,7 +123,7 @@ fn P_GiveAmmo(player: *Player, ammo: AmmoType, _num: c_int) bool {
 
         .Cell => {
             if (player.readyweapon == .Fist or player.readyweapon == .Pistol) {
-                if (player.weaponowned[@intFromEnum(WeaponType.Plasma)] != c.false) {
+                if (player.weaponowned[@backingInt(WeaponType.Plasma)] != c.false) {
                     player.pendingweapon = .Plasma;
                 }
             }
@@ -131,7 +131,7 @@ fn P_GiveAmmo(player: *Player, ammo: AmmoType, _num: c_int) bool {
 
         .Missile => {
             if (player.readyweapon == .Fist) {
-                if (player.weaponowned[@intFromEnum(WeaponType.Missile)] != c.false) {
+                if (player.weaponowned[@backingInt(WeaponType.Missile)] != c.false) {
                     player.pendingweapon = .Missile;
                 }
             }
@@ -149,7 +149,7 @@ fn P_GiveAmmo(player: *Player, ammo: AmmoType, _num: c_int) bool {
 // The weapon name may have a MF_DROPPED flag ored in.
 //
 fn P_GiveWeapon(player: *Player, weapon: WeaponType, dropped: bool) bool {
-    const weaponidx = @intFromEnum(weapon);
+    const weaponidx = @backingInt(weapon);
 
     if (g_game.netgame != c.false and g_game.deathmatch != 2 and !dropped) {
         // leave placed weapon forever on net games
@@ -237,7 +237,7 @@ fn P_GiveArmor(player: *Player, armortype: c_int) bool {
 // P_GiveCard
 //
 fn P_GiveCard(player: *Player, card: Card) void {
-    const cardidx = @intFromEnum(card);
+    const cardidx = @backingInt(card);
 
     if (player.cards[cardidx] != c.false) {
         return;
@@ -252,7 +252,7 @@ fn P_GiveCard(player: *Player, card: Card) void {
 // P_GivePower
 //
 pub fn P_GivePower(player: *Player, power: PowerType) bool {
-    const poweridx = @intFromEnum(power);
+    const poweridx = @backingInt(power);
 
     switch (power) {
         .Invulnerability => {
@@ -368,7 +368,7 @@ pub export fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         // cards
         // leave cards for everyone
         c.SPR_BKEY => {
-            if (player.cards[@intFromEnum(Card.BlueCard)] == c.false) {
+            if (player.cards[@backingInt(Card.BlueCard)] == c.false) {
                 player.message = c.GOTBLUECARD;
             }
             P_GiveCard(player, .BlueCard);
@@ -378,7 +378,7 @@ pub export fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         },
 
         c.SPR_YKEY => {
-            if (player.cards[@intFromEnum(Card.YellowCard)] == c.false) {
+            if (player.cards[@backingInt(Card.YellowCard)] == c.false) {
                 player.message = c.GOTYELWCARD;
             }
             P_GiveCard(player, .YellowCard);
@@ -388,7 +388,7 @@ pub export fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         },
 
         c.SPR_RKEY => {
-            if (player.cards[@intFromEnum(Card.RedCard)] == c.false) {
+            if (player.cards[@backingInt(Card.RedCard)] == c.false) {
                 player.message = c.GOTREDCARD;
             }
             P_GiveCard(player, .RedCard);
@@ -398,7 +398,7 @@ pub export fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         },
 
         c.SPR_BSKU => {
-            if (player.cards[@intFromEnum(Card.BlueSkull)] == c.false) {
+            if (player.cards[@backingInt(Card.BlueSkull)] == c.false) {
                 player.message = c.GOTBLUESKUL;
             }
             P_GiveCard(player, Card.BlueSkull);
@@ -408,7 +408,7 @@ pub export fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         },
 
         c.SPR_YSKU => {
-            if (player.cards[@intFromEnum(Card.YellowSkull)] == c.false) {
+            if (player.cards[@backingInt(Card.YellowSkull)] == c.false) {
                 player.message = c.GOTYELWSKUL;
             }
             P_GiveCard(player, Card.YellowSkull);
@@ -418,7 +418,7 @@ pub export fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         },
 
         c.SPR_RSKU => {
-            if (player.cards[@intFromEnum(Card.RedSkull)] == c.false) {
+            if (player.cards[@backingInt(Card.RedSkull)] == c.false) {
                 player.message = c.GOTREDSKULL;
             }
             P_GiveCard(player, Card.RedSkull);
@@ -571,7 +571,7 @@ pub export fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
                 player.backpack = c.true;
             }
             for (0..player.maxammo.len) |i| {
-                _ = P_GiveAmmo(player, @enumFromInt(i), 1);
+                _ = P_GiveAmmo(player, @fromBackingInt(@intCast(i)), 1);
             }
             player.message = c.GOTBACKPACK;
         },
@@ -804,7 +804,7 @@ pub export fn P_DamageMobj(target: *MObj, inflictor: ?*MObj, source: ?*MObj, _da
         // ignore damage in GOD mode, or with INVUL power.
         if (damage < 1000
             and (player.?.cheats & c.CF_GODMODE != 0
-                or player.?.powers[@intFromEnum(PowerType.Invulnerability)] != c.false)) {
+                or player.?.powers[@backingInt(PowerType.Invulnerability)] != c.false)) {
             return;
         }
 
