@@ -422,12 +422,12 @@ fn M_ReadSaveStrings() void {
     for (0..@intFromEnum(LoadEnum.LoadCount)) |i| {
         const name =
             if (M_CheckParm("-cdrom") != 0)
-                fmt.bufPrintZ(&namebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{i}) catch unreachable
+                fmt.bufPrintSentinel(&namebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{i}, 0) catch unreachable
             else
-                fmt.bufPrintZ(&namebuf, c.SAVEGAMENAME ++ "{}.dsg", .{i}) catch unreachable;
+                fmt.bufPrintSentinel(&namebuf, c.SAVEGAMENAME ++ "{}.dsg", .{i}, 0) catch unreachable;
 
         const file = std.Io.Dir.cwd().openFile(i_system.io, name, .{}) catch {
-            _ = fmt.bufPrintZ(&savegamestrings[i], "{s}", .{c.EMPTYSTRING}) catch unreachable;
+            _ = fmt.bufPrintSentinel(&savegamestrings[i], "{s}", .{c.EMPTYSTRING}, 0) catch unreachable;
             LoadMenu[i].status = 0;
             continue;
         };
@@ -475,9 +475,9 @@ fn M_LoadSelect(choice: c_int) void {
 
     const name =
         if (M_CheckParm("-cdrom") != 0)
-            fmt.bufPrintZ(&namebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{choice}) catch unreachable
+            fmt.bufPrintSentinel(&namebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{choice}, 0) catch unreachable
         else
-            fmt.bufPrintZ(&namebuf, c.SAVEGAMENAME ++ "{}.dsg", .{choice}) catch unreachable;
+            fmt.bufPrintSentinel(&namebuf, c.SAVEGAMENAME ++ "{}.dsg", .{choice}, 0) catch unreachable;
 
     G_LoadGame(name);
     M_ClearMenus();
@@ -596,7 +596,7 @@ fn M_QuickSave() void {
     }
 
     // TODO: Switch to using the string slice in M_StartMessage()
-    _ = fmt.bufPrintZ(&tempstring, c.QSPROMPT, .{savegamestrings[@intCast(quickSaveSlot)]}) catch unreachable;
+    _ = fmt.bufPrintSentinel(&tempstring, c.QSPROMPT, .{savegamestrings[@intCast(quickSaveSlot)]}, 0) catch unreachable;
     M_StartMessage(&tempstring, &M_QuickSaveResponse, true);
 }
 
@@ -625,7 +625,7 @@ fn M_QuickLoad() void {
         return;
     }
 
-    _ = fmt.bufPrintZ(&tempstring, c.QLPROMPT, .{savegamestrings[@intCast(quickSaveSlot)]}) catch unreachable;
+    _ = fmt.bufPrintSentinel(&tempstring, c.QLPROMPT, .{savegamestrings[@intCast(quickSaveSlot)]}, 0) catch unreachable;
     M_StartMessage(&tempstring, &M_QuickLoadResponse, true);
 }
 
@@ -972,9 +972,9 @@ fn M_QuitDOOM(choice: c_int) void {
 
     const endstr =
         if (doomstat.language != .English)
-            fmt.bufPrintZ(&endstring, "{s}\n\n" ++ c.DOSY, .{c.endmsg[0]}) catch unreachable
+            fmt.bufPrintSentinel(&endstring, "{s}\n\n" ++ c.DOSY, .{c.endmsg[0]}, 0) catch unreachable
         else
-            fmt.bufPrintZ(&endstring, "{s}\n\n" ++ c.DOSY, .{c.endmsg[@intCast(@mod(g_game.gametic, c.NUM_QUITMESSAGES-2)+1)]}) catch unreachable;
+            fmt.bufPrintSentinel(&endstring, "{s}\n\n" ++ c.DOSY, .{c.endmsg[@intCast(@mod(g_game.gametic, c.NUM_QUITMESSAGES-2)+1)]}, 0) catch unreachable;
 
     M_StartMessage(endstr, &M_QuitResponse, true);
 }

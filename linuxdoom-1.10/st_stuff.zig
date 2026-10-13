@@ -548,11 +548,11 @@ pub fn ST_Responder(ev: *const Event) bool {
         const S = struct {
             var buf: [ST_MSGWIDTH-1:0]u8 = undefined;
         };
-        _ = fmt.bufPrintZ(&S.buf, "ang=0x{x};x,y=(0x{x},0x{x})", .{
+        _ = fmt.bufPrintSentinel(&S.buf, "ang=0x{x};x,y=(0x{x},0x{x})", .{
             @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo.?.angle)),
             @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo.?.x)),
             @as(c_uint, @bitCast(g_game.players[g_game.consoleplayer].mo.?.y)),
-        }) catch unreachable;
+        }, 0) catch unreachable;
         plyr.message = &S.buf;
       }
     }

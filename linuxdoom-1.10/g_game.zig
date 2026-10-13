@@ -657,7 +657,7 @@ pub export fn G_Ticker() void {
                 const S = struct {
                     var turbomessage: [79:0]u8 = undefined;
                 };
-                _ = fmt.bufPrintZ(&S.turbomessage, "{s} is turbo!", .{hu_stuff.player_names[i]}) catch unreachable;
+                _ = fmt.bufPrintSentinel(&S.turbomessage, "{s} is turbo!", .{hu_stuff.player_names[i]}, 0) catch unreachable;
                 players[consoleplayer].message = &S.turbomessage;
             }
 
@@ -694,7 +694,7 @@ pub export fn G_Ticker() void {
 
                     c.BTS_SAVEGAME => {
                         if (savedescription[0] == 0) {
-                            _ = fmt.bufPrintZ(&savedescription, "NET GAME", .{}) catch unreachable;
+                            _ = fmt.bufPrintSentinel(&savedescription, "NET GAME", .{}, 0) catch unreachable;
                         }
                         savegameslot =
                             (players[i].cmd.buttons & c.BTS_SAVEMASK)>>c.BTS_SAVESHIFT;
@@ -1117,7 +1117,7 @@ fn G_DoLoadGame() void {
     reader.discardAll(SAVESTRINGSIZE) catch unreachable;
 
     var vcheck = [_]u8{0} ** VERSIONSIZE;
-    _ = fmt.bufPrintZ(&vcheck, "version {d}", .{c.VERSION}) catch unreachable;
+    _ = fmt.bufPrintSentinel(&vcheck, "version {d}", .{c.VERSION}, 0) catch unreachable;
     const version = reader.takeArray(VERSIONSIZE) catch unreachable;
     if (!mem.eql(u8, version, &vcheck)) {
         return;
@@ -1186,7 +1186,7 @@ fn G_DoLoadGame() void {
 //
 pub fn G_SaveGame(slot: c_int, description: [*:0]const u8) void {
     savegameslot = slot;
-    _ = fmt.bufPrintZ(&savedescription, "{s}", .{description}) catch unreachable;
+    _ = fmt.bufPrintSentinel(&savedescription, "{s}", .{description}, 0) catch unreachable;
     sendsave = true;
 }
 
@@ -1205,7 +1205,7 @@ fn G_DoSaveGame() void {
     writer.writeAll(&savedescription) catch unreachable;
 
     var version = [_]u8{0} ** VERSIONSIZE;
-    _ = fmt.bufPrintZ(&version, "version {d}", .{c.VERSION}) catch unreachable;
+    _ = fmt.bufPrintSentinel(&version, "version {d}", .{c.VERSION}, 0) catch unreachable;
     writer.writeAll(&version) catch unreachable;
 
     writer.writeByte(@intCast(@intFromEnum(gameskill))) catch unreachable;
@@ -1238,7 +1238,7 @@ fn G_DoSaveGame() void {
     }
     _ = M_WriteFile(name, buffer[0..length]);
     gameaction = .Nothing;
-    _ = fmt.bufPrintZ(&savedescription, "", .{}) catch unreachable;
+    _ = fmt.bufPrintSentinel(&savedescription, "", .{}, 0) catch unreachable;
 
     players[consoleplayer].message = c.GGSAVED;
 
@@ -1442,7 +1442,7 @@ fn G_WriteDemoTiccmd(cmd: *TicCmd) void {
 //
 pub fn G_RecordDemo(name: []const u8) void {
     usergame = false;
-    demoname = fmt.bufPrintZ(&demonamebuf, "{s}.lmp", .{name}) catch unreachable;
+    demoname = fmt.bufPrintSentinel(&demonamebuf, "{s}.lmp", .{name}, 0) catch unreachable;
     const i: usize = @intCast(M_CheckParm("-maxdemo"));
     const maxsize: u32 =
         if (i != 0 and i<m_argv.myargc-1)

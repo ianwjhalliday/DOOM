@@ -59,7 +59,7 @@ fn ExtractFileBase(path: []const u8, dest: []u8) void {
     while (i < path.len and path[i] != '.') {
         length += 1;
         if (length == 9) {
-            const pathZ = std.heap.c_allocator.dupeZ(u8, path) catch unreachable;
+            const pathZ = std.heap.c_allocator.dupeSentinel(u8, path, 0) catch unreachable;
             I_Error("Filename base of %s >8 chars", pathZ.ptr);
         }
 
@@ -128,7 +128,7 @@ pub fn W_AddFile(_filename: []const u8) void {
         if (!std.mem.eql(u8, &header.identification, "IWAD")) {
             // Homebrew levels?
             if (!std.mem.eql(u8, &header.identification, "PWAD")) {
-                const filenameZ = std.heap.c_allocator.dupeZ(u8, filename) catch unreachable;
+                const filenameZ = std.heap.c_allocator.dupeSentinel(u8, filename, 0) catch unreachable;
                 I_Error("Wad file %s doesn't have IWAD or PWAD id", filenameZ.ptr);
             }
 
@@ -179,7 +179,7 @@ pub fn W_Reload() void {
     if (reloadname == null) return;
 
     const file = std.Io.Dir.cwd().openFile(i_system.io, reloadname.?, .{}) catch {
-        const reloadnameZ = std.heap.c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
+        const reloadnameZ = std.heap.c_allocator.dupeSentinel(u8, reloadname.?, 0) catch unreachable;
         I_Error("W_Reload: couldn't open %s", reloadnameZ.ptr);
     };
 
@@ -280,7 +280,7 @@ pub export fn W_CheckNumForName(name: [*]const u8) c_int {
 
 pub fn W_GetNumForNameFmt(comptime name_fmt: []const u8, args: anytype) c_int {
     var namebuf: [9]u8 = undefined;
-    const name = std.fmt.bufPrintZ(&namebuf, name_fmt, args) catch unreachable;
+    const name = std.fmt.bufPrintSentinel(&namebuf, name_fmt, args, 0) catch unreachable;
     return W_GetNumForName(name.ptr);
 }
 
@@ -329,7 +329,7 @@ pub export fn W_ReadLump(lump: c_int, dest: *anyopaque) void {
     const file: std.Io.File = if (l.handle == -1) blk: {
         // reloadable file, so use open / read / close
         break :blk std.Io.Dir.cwd().openFile(i_system.io, reloadname.?, .{}) catch {
-            const reloadnameZ = std.heap.c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
+            const reloadnameZ = std.heap.c_allocator.dupeSentinel(u8, reloadname.?, 0) catch unreachable;
             I_Error("W_ReadLump: couldn't open %s", reloadnameZ.ptr);
         };
     } else .{ .handle = l.handle, .flags = .{ .nonblocking = false } };

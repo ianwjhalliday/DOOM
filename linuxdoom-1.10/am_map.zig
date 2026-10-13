@@ -674,7 +674,7 @@ pub fn AM_Responder(ev: *Event) bool {
             },
 
             AM_MARKKEY => {
-                _ = std.fmt.bufPrintZ(&S.buffer, "{s} {d}", .{c.AMSTR_MARKEDSPOT, markpointnum}) catch unreachable;
+                _ = std.fmt.bufPrintSentinel(&S.buffer, "{s} {d}", .{c.AMSTR_MARKEDSPOT, markpointnum}, 0) catch unreachable;
                 plr.message = &S.buffer;
                 AM_addMark();
             },

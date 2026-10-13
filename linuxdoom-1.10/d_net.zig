@@ -405,7 +405,7 @@ fn GetPackets() void {
             const S = struct {
                 var exitmsg: [79:0]u8 = undefined;
             };
-            _ = std.fmt.bufPrintZ(&S.exitmsg, "Player {} left the game", .{1 + netconsole}) catch unreachable;
+            _ = std.fmt.bufPrintSentinel(&S.exitmsg, "Player {} left the game", .{1 + netconsole}, 0) catch unreachable;
             g_game.players[g_game.consoleplayer].message = &S.exitmsg;
 
             if (g_game.demorecording) {

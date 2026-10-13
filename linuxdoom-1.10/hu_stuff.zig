@@ -650,7 +650,7 @@ pub fn HU_Responder(ev: *Event) bool {
 
             // leave chat mode and notify that it was sent
             chat_on = false;
-            _ = std.fmt.bufPrintZ(&S.lastmessage, "{s}", .{macromessage}) catch unreachable;
+            _ = std.fmt.bufPrintSentinel(&S.lastmessage, "{s}", .{macromessage}, 0) catch unreachable;
             plr.message = &S.lastmessage;
             eatkey = true;
         } else {
@@ -671,7 +671,7 @@ pub fn HU_Responder(ev: *Event) bool {
                 chat_on = false;
                 if (w_chat.l.len != 0) {
                     const msg = w_chat.l.l[0..w_chat.l.len:0];
-                    _ = std.fmt.bufPrintZ(&S.lastmessage, "{s}", .{msg}) catch unreachable;
+                    _ = std.fmt.bufPrintSentinel(&S.lastmessage, "{s}", .{msg}, 0) catch unreachable;
                     plr.message = &S.lastmessage;
                 }
             } else if (ch == doomdef.KEY_ESCAPE) {

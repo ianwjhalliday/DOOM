@@ -344,7 +344,7 @@ fn D_DoomLoop() noreturn {
     // TODO: This parm check should be in `D_DoomMain()`
     if (M_CheckParm("-debugfile") != 0) {
         var buffer: [20]u8 = undefined;
-        const filename = fmt.bufPrintZ(&buffer, "debug{}.txt", .{g_game.consoleplayer}) catch unreachable;
+        const filename = fmt.bufPrintSentinel(&buffer, "debug{}.txt", .{g_game.consoleplayer}, 0) catch unreachable;
         var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
         const stdout = &stdout_writer.interface;
         stdout.print("debug output to: {s}\n", .{filename}) catch unreachable;
@@ -528,7 +528,7 @@ fn IdentifyVersion() void {
     const home = i_system.environ_map.get("HOME") orelse {
         I_Error("Please set $HOME to your home directory");
     };
-    _ = fmt.bufPrintZ(&basedefault, "{s}/.doomrc", .{home}) catch unreachable;
+    _ = fmt.bufPrintSentinel(&basedefault, "{s}/.doomrc", .{home}, 0) catch unreachable;
 
     if (M_CheckParm("-shdev") != 0) {
         doomstat.gamemode = .Shareware;
@@ -536,7 +536,7 @@ fn IdentifyVersion() void {
         D_AddFile(c.DEVDATA ++ "doom1.wad");
         D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
         D_AddFile(c.DEVMAPS ++ "data_se/pnames.lmp");
-        _ = fmt.bufPrintZ(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}) catch unreachable;
+        _ = fmt.bufPrintSentinel(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}, 0) catch unreachable;
         return;
     }
 
@@ -547,7 +547,7 @@ fn IdentifyVersion() void {
         D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
         D_AddFile(c.DEVMAPS ++ "data_se/texture2.lmp");
         D_AddFile(c.DEVMAPS ++ "data_se/pnames.lmp");
-        _ = fmt.bufPrintZ(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}) catch unreachable;
+        _ = fmt.bufPrintSentinel(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}, 0) catch unreachable;
         return;
     }
 
@@ -558,7 +558,7 @@ fn IdentifyVersion() void {
 
         D_AddFile(c.DEVMAPS ++ "cdata/texture1.lmp");
         D_AddFile(c.DEVMAPS ++ "cdata/pnames.lmp");
-        _ = fmt.bufPrintZ(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}) catch unreachable;
+        _ = fmt.bufPrintSentinel(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}, 0) catch unreachable;
         return;
     }
 
@@ -754,7 +754,7 @@ pub fn D_DoomMain() noreturn {
     if (M_CheckParm("-cdrom") != 0) {
         stdout.print("{s}", .{c.D_CDROM}) catch unreachable;
         std.Io.Dir.createDirAbsolute(i_system.io, "c:\\doomdata", .default_dir) catch unreachable;
-        _ = fmt.bufPrintZ(&basedefault, "{s}", .{"c:/doomdata/default.cfg"}) catch unreachable;
+        _ = fmt.bufPrintSentinel(&basedefault, "{s}", .{"c:/doomdata/default.cfg"}, 0) catch unreachable;
     }
 
     // turbo option
@@ -995,9 +995,9 @@ pub fn D_DoomMain() noreturn {
     if (p != 0 and p < myargc - 1) {
         const file =
             if (M_CheckParm("-cdrom") != 0)
-                fmt.bufPrintZ(&filebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}) catch unreachable
+                fmt.bufPrintSentinel(&filebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}, 0) catch unreachable
             else
-                fmt.bufPrintZ(&filebuf, c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}) catch unreachable;
+                fmt.bufPrintSentinel(&filebuf, c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}, 0) catch unreachable;
         G_LoadGame(file);
     }
 
