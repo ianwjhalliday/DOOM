@@ -344,7 +344,7 @@ export fn Z_FileDumpHeap(f: *FILE) void {
     var block = mainzone.blocklist.next;
     while (true) : (block = block.next) {
         _ = fprintf(f, "block:%p    size:%7i    user:%p    tag:%3i\n",
-            block, block.size, block.user, block.tag);
+            block, block.size, block.user, @intFromEnum(block.tag));
 
         if (block.next == &mainzone.blocklist) {
             // all blocks have been hit

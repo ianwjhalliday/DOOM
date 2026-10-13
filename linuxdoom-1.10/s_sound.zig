@@ -436,7 +436,7 @@ fn S_StopMusic() void {
 
         c.I_StopSong(mus_playing.?.handle);
         c.I_UnRegisterSong(mus_playing.?.handle);
-        z_zone.Z_ChangeTag(@constCast(mus_playing.?.data), .Cache);
+        z_zone.Z_ChangeTag(@ptrCast(@constCast(mus_playing.?.data)), .Cache);
 
         mus_playing.?.data = null;
         mus_playing = null;
