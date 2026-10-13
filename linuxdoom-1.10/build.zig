@@ -59,8 +59,8 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    exe.defineCMacro("NORMALUNIX", null);
-    exe.defineCMacro("LINUX", null);
+    exe.root_module.addCMacro("NORMALUNIX", "");
+    exe.root_module.addCMacro("LINUX", "");
     exe.addCSourceFiles(.{ .files = &c_files, .flags = &cflags });
     inline for (zig_files) |file| {
         const o = b.addObject(.{
@@ -90,7 +90,7 @@ pub fn build(b: *std.Build) void {
     // miniaudio's default runtime linking dlopens "CoreFoundation.framework/CoreFoundation"
     // by relative path, which newer macOS no longer resolves, so it silently falls back
     // to the Null backend (no sound). Link the audio frameworks directly instead.
-    exe.defineCMacro("MA_NO_RUNTIME_LINKING", null);
+    exe.root_module.addCMacro("MA_NO_RUNTIME_LINKING", "");
     exe.linkFramework("CoreAudio");
     exe.linkFramework("AudioToolbox");
     b.installArtifact(exe);

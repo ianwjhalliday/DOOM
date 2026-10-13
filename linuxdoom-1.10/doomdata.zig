@@ -21,7 +21,7 @@ pub const ML_SEGS: c_int = 5;       // LineSegs, from LineDefs split by BSP
 pub const ML_SSECTORS: c_int = 6;   // SubSectors, list of LineSegs
 pub const ML_NODES: c_int = 7;      // BSP nodes
 pub const ML_SECTORS: c_int = 8;    // Sectors, from editing
-pub const ML_REJECT: c_int = 9;     // LUT, sector-sector visibility	
+pub const ML_REJECT: c_int = 9;     // LUT, sector-sector visibility
 pub const ML_BLOCKMAP: c_int = 10;  // LUT, motion clipping, walls/grid element
 
 

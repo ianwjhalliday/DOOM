@@ -13,7 +13,7 @@ pub export var myargc: c_int = undefined;
 // albeit then will need to use .? everywhere.
 pub export var myargv: [*c][*c]const u8 = undefined;
 
-pub var myargs: [][:0]const u8 = undefined;
+pub var myargs: []const [:0]const u8 = undefined;
 
 // M_CheckParm
 // Checks for the given parameter

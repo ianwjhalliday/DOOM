@@ -1,6 +1,6 @@
 const c = @cImport({
     @cDefine("GLFW_INCLUDE_GLCOREARB", {});
-    if (builtin.target.isDarwin()) {
+    if (builtin.target.os.tag.isDarwin()) {
         @cDefine("GL_SILENCE_DEPRECATION", {});
     }
     @cInclude("GLFW/glfw3.h");
@@ -156,7 +156,7 @@ pub fn I_InitGraphics() void {
     c.glfwWindowHint(c.GLFW_CONTEXT_VERSION_MINOR, 3);
     c.glfwWindowHint(c.GLFW_OPENGL_PROFILE, c.GLFW_OPENGL_CORE_PROFILE);
 
-    if (builtin.target.isDarwin()) {
+    if (builtin.target.os.tag.isDarwin()) {
         c.glfwWindowHint(c.GLFW_OPENGL_FORWARD_COMPAT, c.GL_TRUE);
     }
 

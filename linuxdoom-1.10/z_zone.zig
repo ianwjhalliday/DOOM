@@ -87,8 +87,8 @@ pub fn alloc(comptime T: type, n: usize, tag: Z_Tag, user: ?*?*anyopaque) []T {
 
 pub fn free(slice: anytype) void {
     const ArgType = @TypeOf(slice);
-    const info = @typeInfo(ArgType).Pointer;
-    if (info.size != .Slice) {
+    const info = @typeInfo(ArgType).pointer;
+    if (info.size != .slice) {
         @compileError("expected slice argument, found " ++ @typeName(ArgType));
     }
     Z_Free(@ptrCast(slice.ptr));
@@ -102,8 +102,8 @@ pub fn create(comptime T: type, tag: Z_Tag, user: ?*?*anyopaque) *T {
 
 pub fn destroy(ptr: anytype) void {
     const ArgType = @TypeOf(ptr);
-    const info = @typeInfo(ArgType).Pointer;
-    if (info.size != .One) {
+    const info = @typeInfo(ArgType).pointer;
+    if (info.size != .one) {
         @compileError("expected single pointer argument, found " ++ @typeName(ArgType));
     }
     Z_Free(@ptrCast(ptr));
@@ -118,7 +118,7 @@ export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopa
     // correct alignment on the host architecture. However this will increase
     // block allocation size on modern 64 bit architectures.
     // TODO: Measure allocation sizes with and without this change.
-    const alignment = @typeInfo(**anyopaque).Pointer.alignment;
+    const alignment = @typeInfo(**anyopaque).pointer.alignment;
     var size = (requested_size + alignment - 1) & ~@as(i32, alignment - 1);
 
     // scan through the block list,
