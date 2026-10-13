@@ -538,7 +538,7 @@ fn M_SaveSelect(_choice: c_int) void {
 
     const choice: u8 = @intCast(_choice);
     saveSlot = @intCast(choice);
-    mem.copy(u8, &saveOldString, &savegamestrings[choice]);
+    saveOldString = savegamestrings[choice];
     var name = std.mem.sliceTo(&savegamestrings[choice], 0);
     if (std.mem.eql(u8, name, c.EMPTYSTRING)) {
         savegamestrings[choice][0] = 0;
@@ -1267,7 +1267,7 @@ pub fn M_Responder(ev: *Event) bool {
 
           doomdef.KEY_ESCAPE => {
             saveStringEnter = 0;
-            mem.copy(u8, &savegamestrings[saveSlot], &saveOldString);
+            savegamestrings[saveSlot] = saveOldString;
           },
 
           doomdef.KEY_ENTER => {
@@ -1573,7 +1573,7 @@ pub fn M_Drawer() void {
             for (0..l) |i| {
                 if (messageString[start+i] == '\n') {
                     @memset(&stringbuf, 0);
-                    mem.copy(u8, &stringbuf, messageString[start..start+i]);
+                    @memcpy(stringbuf[0..i], messageString[start..start+i]);
                     start += i+1;
                     l = i;
                     break;
@@ -1581,7 +1581,7 @@ pub fn M_Drawer() void {
             }
 
             if (l == messageString[start..].len) {
-                mem.copy(u8, &stringbuf, messageString[start..start+l]);
+                @memcpy(stringbuf[0..l], messageString[start..start+l]);
                 start += l;
             }
 
