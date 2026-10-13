@@ -24,9 +24,9 @@ pub export var leveltime: c_int = 0;
 //
 
 
-pub const actionf_v = *const fn (...) callconv(.C) void;
-pub const actionf_p1 = *const fn (*anyopaque) callconv(.C) void;
-pub const actionf_p2 = *const fn (*anyopaque, *anyopaque) callconv(.C) void;
+pub const actionf_v = *const fn (...) callconv(.c) void;
+pub const actionf_p1 = *const fn (*anyopaque) callconv(.c) void;
+pub const actionf_p2 = *const fn (*anyopaque, *anyopaque) callconv(.c) void;
 
 pub const ActionFn = extern union {
     acp1: ?actionf_p1,
@@ -76,7 +76,7 @@ pub export fn P_AddThinker(thinker: *Thinker) void {
 // Deallocation is lazy -- it will not actually be freed
 // until its thinking turn comes up.
 //
-fn removeThinkerSentinel(...) callconv(.C) void {}
+fn removeThinkerSentinel(...) callconv(.c) void {}
 pub export fn P_RemoveThinker(thinker: *Thinker) void {
     // FIXME: NOP.
     thinker.function.acv = &removeThinkerSentinel;

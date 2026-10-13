@@ -63,12 +63,12 @@ var screenQuadVAO: c.GLuint = undefined;
 var mainWindow: ?*c.GLFWwindow = undefined;
 
 const GLFWCallback = struct {
-    pub fn Error(err: c_int, description: [*c]const u8) callconv(.C) void {
+    pub fn Error(err: c_int, description: [*c]const u8) callconv(.c) void {
         const stderr = std.io.getStdErr().writer();
         stderr.print("I_GLFWErrorCallback: {} {s}\n", .{err, description}) catch {};
     }
 
-    pub fn Key(window: ?*c.GLFWwindow, key: c_int, scancode: c_int, action: c_int, mods: c_int) callconv(.C) void {
+    pub fn Key(window: ?*c.GLFWwindow, key: c_int, scancode: c_int, action: c_int, mods: c_int) callconv(.c) void {
         _ = mods;
         _ = scancode;
         _ = window;
@@ -85,7 +85,7 @@ const GLFWCallback = struct {
         D_PostEvent(&doom_event);
     }
 
-    pub fn MouseButton(window: ?*c.GLFWwindow, button: c_int, action: c_int, mods: c_int) callconv(.C) void {
+    pub fn MouseButton(window: ?*c.GLFWwindow, button: c_int, action: c_int, mods: c_int) callconv(.c) void {
         _ = mods;
         _ = action;
         _ = button;
@@ -107,7 +107,7 @@ const GLFWCallback = struct {
     var last_x: f64 = 0;
     var last_y: f64 = 0;
 
-    pub fn CursorPosition(window: ?*c.GLFWwindow, xpos: f64, ypos: f64) callconv(.C) void {
+    pub fn CursorPosition(window: ?*c.GLFWwindow, xpos: f64, ypos: f64) callconv(.c) void {
         const MOUSE_SENSITIVITY_FACTOR = 4.0;
 
         const dx = xpos - last_x;
@@ -136,7 +136,7 @@ const GLFWCallback = struct {
     }
 };
 
-fn sigint_handler(_: c_int) callconv(.C) void {
+fn sigint_handler(_: c_int) callconv(.c) void {
     I_Quit();
 }
 
