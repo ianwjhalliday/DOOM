@@ -703,6 +703,7 @@ extern var sidemove: [2]c_int;
 extern var statcopy: *anyopaque;
 
 extern fn R_Init() void;
+extern fn fflush(stream: ?*anyopaque) c_int;
 
 pub fn toDoomBoolean(b: bool) c.boolean {
     return if (b) c.true else c.false;
@@ -942,6 +943,8 @@ pub fn D_DoomMain() noreturn {
 
     stdout.print("R_Init: Init DOOM refresh daemon - ", .{}) catch unreachable;
     R_Init();
+    // R_Init prints via C printf, which is buffered separately from Zig stdout
+    _ = fflush(null);
 
     stdout.print("\nP_Init: Init Playloop state.\n", .{}) catch unreachable;
     P_Init();
