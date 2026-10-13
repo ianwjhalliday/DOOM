@@ -12,6 +12,9 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    // Homebrew installs to /opt/homebrew on Apple Silicon and /usr/local on Intel.
+    const homebrew = if (target.result.cpu.arch == .aarch64) "/opt/homebrew" else "/usr/local";
+
     // Only files that are not imported directly or indirectly need to be listed
     // here. Otherwise you may get MultipleSymbolDefinitions compile errors.
     const zig_files = [_][]const u8{
@@ -70,8 +73,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
         });
         o.addIncludePath(b.path("."));
-        o.addSystemIncludePath(.{ .cwd_relative = "/usr/local/include" });
-        o.addSystemIncludePath(.{ .cwd_relative = "/opt/homebrew/include" }); // Homebrew on Apple Silicon
+        o.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{ homebrew, "include" }) });
         // TODO: Properly find and setup system include paths per platform
         o.addSystemIncludePath(.{ .cwd_relative = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include" });
         o.addFrameworkPath(.{ .cwd_relative = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks" });
@@ -79,8 +81,7 @@ pub fn build(b: *std.Build) void {
         exe.addObject(o);
     }
     exe.linkLibC();
-    exe.addLibraryPath(.{ .cwd_relative = "/usr/local/lib" });
-    exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" }); // Homebrew on Apple Silicon
+    exe.addLibraryPath(.{ .cwd_relative = b.pathJoin(&.{ homebrew, "lib" }) });
     exe.linkSystemLibrary("glfw3");
     // TODO: MacOS only frameworks
     exe.linkFramework("Cocoa");
