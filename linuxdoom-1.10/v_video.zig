@@ -167,8 +167,8 @@ pub fn V_DrawPatchSigned(x: c_int, y: c_int, scrn: u32, patch: *c.patch_t) void 
 }
 
 pub export fn V_DrawPatch(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
-    var y: u32 = @intCast(@as(i64, _y) - SHORT(patch.topoffset));
-    var x: u32 = @intCast(@as(i64, _x) - SHORT(patch.leftoffset));
+    const y: u32 = @intCast(@as(i64, _y) - SHORT(patch.topoffset));
+    const x: u32 = @intCast(@as(i64, _x) - SHORT(patch.leftoffset));
 
     const w = @as(u32, @intCast(SHORT(patch.width)));
     const h = @as(u32, @intCast(SHORT(patch.height)));
@@ -177,7 +177,7 @@ pub export fn V_DrawPatch(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
         V_MarkRect(x, y, w, h);
     }
 
-    var desttop: [*]u8 = screens[scrn] + y * doomdef.SCREENWIDTH + x;
+    const desttop: [*]u8 = screens[scrn] + y * doomdef.SCREENWIDTH + x;
 
     const patchAsBytes = @as([*]u8, @ptrCast(patch));
 
@@ -211,8 +211,8 @@ pub export fn V_DrawPatch(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
 // Flips horizontally, e.g. to mirror face.
 //
 pub fn V_DrawPatchFlipped(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
-    var y: u32 = @intCast(@as(i64, _y) - SHORT(patch.topoffset));
-    var x: u32 = @intCast(@as(i64, _x) - SHORT(patch.leftoffset));
+    const y: u32 = @intCast(@as(i64, _y) - SHORT(patch.topoffset));
+    const x: u32 = @intCast(@as(i64, _x) - SHORT(patch.leftoffset));
 
     const w = @as(u32, @intCast(SHORT(patch.width)));
     const h = @as(u32, @intCast(SHORT(patch.height)));
@@ -221,7 +221,7 @@ pub fn V_DrawPatchFlipped(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
         V_MarkRect(x, y, w, h);
     }
 
-    var desttop: [*]u8 = screens[scrn] + y * doomdef.SCREENWIDTH + x;
+    const desttop: [*]u8 = screens[scrn] + y * doomdef.SCREENWIDTH + x;
 
     const patchAsBytes = @as([*]u8, @ptrCast(patch));
 
@@ -272,7 +272,7 @@ pub fn V_DrawBlock(x: u32, y: u32, scrn: u32, width: u32, height: u32, _src: [*]
 //
 pub fn V_Init() void {
     // stick these in low dos memory on PCs
-    var base: [*]u8 = I_AllocLow(doomdef.SCREENWIDTH * doomdef.SCREENHEIGHT * 4) orelse unreachable;
+    const base: [*]u8 = I_AllocLow(doomdef.SCREENWIDTH * doomdef.SCREENHEIGHT * 4) orelse unreachable;
 
     for (0..4) |i| {
         screens[i] = base + i * doomdef.SCREENWIDTH * doomdef.SCREENHEIGHT;

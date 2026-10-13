@@ -893,7 +893,7 @@ pub fn D_DoomMain() noreturn {
     if (doomstat.modifiedgame != c.false) {
         // These are the lumps that will be checked in IWAD,
         // if any one is not present, execution will be aborted.
-        var names = [_][:0]const u8{ "e2m1", "e2m2", "e2m3", "e2m4", "e2m5", "e2m6", "e2m7", "e2m8", "e2m9", "e3m1", "e3m3", "e3m3", "e3m4", "e3m5", "e3m6", "e3m7", "e3m8", "e3m9", "dphoof", "bfgga0", "heada1", "cybra1", "spida1d1" };
+        const names = [_][:0]const u8{ "e2m1", "e2m2", "e2m3", "e2m4", "e2m5", "e2m6", "e2m7", "e2m8", "e2m9", "e3m1", "e3m3", "e3m3", "e3m4", "e3m5", "e3m6", "e3m7", "e3m8", "e3m9", "dphoof", "bfgga0", "heada1", "cybra1", "spida1d1" };
 
         if (doomstat.gamemode == .Shareware) {
             I_Error("\nYou cannot -file with the shareware version. Register!");

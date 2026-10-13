@@ -1118,7 +1118,7 @@ fn AM_drawWalls() void {
 // Used to rotate player arrow line character.
 //
 fn AM_rotate(x: *fixed_t, y: *fixed_t, a: c.angle_t) void {
-    var tmpx =
+    const tmpx =
         FixedMul(x.*, c.finecosine[a >> c.ANGLETOFINESHIFT])
         - FixedMul(y.*, c.finesine[a >> c.ANGLETOFINESHIFT]);
 
@@ -1201,10 +1201,10 @@ fn AM_drawMarks() void {
     for (markpoints, marknums) |markpoint, marknum| {
         if (markpoint.x == -1) { continue; }
 
-        var w: c_int = 5;
-        var h: c_int = 6;
-        var fx = CXMTOF(markpoint.x);
-        var fy = CYMTOF(markpoint.y);
+        const w: c_int = 5;
+        const h: c_int = 6;
+        const fx = CXMTOF(markpoint.x);
+        const fy = CYMTOF(markpoint.y);
         if (fx >= f_x and fx <= f_w - w and fy >= f_y and fy <= f_h - h) {
             V_DrawPatch(fx, fy, FB, marknum);
         }

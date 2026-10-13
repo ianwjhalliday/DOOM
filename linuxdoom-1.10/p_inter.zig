@@ -93,7 +93,7 @@ fn P_GiveAmmo(player: *Player, ammo: AmmoType, _num: c_int) bool {
         num <<= 1;
     }
 
-    var oldammo = player.ammo[ammoidx];
+    const oldammo = player.ammo[ammoidx];
     player.ammo[ammoidx] += num;
 
     if (player.ammo[ammoidx] > player.maxammo[ammoidx]) {

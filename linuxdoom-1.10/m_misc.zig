@@ -313,7 +313,7 @@ const PCX = extern struct {
 //
 fn WritePCXfile(filename: []const u8, data: [*]const u8, width: c_int, height: c_int, palette: [*]const u8) void {
     // PCX has alignment 2 so alloc a u16 buffer rather than a u8 buffer
-    var pcx_buffer = zone.alloc(u16, @intCast(width*height+500), .Static, null);
+    const pcx_buffer = zone.alloc(u16, @intCast(width*height+500), .Static, null);
     defer zone.free(pcx_buffer);
 
     const pcx: *PCX = @ptrCast(pcx_buffer.ptr);
