@@ -228,7 +228,7 @@ var joyarray: [5]bool = undefined;
 var joybuttons: [*]bool = joyarray[1..].ptr;   // allow [-1]
 
 var savegameslot: c_int = 0;
-var savedescription = [_]u8{0} ** SAVESTRINGSIZE;
+var savedescription: [SAVESTRINGSIZE]u8 = @splat(0);
 
 
 const BODYQUESIZE = 32;
@@ -895,7 +895,7 @@ var pars = [4][9]c_int{
     .{30,75,120,90,165,180,180,30,165},
     .{90,90,90,120,90,360,240,30,170},
     .{90,45,90,150,90,90,165,30,135},
-    .{0}**9,
+    @splat(0),
 };
 
 // DOOM II Par Times
@@ -1102,7 +1102,7 @@ fn G_DoLoadGame() void {
     // skip the description field
     reader.discardAll(SAVESTRINGSIZE) catch unreachable;
 
-    var vcheck = [_]u8{0} ** VERSIONSIZE;
+    var vcheck: [VERSIONSIZE]u8 = @splat(0);
     _ = fmt.bufPrintSentinel(&vcheck, "version {d}", .{c.VERSION}, 0) catch unreachable;
     const version = reader.takeArray(VERSIONSIZE) catch unreachable;
     if (!mem.eql(u8, version, &vcheck)) {
@@ -1190,7 +1190,7 @@ fn G_DoSaveGame() void {
 
     writer.writeAll(&savedescription) catch unreachable;
 
-    var version = [_]u8{0} ** VERSIONSIZE;
+    var version: [VERSIONSIZE]u8 = @splat(0);
     _ = fmt.bufPrintSentinel(&version, "version {d}", .{c.VERSION}, 0) catch unreachable;
     writer.writeAll(&version) catch unreachable;
 

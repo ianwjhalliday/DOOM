@@ -585,7 +585,7 @@ fn CheckAbort() void {
 // D_ArbitrateNetStart
 //
 fn D_ArbitrateNetStart() void {
-    var gotinfo = [_]bool{false} ** MAXNETNODES;
+    var gotinfo: [MAXNETNODES]bool = @splat(false);
     d_main.autostart = true;
 
     var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
@@ -758,7 +758,7 @@ pub fn D_QuitNetGame() void {
 // TryRunTics
 //
 var frameon: c_int = undefined;
-var frameskip = [_]bool{false} ** 4;
+var frameskip: [4]bool = @splat(false);
 var oldnettics: c_int = undefined;
 
 pub fn TryRunTics() void {

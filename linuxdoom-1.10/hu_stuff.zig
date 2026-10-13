@@ -82,7 +82,7 @@ var w_title: hu_lib.HudTextLine = undefined;
 pub var chat_on = false;
 var w_chat: hu_lib.HudIText = undefined;
 var always_off = false;
-var chat_dest = [_]u8{0} ** doomdef.MAXPLAYERS;
+var chat_dest: [doomdef.MAXPLAYERS]u8 = @splat(0);
 var w_inputbuffer: [doomdef.MAXPLAYERS]hu_lib.HudIText = undefined;
 
 var message_on = false;
@@ -528,7 +528,7 @@ pub fn HU_Ticker() void {
 
 const QUEUESIZE = 128;
 
-var chatchars = [_]u8{0} ** QUEUESIZE;
+var chatchars: [QUEUESIZE]u8 = @splat(0);
 var head: usize = 0;
 var tail: usize = 0;
 

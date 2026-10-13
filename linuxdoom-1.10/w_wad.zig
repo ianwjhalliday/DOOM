@@ -259,7 +259,7 @@ pub fn W_InitMultipleFiles(filenames: [][]const u8) void {
 // Returns -1 if name not found.
 //
 pub export fn W_CheckNumForName(name: [*]const u8) c_int {
-    var name_upper: [8]u8 = [_]u8{0} ** 8;
+    var name_upper: [8]u8 = @splat(0);
     for (&name_upper, 0..) |*c, i| {
         if (name[i] == 0) break;
         c.* = std.ascii.toUpper(name[i]);

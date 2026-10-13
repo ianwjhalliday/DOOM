@@ -509,7 +509,7 @@ pub fn P_SetupLevel(episode: c_int, map: c_int) void {
     W_Reload();
 
     // find map name
-    var lumpnamebuf = [_]u8{0} ** 9;
+    var lumpnamebuf: [9]u8 = @splat(0);
     const lumpname = if (doomstat.gamemode == .Commercial)
         std.fmt.bufPrintSentinel(&lumpnamebuf, "map{d:0>2}", .{@as(c_uint, @intCast(map))}, 0) catch unreachable
     else

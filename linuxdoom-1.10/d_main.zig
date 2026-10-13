@@ -99,7 +99,7 @@ const doomstat = @import("doomstat.zig");
 
 const MAXWADFILES = 20;
 
-var wadfiles = [_][]const u8{undefined} ** MAXWADFILES;
+var wadfiles: [MAXWADFILES][]const u8 = @splat(undefined);
 var numwadfiles: usize = 0;
 
 pub var devparm = false; // started game with -devparm

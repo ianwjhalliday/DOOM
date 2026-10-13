@@ -287,7 +287,7 @@ var st_oldhealth: c_int = -1;
 
 // used for evil grin
 // TODO: Convert to bool when Player.weaponowned is converted to bool
-var oldweaponsowned = [_]c.boolean{c.false} ** @intFromEnum(WeaponType.NUMWEAPONS);
+var oldweaponsowned: [@intFromEnum(WeaponType.NUMWEAPONS)]c.boolean = @splat(c.false);
 
 // count until face changes
 var st_facecount: c_int = 0;
@@ -296,7 +296,7 @@ var st_facecount: c_int = 0;
 var st_faceindex: c_int = 0;
 
 // holds key-type for each key box on bar
-var keyboxes = [_]c_int{0} ** 3;
+var keyboxes: [3]c_int = @splat(0);
 
 // a random number per tick
 var st_randomnumber: c_int = 0;
@@ -465,7 +465,7 @@ pub fn ST_Responder(ev: *const Event) bool {
       }
       // 'mus' cheat for changing music
       else if (cht_CheckCheat(&cheat_mus, @intCast(ev.data1))) {
-        var buf = [_]u8{0} ** 3;
+        var buf: [3]u8 = @splat(0);
 
         plyr.message = c.STSTR_MUS;
         cht_GetParam(&cheat_mus, &buf);
@@ -551,7 +551,7 @@ pub fn ST_Responder(ev: *const Event) bool {
     // 'clev' change-level cheat
     if (cht_CheckCheat(&cheat_clev, @intCast(ev.data1)))
     {
-      var buf = [_]u8{0} ** 3;
+      var buf: [3]u8 = @splat(0);
       var epsd: c_int = undefined;
       var map: c_int = undefined;
 
