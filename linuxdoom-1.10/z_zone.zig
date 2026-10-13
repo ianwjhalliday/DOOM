@@ -118,7 +118,7 @@ export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopa
     // correct alignment on the host architecture. However this will increase
     // block allocation size on modern 64 bit architectures.
     // TODO: Measure allocation sizes with and without this change.
-    const alignment = @typeInfo(**anyopaque).pointer.alignment;
+    const alignment = @alignOf(*anyopaque);
     var size = (requested_size + alignment - 1) & ~@as(i32, alignment - 1);
 
     // scan through the block list,
