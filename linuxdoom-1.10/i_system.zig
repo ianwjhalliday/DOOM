@@ -20,6 +20,13 @@ const TicCmd = @import("d_ticcmd.zig").TicCmd;
 
 const TICRATE = @import("doomdef.zig").TICRATE;
 
+// The std.Io implementation that all file and console I/O goes through.
+// Set by main() before anything else runs.
+pub var io: std.Io = undefined;
+
+// The process environment variables. Set by main().
+pub var environ_map: *const std.process.Environ.Map = undefined;
+
 const mb_used: c_int = 6;
 
 pub export fn I_Tactile(on: c_int, off: c_int, total: c_int) void {

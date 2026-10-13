@@ -9,6 +9,7 @@ const c = @cImport({
 
 const builtin = @import("builtin");
 const std = @import("std");
+const i_system = @import("i_system.zig");
 const D_PostEvent = @import("d_main.zig").D_PostEvent;
 const Event = @import("d_main.zig").Event;
 const I_Quit = @import("i_system.zig").I_Quit;
@@ -64,7 +65,7 @@ var mainWindow: ?*c.GLFWwindow = undefined;
 
 const GLFWCallback = struct {
     pub fn Error(err: c_int, description: [*c]const u8) callconv(.c) void {
-        var stderr_writer = std.fs.File.stderr().writer(&.{});
+        var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
         const stderr = &stderr_writer.interface;
         stderr.print("I_GLFWErrorCallback: {} {s}\n", .{err, description}) catch {};
     }
@@ -142,7 +143,7 @@ fn sigint_handler(_: c_int) callconv(.c) void {
 }
 
 pub fn I_InitGraphics() void {
-    var stderr_writer = std.fs.File.stderr().writer(&.{});
+    var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
     const stderr = &stderr_writer.interface;
     stderr.print("I_InitGraphics\n", .{}) catch {};
 

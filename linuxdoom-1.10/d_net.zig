@@ -591,7 +591,7 @@ fn D_ArbitrateNetStart() void {
     var gotinfo = [_]bool{false} ** MAXNETNODES;
     d_main.autostart = true;
 
-    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
     const stdout = &stdout_writer.interface;
     if (doomcom.consoleplayer != 0) {
         // listen for setup info from key player
@@ -691,7 +691,7 @@ pub fn D_CheckNetGame() void {
         D_ArbitrateNetStart();
     }
 
-    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
     const stdout = &stdout_writer.interface;
     stdout.print("startskill {}  deathmatch: {}  startmap: {}  startepisode: {}\n", .{
         @intFromEnum(d_main.startskill),

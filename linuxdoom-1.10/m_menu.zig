@@ -11,7 +11,6 @@ const c = @cImport({
 const std = @import("std");
 const fmt = std.fmt;
 const mem = std.mem;
-const posix = std.posix;
 
 const d_main = @import("d_main.zig");
 const D_StartTitle = d_main.D_StartTitle;
@@ -427,14 +426,14 @@ fn M_ReadSaveStrings() void {
             else
                 fmt.bufPrintZ(&namebuf, c.SAVEGAMENAME ++ "{}.dsg", .{i}) catch unreachable;
 
-        const handle = posix.open(name, .{ .ACCMODE = .RDONLY }, 0o666) catch {
+        const file = std.Io.Dir.cwd().openFile(i_system.io, name, .{}) catch {
             _ = fmt.bufPrintZ(&savegamestrings[i], "{s}", .{c.EMPTYSTRING}) catch unreachable;
             LoadMenu[i].status = 0;
             continue;
         };
+        defer file.close(i_system.io);
 
-        _ = posix.read(handle, &savegamestrings[i]) catch unreachable;
-        posix.close(handle);
+        _ = file.readPositionalAll(i_system.io, &savegamestrings[i], 0) catch unreachable;
         LoadMenu[i].status = 1;
     }
 }
@@ -803,7 +802,7 @@ fn M_Episode(choice: c_int) void {
     epi = choice;
     // Yet another hack...
     if (doomstat.gamemode == .Registered and choice > 2) {
-        var stderr_writer = std.fs.File.stderr().writer(&.{});
+        var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
         const stderr = &stderr_writer.interface;
         stderr.print("M_Episode: 4th episode requires UltimateDOOM\n", .{}) catch {};
         epi = 0;
@@ -1006,7 +1005,7 @@ fn M_ChangeDetail(choice: c_int) void {
     detailLevel = 1 - detailLevel;
 
     // FIXME - does not work. Remove anyway?
-    var stderr_writer = std.fs.File.stderr().writer(&.{});
+    var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
     const stderr = &stderr_writer.interface;
     stderr.print("M_ChangeDetail: low detail mode n.a.\n", .{}) catch {};
 

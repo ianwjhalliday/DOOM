@@ -1,4 +1,5 @@
 const std = @import("std");
+const i_system = @import("i_system.zig");
 const m_swap = @import("m_swap.zig");
 const LONG = m_swap.LONG;
 const I_Error = @import("i_system.zig").I_Error;
@@ -35,12 +36,12 @@ var lumpcache: []?*anyopaque = undefined;
 var reloadlump: usize = 0;
 var reloadname: ?[]const u8 = null;
 
-fn filelength(handle: std.posix.fd_t) c_int {
-    const fileinfo = std.posix.fstat(handle) catch {
+fn filelength(file: std.Io.File) c_int {
+    const length = file.length(i_system.io) catch {
         I_Error("Error fstating");
     };
 
-    return @intCast(fileinfo.size);
+    return @intCast(length);
 }
 
 fn ExtractFileBase(path: []const u8, dest: []u8) void {
@@ -94,9 +95,9 @@ pub fn W_AddFile(_filename: []const u8) void {
         break :blk _filename[1..];
     } else _filename;
 
-    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
     const stdout = &stdout_writer.interface;
-    const handle = std.posix.open(filename, .{ .ACCMODE = .RDONLY }, 0) catch {
+    const file = std.Io.Dir.cwd().openFile(i_system.io, filename, .{}) catch {
         stdout.print(" couldn't open {s}\n", .{filename}) catch {};
         return;
     };
@@ -114,13 +115,13 @@ pub fn W_AddFile(_filename: []const u8) void {
         // single lump file
         fileinfo = @as(*[1]FileLump, &singleinfo);
         singleinfo.filepos = 0;
-        singleinfo.size = filelength(handle);
+        singleinfo.size = filelength(file);
         ExtractFileBase(filename, &singleinfo.name);
         numlumps += 1;
     } else {
         // WAD file
         var header_bytes: [@sizeOf(WadInfo)]u8 = undefined;
-        _ = std.posix.read(handle, &header_bytes) catch {
+        _ = file.readPositionalAll(i_system.io, &header_bytes, 0) catch {
             I_Error("Failed to read WAD header");
         };
         var header = std.mem.bytesAsValue(WadInfo, &header_bytes);
@@ -140,10 +141,7 @@ pub fn W_AddFile(_filename: []const u8) void {
             I_Error("W_AddFile: Alloc lumps failed. numlumps = %d", header.numlumps);
         };
 
-        _ = std.posix.lseek_SET(handle, @intCast(header.infotableofs)) catch {
-            I_Error("W_AddFile: Failed lseek_SET");
-        };
-        _ = std.posix.read(handle, std.mem.sliceAsBytes(fileinfo)) catch {
+        _ = file.readPositionalAll(i_system.io, std.mem.sliceAsBytes(fileinfo), @intCast(header.infotableofs)) catch {
             I_Error("Failed to read WAD lump infos");
         };
 
@@ -156,7 +154,7 @@ pub fn W_AddFile(_filename: []const u8) void {
     };
     lumpinfo = lumpinfo_slice.ptr;
 
-    const storehandle = if (reloadname != null) -1 else handle;
+    const storehandle = if (reloadname != null) -1 else file.handle;
 
     for (startlump..numlumps) |i| {
         lumpinfo_slice[i].handle = storehandle;
@@ -166,7 +164,7 @@ pub fn W_AddFile(_filename: []const u8) void {
     }
 
     if (reloadname != null) {
-        _ = std.c.close(handle);
+        file.close(i_system.io);
     }
 }
 
@@ -180,13 +178,13 @@ pub fn W_AddFile(_filename: []const u8) void {
 pub fn W_Reload() void {
     if (reloadname == null) return;
 
-    const handle = std.posix.open(reloadname.?, .{ .ACCMODE = .RDONLY }, 0) catch {
+    const file = std.Io.Dir.cwd().openFile(i_system.io, reloadname.?, .{}) catch {
         const reloadnameZ = std.heap.c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
         I_Error("W_Reload: couldn't open %s", reloadnameZ.ptr);
     };
 
     var header_bytes: [@sizeOf(WadInfo)]u8 = undefined;
-    _ = std.posix.read(handle, &header_bytes) catch {
+    _ = file.readPositionalAll(i_system.io, &header_bytes, 0) catch {
         I_Error("W_Reload: Failed to read WAD header");
     };
     var header = std.mem.bytesAsValue(WadInfo, &header_bytes);
@@ -201,10 +199,7 @@ pub fn W_Reload() void {
         I_Error("W_Reload: Alloc lumps failed. numlumps = %d", header.numlumps);
     };
 
-    _ = std.posix.lseek_SET(handle, @intCast(header.infotableofs)) catch {
-        I_Error("W_Reload: Failed lseek_SET");
-    };
-    _ = std.posix.read(handle, std.mem.sliceAsBytes(fileinfo)) catch {
+    _ = file.readPositionalAll(i_system.io, std.mem.sliceAsBytes(fileinfo), @intCast(header.infotableofs)) catch {
         I_Error("W_Reload: Failed to read WAD lump infos");
     };
 
@@ -217,7 +212,7 @@ pub fn W_Reload() void {
         lumpinfo_slice[i].size = LONG(fileinfo[i - reloadlump].size);
     }
 
-    std.posix.close(handle);
+    file.close(i_system.io);
 }
 
 
@@ -331,28 +326,21 @@ pub export fn W_ReadLump(lump: c_int, dest: *anyopaque) void {
 
     const l = lumpinfo_slice[@intCast(lump)];
 
-    const handle = if (l.handle == -1) blk: {
+    const file: std.Io.File = if (l.handle == -1) blk: {
         // reloadable file, so use open / read / close
-        break :blk std.posix.open(reloadname.?, .{ .ACCMODE = .RDONLY }, 0) catch {
+        break :blk std.Io.Dir.cwd().openFile(i_system.io, reloadname.?, .{}) catch {
             const reloadnameZ = std.heap.c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
             I_Error("W_ReadLump: couldn't open %s", reloadnameZ.ptr);
         };
-    } else l.handle;
+    } else .{ .handle = l.handle, .flags = .{ .nonblocking = false } };
+    defer if (l.handle == -1) file.close(i_system.io);
 
-    _ = std.posix.lseek_SET(handle, @intCast(l.position)) catch {
-        const reloadnameZ = std.heap.c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
-        I_Error("W_ReadLump: couldn't lseek %s", reloadnameZ.ptr);
-    };
     // TODO: Change `dest` to a slice and fix callers to W_ReadLump to pass length of buffer (as slice)
-    // const c = std.posix.read(handle, dest);
-    const c = std.c.read(handle, @ptrCast(dest), @intCast(l.size));
+    const buffer = @as([*]u8, @ptrCast(dest))[0..@intCast(l.size)];
+    const count = file.readPositionalAll(i_system.io, buffer, @intCast(l.position)) catch 0;
 
-    if (c < l.size) {
-        I_Error("W_ReadLump: only read %i of %i bytes of lump %i", c, l.size, lump);
-    }
-
-    if (l.handle == -1) {
-        std.posix.close(handle);
+    if (count < l.size) {
+        I_Error("W_ReadLump: only read %i of %i bytes of lump %i", @as(c_int, @intCast(count)), l.size, lump);
     }
 }
 

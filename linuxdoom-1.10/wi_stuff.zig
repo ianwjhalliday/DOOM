@@ -4,6 +4,7 @@ const c = @cImport({
 });
 
 const std = @import("std");
+const i_system = @import("i_system.zig");
 
 const doomdef = @import("doomdef.zig");
 const MAXPLAYERS = doomdef.MAXPLAYERS;
@@ -432,7 +433,7 @@ fn WI_drawOnLnode(n: usize, cp: [*]*patch_t) void {
         V_DrawPatch(lnode.x, lnode.y, FB, cp[i]);
     } else {
         // DEBUG
-        var stderr_writer = std.fs.File.stderr().writer(&.{});
+        var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
         const stderr = &stderr_writer.interface;
         stderr.print("Could not place patch on level {d}\n", .{n + 1}) catch {};
     }

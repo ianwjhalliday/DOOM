@@ -6,6 +6,7 @@ const c = @cImport({
 });
 
 const std = @import("std");
+const i_system = @import("i_system.zig");
 
 const doomstat = @import("doomstat.zig");
 
@@ -96,7 +97,7 @@ export var numChannels: c_int = undefined;
 //  allocates channel buffer, sets S_sfx lookup.
 //
 pub fn S_Init(sfxVolume: c_int, musicVolume: c_int) void {
-    var stderr_writer = std.fs.File.stderr().writer(&.{});
+    var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
     const stderr = &stderr_writer.interface;
     stderr.print("S_Init: default sfx volume {}\n", .{sfxVolume}) catch {};
 

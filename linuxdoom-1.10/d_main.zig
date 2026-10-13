@@ -23,7 +23,6 @@ extern fn I_SubmitSound() void;
 
 const std = @import("std");
 const fmt = std.fmt;
-const posix = std.posix;
 const M_CheckParm = @import("m_argv.zig").M_CheckParm;
 const M_LoadDefaults = @import("m_misc.zig").M_LoadDefaults;
 const z_zone = @import("z_zone.zig");
@@ -346,7 +345,7 @@ fn D_DoomLoop() noreturn {
     if (M_CheckParm("-debugfile") != 0) {
         var buffer: [20]u8 = undefined;
         const filename = fmt.bufPrintZ(&buffer, "debug{}.txt", .{g_game.consoleplayer}) catch unreachable;
-        var stdout_writer = std.fs.File.stdout().writer(&.{});
+        var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
         const stdout = &stdout_writer.interface;
         stdout.print("debug output to: {s}\n", .{filename}) catch unreachable;
         debugfile = std.c.fopen(filename, "w");
@@ -505,7 +504,7 @@ fn IdentifyVersion() void {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    const doomwaddir = posix.getenv("DOOMWADDIR") orelse ".";
+    const doomwaddir = i_system.environ_map.get("DOOMWADDIR") orelse ".";
 
     // Commercial.
     const doom2wad = fmt.allocPrint(allocator, "{s}/doom2.wad", .{doomwaddir}) catch unreachable;
@@ -526,7 +525,7 @@ fn IdentifyVersion() void {
     // French stuff.
     const doom2fwad = fmt.allocPrint(allocator, "{s}/doom2f.wad", .{doomwaddir}) catch unreachable;
 
-    const home = posix.getenv("HOME") orelse {
+    const home = i_system.environ_map.get("HOME") orelse {
         I_Error("Please set $HOME to your home directory");
     };
     _ = fmt.bufPrintZ(&basedefault, "{s}/.doomrc", .{home}) catch unreachable;
@@ -563,10 +562,10 @@ fn IdentifyVersion() void {
         return;
     }
 
-    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
     const stdout = &stdout_writer.interface;
 
-    if (posix.access(doom2fwad, posix.R_OK)) {
+    if (std.Io.Dir.cwd().access(i_system.io, doom2fwad, .{ .read = true })) {
         doomstat.gamemode = .Commercial;
         // C'est ridicule!
         // Let's handle languages in config files, okay?
@@ -576,37 +575,37 @@ fn IdentifyVersion() void {
         return;
     } else |_| {}
 
-    if (posix.access(doom2wad, posix.R_OK)) {
+    if (std.Io.Dir.cwd().access(i_system.io, doom2wad, .{ .read = true })) {
         doomstat.gamemode = .Commercial;
         D_AddFile(doom2wad);
         return;
     } else |_| {}
 
-    if (posix.access(plutoniawad, posix.R_OK)) {
+    if (std.Io.Dir.cwd().access(i_system.io, plutoniawad, .{ .read = true })) {
         doomstat.gamemode = .Commercial;
         D_AddFile(plutoniawad);
         return;
     } else |_| {}
 
-    if (posix.access(tntwad, posix.R_OK)) {
+    if (std.Io.Dir.cwd().access(i_system.io, tntwad, .{ .read = true })) {
         doomstat.gamemode = .Commercial;
         D_AddFile(tntwad);
         return;
     } else |_| {}
 
-    if (posix.access(doomuwad, posix.R_OK)) {
+    if (std.Io.Dir.cwd().access(i_system.io, doomuwad, .{ .read = true })) {
         doomstat.gamemode = .Retail;
         D_AddFile(doomuwad);
         return;
     } else |_| {}
 
-    if (posix.access(doomwad, posix.R_OK)) {
+    if (std.Io.Dir.cwd().access(i_system.io, doomwad, .{ .read = true })) {
         doomstat.gamemode = .Registered;
         D_AddFile(doomwad);
         return;
     } else |_| {}
 
-    if (posix.access(doom1wad, posix.R_OK)) {
+    if (std.Io.Dir.cwd().access(i_system.io, doom1wad, .{ .read = true })) {
         doomstat.gamemode = .Shareware;
         D_AddFile(doom1wad);
         return;
@@ -629,7 +628,7 @@ extern var myargc: c_int;
 extern var myargv: [*c][*c]u8;
 
 fn FindResponseFile() void {
-    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
     const stdout = &stdout_writer.interface;
     const MAXARGVS = 100;
 
@@ -640,14 +639,11 @@ fn FindResponseFile() void {
 
             // READ THE RESPONSE FILE INTO MEMORY
             const responsefile = std.mem.span(myargv[i] + 1);
-            const handle = posix.open(responsefile, .{ .ACCMODE = .RDONLY }, 0) catch {
+            const file = std.Io.Dir.cwd().readFileAlloc(i_system.io, responsefile, std.heap.c_allocator, .unlimited) catch {
                 I_Error("\nNo such response file!");
             };
             stdout.print("Found response file {s}!\n", .{responsefile}) catch unreachable;
-            const size = (posix.fstat(handle) catch unreachable).size;
-            const file = std.heap.c_allocator.alloc(u8, @intCast(size)) catch unreachable;
-            _ = posix.read(handle, file) catch unreachable;
-            posix.close(handle);
+            const size = file.len;
 
             // KEEP ALL CMDLINE ARGS FOLLOWING @RESPONSEFILE ARG
             const originalargv = myargv;
@@ -747,7 +743,7 @@ pub fn D_DoomMain() noreturn {
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
     };
 
-    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
     const stdout = &stdout_writer.interface;
     stdout.print("{s}\n", .{title}) catch unreachable;
 
@@ -757,7 +753,7 @@ pub fn D_DoomMain() noreturn {
 
     if (M_CheckParm("-cdrom") != 0) {
         stdout.print("{s}", .{c.D_CDROM}) catch unreachable;
-        std.fs.makeDirAbsolute("c:\\doomdata") catch unreachable;
+        std.Io.Dir.createDirAbsolute(i_system.io, "c:\\doomdata", .default_dir) catch unreachable;
         _ = fmt.bufPrintZ(&basedefault, "{s}", .{"c:/doomdata/default.cfg"}) catch unreachable;
     }
 

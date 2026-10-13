@@ -5,9 +5,8 @@ const c = @cImport({
 });
 
 const std = @import("std");
-const fs = std.fs;
+const i_system = @import("i_system.zig");
 const mem = std.mem;
-const posix = std.posix;
 const zone = @import("z_zone.zig");
 const g_game = @import("g_game.zig");
 const hu_stuff = @import("hu_stuff.zig");
@@ -28,19 +27,9 @@ extern var basedefault: [1023:0]u8;
 // M_WriteFile
 //
 pub fn M_WriteFile(name: []const u8, source: []const u8) bool {
-    const flags: posix.O = .{ .ACCMODE = .WRONLY, .CREAT = true, .TRUNC = true };
-    const handle = posix.open(name, flags, 0o666) catch {
+    std.Io.Dir.cwd().writeFile(i_system.io, .{ .sub_path = name, .data = source }) catch {
         return false;
     };
-    defer posix.close(handle);
-
-    const count = posix.write(handle, source) catch {
-        return false;
-    };
-    if (count < source.len) {
-        return false;
-    }
-
     return true;
 }
 
@@ -49,18 +38,17 @@ pub fn M_WriteFile(name: []const u8, source: []const u8) bool {
 // M_ReadFile
 //
 pub fn M_ReadFile(name: []const u8) []u8 {
-    const handle = posix.open(name, .{ .ACCMODE = .RDONLY }, 0o666) catch {
+    const file = std.Io.Dir.cwd().openFile(i_system.io, name, .{}) catch {
         I_Error("Couldn't read file %s", name.ptr);
     };
+    defer file.close(i_system.io);
 
-    const fileinfo = posix.fstat(handle) catch {
+    const length = file.length(i_system.io) catch {
         I_Error("Couldn't read file %s", name.ptr);
     };
-
-    const length: c_int = @intCast(fileinfo.size);
     const buf = zone.alloc(u8, @intCast(length), .Static, null);
 
-    const count = posix.read(handle, buf) catch {
+    const count = file.readPositionalAll(i_system.io, buf, 0) catch {
         I_Error("Couldn't read file %s", name.ptr);
     };
     if (count < length) {
@@ -190,17 +178,17 @@ var defaultfile: []const u8 = undefined;
 // M_SaveDefaults
 //
 pub fn M_SaveDefaults() void {
-    var stderr_writer = std.fs.File.stderr().writer(&.{});
+    var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
     const stderr = &stderr_writer.interface;
     stderr.print("M_SaveDefaults: Saving to '{s}'\n", .{defaultfile}) catch {};
 
-    const f = fs.cwd().createFile(defaultfile, .{}) catch {
+    const f = std.Io.Dir.cwd().createFile(i_system.io, defaultfile, .{}) catch {
         return; // can't write the file, but don't complain
     };
-    defer f.close();
+    defer f.close(i_system.io);
 
     var buffer: [1024]u8 = undefined;
-    var file_writer = f.writer(&buffer);
+    var file_writer = f.writer(i_system.io, &buffer);
     const st = &file_writer.interface;
     defer st.flush() catch {};
 
@@ -228,22 +216,22 @@ pub fn M_LoadDefaults() void {
     const arg_i: usize = @intCast(M_CheckParm("-config"));
     if (arg_i > 0 and arg_i < m_argv.myargc - 1) {
         defaultfile = mem.span(m_argv.myargv[arg_i + 1]);
-        var stdout_writer = std.fs.File.stdout().writer(&.{});
+        var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
         stdout_writer.interface.print("\tdefault file: {s}\n", .{defaultfile}) catch {};
     } else {
         defaultfile = mem.span(@as([*:0]u8, &basedefault));
     }
 
-    var stderr_writer = std.fs.File.stderr().writer(&.{});
+    var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
     const stderr = &stderr_writer.interface;
 
     // read the file in, overriding any set defaults
-    if (fs.cwd().openFile(defaultfile, .{})) |f| {
-        defer f.close();
+    if (std.Io.Dir.cwd().openFile(i_system.io, defaultfile, .{})) |f| {
+        defer f.close(i_system.io);
 
         // Lines longer than the buffer are an error (StreamTooLong).
         var buffer: [256]u8 = undefined;
-        var file_reader = f.reader(&buffer);
+        var file_reader = f.reader(i_system.io, &buffer);
         const st = &file_reader.interface;
 
         while (true) {
@@ -370,7 +358,7 @@ pub fn M_ScreenShot() void {
     var name: []u8 = undefined;
     for (0..100) |i| {
         name = std.fmt.bufPrint(&lbmname, "DOOM{d:0>2}.pcx", .{i}) catch unreachable;
-        posix.access(name, 0) catch {
+        std.Io.Dir.cwd().access(i_system.io, name, .{}) catch {
             break;  // file doesn't exist
         };
     } else {
