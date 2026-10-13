@@ -61,7 +61,7 @@ pub fn build(b: *std.Build) void {
 
     exe.defineCMacro("NORMALUNIX", null);
     exe.defineCMacro("LINUX", null);
-    exe.addCSourceFiles(&c_files, &cflags);
+    exe.addCSourceFiles(.{ .files = &c_files, .flags = &cflags });
     inline for (zig_files) |file| {
         const o = b.addObject(.{
             .name = file,

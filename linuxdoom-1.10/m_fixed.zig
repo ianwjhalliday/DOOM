@@ -14,8 +14,8 @@ pub export fn FixedMul(a: fixed_t, b: fixed_t) fixed_t {
 }
 
 pub export fn FixedDiv(a : fixed_t, b: fixed_t) fixed_t {
-    const abs_a = math.absInt(a) catch math.maxInt(fixed_t);
-    const abs_b = math.absInt(b) catch math.maxInt(fixed_t);
+    const abs_a = @min(@abs(a), math.maxInt(fixed_t));
+    const abs_b = @min(@abs(b), math.maxInt(fixed_t));
 
     if (abs_a >> 14 >= abs_b) {
         return if (a^b < 0) math.minInt(fixed_t) else math.maxInt(fixed_t);

@@ -23,7 +23,7 @@ extern fn I_SubmitSound() void;
 
 const std = @import("std");
 const fmt = std.fmt;
-const os = std.os;
+const posix = std.posix;
 const M_CheckParm = @import("m_argv.zig").M_CheckParm;
 const M_LoadDefaults = @import("m_misc.zig").M_LoadDefaults;
 const z_zone = @import("z_zone.zig");
@@ -504,7 +504,7 @@ fn IdentifyVersion() void {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    const doomwaddir = os.getenv("DOOMWADDIR") orelse ".";
+    const doomwaddir = posix.getenv("DOOMWADDIR") orelse ".";
 
     // Commercial.
     const doom2wad = fmt.allocPrint(allocator, "{s}/doom2.wad", .{doomwaddir}) catch unreachable;
@@ -525,7 +525,7 @@ fn IdentifyVersion() void {
     // French stuff.
     const doom2fwad = fmt.allocPrint(allocator, "{s}/doom2f.wad", .{doomwaddir}) catch unreachable;
 
-    const home = os.getenv("HOME") orelse {
+    const home = posix.getenv("HOME") orelse {
         I_Error("Please set $HOME to your home directory");
     };
     _ = fmt.bufPrintZ(&basedefault, "{s}/.doomrc", .{home}) catch unreachable;
@@ -564,7 +564,7 @@ fn IdentifyVersion() void {
 
     const stdout = std.io.getStdOut().writer();
 
-    if (os.access(doom2fwad, os.R_OK)) {
+    if (posix.access(doom2fwad, posix.R_OK)) {
         doomstat.gamemode = .Commercial;
         // C'est ridicule!
         // Let's handle languages in config files, okay?
@@ -574,37 +574,37 @@ fn IdentifyVersion() void {
         return;
     } else |_| {}
 
-    if (os.access(doom2wad, os.R_OK)) {
+    if (posix.access(doom2wad, posix.R_OK)) {
         doomstat.gamemode = .Commercial;
         D_AddFile(doom2wad);
         return;
     } else |_| {}
 
-    if (os.access(plutoniawad, os.R_OK)) {
+    if (posix.access(plutoniawad, posix.R_OK)) {
         doomstat.gamemode = .Commercial;
         D_AddFile(plutoniawad);
         return;
     } else |_| {}
 
-    if (os.access(tntwad, os.R_OK)) {
+    if (posix.access(tntwad, posix.R_OK)) {
         doomstat.gamemode = .Commercial;
         D_AddFile(tntwad);
         return;
     } else |_| {}
 
-    if (os.access(doomuwad, os.R_OK)) {
+    if (posix.access(doomuwad, posix.R_OK)) {
         doomstat.gamemode = .Retail;
         D_AddFile(doomuwad);
         return;
     } else |_| {}
 
-    if (os.access(doomwad, os.R_OK)) {
+    if (posix.access(doomwad, posix.R_OK)) {
         doomstat.gamemode = .Registered;
         D_AddFile(doomwad);
         return;
     } else |_| {}
 
-    if (os.access(doom1wad, os.R_OK)) {
+    if (posix.access(doom1wad, posix.R_OK)) {
         doomstat.gamemode = .Shareware;
         D_AddFile(doom1wad);
         return;
@@ -637,14 +637,14 @@ fn FindResponseFile() void {
 
             // READ THE RESPONSE FILE INTO MEMORY
             const responsefile = std.mem.span(myargv[i] + 1);
-            const handle = os.open(responsefile, os.O.RDONLY, 0) catch {
+            const handle = posix.open(responsefile, .{ .ACCMODE = .RDONLY }, 0) catch {
                 I_Error("\nNo such response file!");
             };
             stdout.print("Found response file {s}!\n", .{responsefile}) catch unreachable;
-            const size = (os.fstat(handle) catch unreachable).size;
+            const size = (posix.fstat(handle) catch unreachable).size;
             const file = std.heap.raw_c_allocator.alloc(u8, @intCast(size)) catch unreachable;
-            _ = os.read(handle, file) catch unreachable;
-            os.close(handle);
+            _ = posix.read(handle, file) catch unreachable;
+            posix.close(handle);
 
             // KEEP ALL CMDLINE ARGS FOLLOWING @RESPONSEFILE ARG
             const originalargv = myargv;

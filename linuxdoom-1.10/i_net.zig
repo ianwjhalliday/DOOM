@@ -9,7 +9,7 @@ const c = @cImport({
 
 const std = @import("std");
 const mem = std.mem;
-const os = std.os;
+const posix = std.posix;
 
 const d_net = @import("d_net.zig");
 const DoomCom = d_net.DoomCom;
@@ -26,18 +26,18 @@ const M_CheckParm = @import("m_argv.zig").M_CheckParm;
 // IPPORT_USERRESERVED + 0x1d
 var DOOMPORT: u16 = 5000 + 0x1d;
 
-var sendsocket: os.socket_t = undefined;
-var insocket: os.socket_t = undefined;
+var sendsocket: posix.socket_t = undefined;
+var insocket: posix.socket_t = undefined;
 
-var sendaddress: [d_net.MAXNETNODES]os.sockaddr.in = undefined;
+var sendaddress: [d_net.MAXNETNODES]posix.sockaddr.in = undefined;
 
 
 //
 // UDPsocket
 //
-fn UDPsocket() os.socket_t {
+fn UDPsocket() posix.socket_t {
     // allocate a socket
-    return os.socket(os.AF.INET, os.SOCK.DGRAM, os.IPPROTO.UDP) catch |err| {
+    return posix.socket(posix.AF.INET, posix.SOCK.DGRAM, posix.IPPROTO.UDP) catch |err| {
         I_Error("can't create socket: %s", @errorName(err).ptr);
     };
 }
@@ -46,13 +46,13 @@ fn UDPsocket() os.socket_t {
 //
 // BindToLocalPort
 //
-fn BindToLocalPort(s: os.socket_t, port: u16) void {
-    const address = os.sockaddr.in{
+fn BindToLocalPort(s: posix.socket_t, port: u16) void {
+    const address = posix.sockaddr.in{
         .port = port,
         .addr = 0,
     };
 
-    os.bind(s, @ptrCast(&address), address.len) catch |err| {
+    posix.bind(s, @ptrCast(&address), address.len) catch |err| {
         I_Error("BindToPort: bind: %s", @errorName(err).ptr);
     };
 }
@@ -79,7 +79,7 @@ fn PacketSend() void {
     }
 
     //std.debug.print("sending {}\n", .{gametic});
-    _ = os.sendto(
+    _ = posix.sendto(
         sendsocket,
         mem.asBytes(&sw)[0..@intCast(d_net.doomcom.datalength)],
         0,
@@ -95,11 +95,11 @@ fn PacketSend() void {
 // PacketGet
 //
 fn PacketGet() void {
-    var fromaddress = os.sockaddr.in{.port = 0, .addr = 0};
-    var sl: os.socklen_t = @sizeOf(os.sockaddr.in);
+    var fromaddress = posix.sockaddr.in{.port = 0, .addr = 0};
+    var sl: posix.socklen_t = @sizeOf(posix.sockaddr.in);
     var sw: DoomData = undefined;
 
-    const rc = os.recvfrom(
+    const rc = posix.recvfrom(
         insocket,
         mem.asBytes(&sw),
         0,
@@ -216,7 +216,7 @@ pub export fn I_InitNetwork() void {
     i += 1; // Not a typo, original C code had i++ before the loop and
             // ++i in the while condition expression
     while (i < m_argv.myargc and m_argv.myargv[@intCast(i)][0] != '-') : (i += 1) {
-        sendaddress[@intCast(d_net.doomcom.numnodes)].family = os.AF.INET;
+        sendaddress[@intCast(d_net.doomcom.numnodes)].family = posix.AF.INET;
         sendaddress[@intCast(d_net.doomcom.numnodes)].port = mem.nativeToBig(u16, DOOMPORT);
         if (m_argv.myargv[@intCast(i)][0] == '.') {
             sendaddress[@intCast(d_net.doomcom.numnodes)].addr
@@ -238,8 +238,8 @@ pub export fn I_InitNetwork() void {
     // build message to receive
     insocket = UDPsocket();
     BindToLocalPort(insocket, mem.nativeToBig(u16, DOOMPORT));
-    const flags = std.c.fcntl(insocket, std.os.F.GETFL);
-    _ = std.c.fcntl(insocket, std.os.F.SETFL, flags | std.os.O.NONBLOCK);
+    const flags = std.c.fcntl(insocket, std.posix.F.GETFL);
+    _ = std.c.fcntl(insocket, std.posix.F.SETFL, flags | @as(c_int, @bitCast(std.posix.O{ .NONBLOCK = true })));
 
     sendsocket = UDPsocket();
 }

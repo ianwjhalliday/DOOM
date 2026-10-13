@@ -473,8 +473,8 @@ fn S_AdjustSoundParams(listener: *mobj_t, source: *mobj_t, vol: *c_int, sep: *c_
     _ = pitch;
     // calculate the distance to sound origin
     //  and clip it if necessary
-    const adx = std.math.absInt(listener.x - source.x) catch unreachable;
-    const ady = std.math.absInt(listener.y - source.y) catch unreachable;
+    const adx: c_int = @intCast(@abs(listener.x - source.x));
+    const ady: c_int = @intCast(@abs(listener.y - source.y));
 
     // From _GG1_ p.428. Appox. eucledian distance fast.
     var approx_dist = adx + ady - ((if (adx < ady) adx else ady) >> 1);

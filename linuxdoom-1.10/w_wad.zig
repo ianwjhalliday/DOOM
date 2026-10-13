@@ -35,8 +35,8 @@ var lumpcache: []?*anyopaque = undefined;
 var reloadlump: usize = 0;
 var reloadname: ?[]const u8 = null;
 
-fn filelength(handle: std.os.fd_t) c_int {
-    const fileinfo = std.os.fstat(handle) catch {
+fn filelength(handle: std.posix.fd_t) c_int {
+    const fileinfo = std.posix.fstat(handle) catch {
         I_Error("Error fstating");
     };
 
@@ -95,7 +95,7 @@ pub fn W_AddFile(_filename: []const u8) void {
     } else _filename;
 
     const stdout = std.io.getStdOut().writer();
-    const handle = std.os.open(filename, std.os.O.RDONLY, 0) catch {
+    const handle = std.posix.open(filename, .{ .ACCMODE = .RDONLY }, 0) catch {
         stdout.print(" couldn't open {s}\n", .{filename}) catch {};
         return;
     };
@@ -119,7 +119,7 @@ pub fn W_AddFile(_filename: []const u8) void {
     } else {
         // WAD file
         var header_bytes: [@sizeOf(WadInfo)]u8 = undefined;
-        _ = std.os.read(handle, &header_bytes) catch {
+        _ = std.posix.read(handle, &header_bytes) catch {
             I_Error("Failed to read WAD header");
         };
         var header = std.mem.bytesAsValue(WadInfo, &header_bytes);
@@ -139,10 +139,10 @@ pub fn W_AddFile(_filename: []const u8) void {
             I_Error("W_AddFile: Alloc lumps failed. numlumps = %d", header.numlumps);
         };
 
-        _ = std.os.lseek_SET(handle, @intCast(header.infotableofs)) catch {
+        _ = std.posix.lseek_SET(handle, @intCast(header.infotableofs)) catch {
             I_Error("W_AddFile: Failed lseek_SET");
         };
-        _ = std.os.read(handle, std.mem.sliceAsBytes(fileinfo)) catch {
+        _ = std.posix.read(handle, std.mem.sliceAsBytes(fileinfo)) catch {
             I_Error("Failed to read WAD lump infos");
         };
 
@@ -179,13 +179,13 @@ pub fn W_AddFile(_filename: []const u8) void {
 pub fn W_Reload() void {
     if (reloadname == null) return;
 
-    const handle = std.os.open(reloadname.?, std.os.O.RDONLY, 0) catch {
+    const handle = std.posix.open(reloadname.?, .{ .ACCMODE = .RDONLY }, 0) catch {
         const reloadnameZ = std.heap.raw_c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
         I_Error("W_Reload: couldn't open %s", reloadnameZ.ptr);
     };
 
     var header_bytes: [@sizeOf(WadInfo)]u8 = undefined;
-    _ = std.os.read(handle, &header_bytes) catch {
+    _ = std.posix.read(handle, &header_bytes) catch {
         I_Error("W_Reload: Failed to read WAD header");
     };
     var header = std.mem.bytesAsValue(WadInfo, &header_bytes);
@@ -200,10 +200,10 @@ pub fn W_Reload() void {
         I_Error("W_Reload: Alloc lumps failed. numlumps = %d", header.numlumps);
     };
 
-    _ = std.os.lseek_SET(handle, @intCast(header.infotableofs)) catch {
+    _ = std.posix.lseek_SET(handle, @intCast(header.infotableofs)) catch {
         I_Error("W_Reload: Failed lseek_SET");
     };
-    _ = std.os.read(handle, std.mem.sliceAsBytes(fileinfo)) catch {
+    _ = std.posix.read(handle, std.mem.sliceAsBytes(fileinfo)) catch {
         I_Error("W_Reload: Failed to read WAD lump infos");
     };
 
@@ -216,7 +216,7 @@ pub fn W_Reload() void {
         lumpinfo_slice[i].size = LONG(fileinfo[i - reloadlump].size);
     }
 
-    std.os.close(handle);
+    std.posix.close(handle);
 }
 
 
@@ -332,18 +332,18 @@ pub export fn W_ReadLump(lump: c_int, dest: *anyopaque) void {
 
     const handle = if (l.handle == -1) blk: {
         // reloadable file, so use open / read / close
-        break :blk std.os.open(reloadname.?, std.os.O.RDONLY, 0) catch {
+        break :blk std.posix.open(reloadname.?, .{ .ACCMODE = .RDONLY }, 0) catch {
             const reloadnameZ = std.heap.raw_c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
             I_Error("W_ReadLump: couldn't open %s", reloadnameZ.ptr);
         };
     } else l.handle;
 
-    _ = std.os.lseek_SET(handle, @intCast(l.position)) catch {
+    _ = std.posix.lseek_SET(handle, @intCast(l.position)) catch {
         const reloadnameZ = std.heap.raw_c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
         I_Error("W_ReadLump: couldn't lseek %s", reloadnameZ.ptr);
     };
     // TODO: Change `dest` to a slice and fix callers to W_ReadLump to pass length of buffer (as slice)
-    // const c = std.os.read(handle, dest);
+    // const c = std.posix.read(handle, dest);
     const c = std.c.read(handle, @ptrCast(dest), @intCast(l.size));
 
     if (c < l.size) {
@@ -351,7 +351,7 @@ pub export fn W_ReadLump(lump: c_int, dest: *anyopaque) void {
     }
 
     if (l.handle == -1) {
-        std.os.close(handle);
+        std.posix.close(handle);
     }
 }
 

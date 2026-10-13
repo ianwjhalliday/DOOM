@@ -8,7 +8,7 @@ const std = @import("std");
 const fs = std.fs;
 const io = std.io;
 const mem = std.mem;
-const os = std.os;
+const posix = std.posix;
 const zone = @import("z_zone.zig");
 const g_game = @import("g_game.zig");
 const hu_stuff = @import("hu_stuff.zig");
@@ -29,13 +29,13 @@ extern var basedefault: [1023:0]u8;
 // M_WriteFile
 //
 pub fn M_WriteFile(name: []const u8, source: []const u8) bool {
-    const flags = os.O.WRONLY | os.O.CREAT | os.O.TRUNC;
-    const handle = os.open(name, flags, 0o666) catch {
+    const flags: posix.O = .{ .ACCMODE = .WRONLY, .CREAT = true, .TRUNC = true };
+    const handle = posix.open(name, flags, 0o666) catch {
         return false;
     };
-    defer os.close(handle);
+    defer posix.close(handle);
 
-    const count = os.write(handle, source) catch {
+    const count = posix.write(handle, source) catch {
         return false;
     };
     if (count < source.len) {
@@ -50,18 +50,18 @@ pub fn M_WriteFile(name: []const u8, source: []const u8) bool {
 // M_ReadFile
 //
 pub fn M_ReadFile(name: []const u8) []u8 {
-    const handle = os.open(name, os.O.RDONLY, 0o666) catch {
+    const handle = posix.open(name, .{ .ACCMODE = .RDONLY }, 0o666) catch {
         I_Error("Couldn't read file %s", name.ptr);
     };
 
-    const fileinfo = os.fstat(handle) catch {
+    const fileinfo = posix.fstat(handle) catch {
         I_Error("Couldn't read file %s", name.ptr);
     };
 
     const length: c_int = @intCast(fileinfo.size);
     const buf = zone.alloc(u8, @intCast(length), .Static, null);
 
-    const count = os.read(handle, buf) catch {
+    const count = posix.read(handle, buf) catch {
         I_Error("Couldn't read file %s", name.ptr);
     };
     if (count < length) {
@@ -371,7 +371,7 @@ pub fn M_ScreenShot() void {
     var name: []u8 = undefined;
     for (0..100) |i| {
         name = std.fmt.bufPrint(&lbmname, "DOOM{d:0>2}.pcx", .{i}) catch unreachable;
-        os.access(name, 0) catch {
+        posix.access(name, 0) catch {
             break;  // file doesn't exist
         };
     } else {
