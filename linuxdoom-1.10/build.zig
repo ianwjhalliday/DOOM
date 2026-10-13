@@ -65,22 +65,22 @@ pub fn build(b: *std.Build) void {
     inline for (zig_files) |file| {
         const o = b.addObject(.{
             .name = file,
-            .root_source_file = .{ .path = file ++ ".zig" },
+            .root_source_file = b.path(file ++ ".zig"),
             .optimize = optimize,
             .target = target,
         });
-        o.addIncludePath(.{ .path = "." });
-        o.addSystemIncludePath(.{ .path = "/usr/local/include" });
-        o.addSystemIncludePath(.{ .path = "/opt/homebrew/include" }); // Homebrew on Apple Silicon
+        o.addIncludePath(b.path("."));
+        o.addSystemIncludePath(.{ .cwd_relative = "/usr/local/include" });
+        o.addSystemIncludePath(.{ .cwd_relative = "/opt/homebrew/include" }); // Homebrew on Apple Silicon
         // TODO: Properly find and setup system include paths per platform
-        o.addSystemIncludePath(.{ .path = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include" });
-        o.addFrameworkPath(.{ .path = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks" });
+        o.addSystemIncludePath(.{ .cwd_relative = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include" });
+        o.addFrameworkPath(.{ .cwd_relative = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks" });
 
         exe.addObject(o);
     }
     exe.linkLibC();
-    exe.addLibraryPath(.{ .path = "/usr/local/lib" });
-    exe.addLibraryPath(.{ .path = "/opt/homebrew/lib" }); // Homebrew on Apple Silicon
+    exe.addLibraryPath(.{ .cwd_relative = "/usr/local/lib" });
+    exe.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" }); // Homebrew on Apple Silicon
     exe.linkSystemLibrary("glfw3");
     // TODO: MacOS only frameworks
     exe.linkFramework("Cocoa");
