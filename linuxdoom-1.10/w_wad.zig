@@ -58,7 +58,7 @@ fn ExtractFileBase(path: []const u8, dest: []u8) void {
     while (i < path.len and path[i] != '.') {
         length += 1;
         if (length == 9) {
-            const pathZ = std.heap.raw_c_allocator.dupeZ(u8, path) catch unreachable;
+            const pathZ = std.heap.c_allocator.dupeZ(u8, path) catch unreachable;
             I_Error("Filename base of %s >8 chars", pathZ.ptr);
         }
 
@@ -106,7 +106,7 @@ pub fn W_AddFile(_filename: []const u8) void {
     var singleinfo: FileLump = undefined;
     var fileinfo: []FileLump = undefined;
 
-    var arena = std.heap.ArenaAllocator.init(std.heap.raw_c_allocator);
+    var arena = std.heap.ArenaAllocator.init(std.heap.c_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
 
@@ -127,7 +127,7 @@ pub fn W_AddFile(_filename: []const u8) void {
         if (!std.mem.eql(u8, &header.identification, "IWAD")) {
             // Homebrew levels?
             if (!std.mem.eql(u8, &header.identification, "PWAD")) {
-                const filenameZ = std.heap.raw_c_allocator.dupeZ(u8, filename) catch unreachable;
+                const filenameZ = std.heap.c_allocator.dupeZ(u8, filename) catch unreachable;
                 I_Error("Wad file %s doesn't have IWAD or PWAD id", filenameZ.ptr);
             }
 
@@ -151,7 +151,7 @@ pub fn W_AddFile(_filename: []const u8) void {
     }
 
     // Fill in lumpinfo
-    lumpinfo_slice = std.heap.raw_c_allocator.realloc(lumpinfo_slice, @sizeOf(LumpInfo) * numlumps) catch {
+    lumpinfo_slice = std.heap.c_allocator.realloc(lumpinfo_slice, @sizeOf(LumpInfo) * numlumps) catch {
         I_Error("Couldn't realloc lumpinfo");
     };
     lumpinfo = lumpinfo_slice.ptr;
@@ -181,7 +181,7 @@ pub fn W_Reload() void {
     if (reloadname == null) return;
 
     const handle = std.posix.open(reloadname.?, .{ .ACCMODE = .RDONLY }, 0) catch {
-        const reloadnameZ = std.heap.raw_c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
+        const reloadnameZ = std.heap.c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
         I_Error("W_Reload: couldn't open %s", reloadnameZ.ptr);
     };
 
@@ -193,7 +193,7 @@ pub fn W_Reload() void {
     header.numlumps = LONG(header.numlumps);
     header.infotableofs = LONG(header.infotableofs);
 
-    var arena = std.heap.ArenaAllocator.init(std.heap.raw_c_allocator);
+    var arena = std.heap.ArenaAllocator.init(std.heap.c_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
 
@@ -239,7 +239,7 @@ pub fn W_InitMultipleFiles(filenames: [][]const u8) void {
     numlumps = 0;
 
     // will be reallocated as lumps are added
-    lumpinfo_slice = std.heap.raw_c_allocator.alloc(LumpInfo, 0) catch {
+    lumpinfo_slice = std.heap.c_allocator.alloc(LumpInfo, 0) catch {
         I_Error("W_InitFiles: failed to allocate initial lumpinfo_slice");
     };
 
@@ -252,7 +252,7 @@ pub fn W_InitMultipleFiles(filenames: [][]const u8) void {
     }
 
     // set up caching
-    lumpcache = std.heap.raw_c_allocator.alloc(?*anyopaque, numlumps) catch {
+    lumpcache = std.heap.c_allocator.alloc(?*anyopaque, numlumps) catch {
         I_Error("Couldn't allocate lumpcache");
     };
 
@@ -334,13 +334,13 @@ pub export fn W_ReadLump(lump: c_int, dest: *anyopaque) void {
     const handle = if (l.handle == -1) blk: {
         // reloadable file, so use open / read / close
         break :blk std.posix.open(reloadname.?, .{ .ACCMODE = .RDONLY }, 0) catch {
-            const reloadnameZ = std.heap.raw_c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
+            const reloadnameZ = std.heap.c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
             I_Error("W_ReadLump: couldn't open %s", reloadnameZ.ptr);
         };
     } else l.handle;
 
     _ = std.posix.lseek_SET(handle, @intCast(l.position)) catch {
-        const reloadnameZ = std.heap.raw_c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
+        const reloadnameZ = std.heap.c_allocator.dupeZ(u8, reloadname.?) catch unreachable;
         I_Error("W_ReadLump: couldn't lseek %s", reloadnameZ.ptr);
     };
     // TODO: Change `dest` to a slice and fix callers to W_ReadLump to pass length of buffer (as slice)

@@ -265,7 +265,7 @@ pub fn M_LoadDefaults() void {
 
             if (value[0] == '"') {
                 // get a string default
-                const s = std.heap.raw_c_allocator.dupe(u8, value[1..value.len-1]) catch unreachable;
+                const s = std.heap.c_allocator.dupe(u8, value[1..value.len-1]) catch unreachable;
                 default.d.str.location.* = s;
             } else {
                 // assume an integer default

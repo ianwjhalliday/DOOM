@@ -167,7 +167,7 @@ fn PacketGet() void {
 pub export fn I_InitNetwork() void {
     // struct hostent*     hostentry;      // host information entry
 
-    d_net.doomcom = std.heap.raw_c_allocator.create(DoomCom) catch unreachable;
+    d_net.doomcom = std.heap.c_allocator.create(DoomCom) catch unreachable;
     d_net.doomcom.* = std.mem.zeroes(DoomCom);
 
     // set up for network

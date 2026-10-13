@@ -490,7 +490,7 @@ fn D_AddFile(file: []const u8) void {
         I_Error("Too many wadfiles\n");
     }
 
-    const newfile = std.heap.raw_c_allocator.dupe(u8, file) catch unreachable;
+    const newfile = std.heap.c_allocator.dupe(u8, file) catch unreachable;
     wadfiles[numwadfiles - 1] = newfile;
 }
 
@@ -501,7 +501,7 @@ fn D_AddFile(file: []const u8) void {
 // should be executed (notably loading PWAD's).
 //
 fn IdentifyVersion() void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.raw_c_allocator);
+    var arena = std.heap.ArenaAllocator.init(std.heap.c_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
 
@@ -645,7 +645,7 @@ fn FindResponseFile() void {
             };
             stdout.print("Found response file {s}!\n", .{responsefile}) catch unreachable;
             const size = (posix.fstat(handle) catch unreachable).size;
-            const file = std.heap.raw_c_allocator.alloc(u8, @intCast(size)) catch unreachable;
+            const file = std.heap.c_allocator.alloc(u8, @intCast(size)) catch unreachable;
             _ = posix.read(handle, file) catch unreachable;
             posix.close(handle);
 
@@ -653,7 +653,7 @@ fn FindResponseFile() void {
             const originalargv = myargv;
 
             // TODO: assign to `myargs`
-            myargv = (std.heap.raw_c_allocator.alloc([*c]u8, MAXARGVS) catch unreachable).ptr;
+            myargv = (std.heap.c_allocator.alloc([*c]u8, MAXARGVS) catch unreachable).ptr;
             @memset(myargv[0 .. MAXARGVS - 1], 0);
 
             const infile = @as([*]u8, @ptrCast(file));

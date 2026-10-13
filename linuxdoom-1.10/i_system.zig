@@ -46,7 +46,7 @@ pub export fn I_BaseTiccmd() *const TicCmd {
 
 pub fn I_ZoneBase(size: *c_int) [*]u8 {
     size.* = mb_used*1024*1024;
-    if (std.heap.raw_c_allocator.alloc(u8, @intCast(size.*))) |p| {
+    if (std.heap.c_allocator.alloc(u8, @intCast(size.*))) |p| {
         return p.ptr;
     } else |_| {
         I_Error("I_ZoneBase: Failed to allocate zone memory\n");
@@ -86,7 +86,7 @@ pub fn I_WaitVBL(count: c_int) void {
 // Allocates from low memory under dos,
 // just mallocs under unix
 pub fn I_AllocLow(length: c_int) ?[*]u8 {
-    if (std.heap.raw_c_allocator.alloc(u8, @intCast(length))) |p| {
+    if (std.heap.c_allocator.alloc(u8, @intCast(length))) |p| {
         @memset(p, 0);
         return p.ptr;
     } else |_| {
