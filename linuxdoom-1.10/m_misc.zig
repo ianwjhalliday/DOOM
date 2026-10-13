@@ -6,7 +6,6 @@ const c = @cImport({
 
 const std = @import("std");
 const fs = std.fs;
-const io = std.io;
 const mem = std.mem;
 const posix = std.posix;
 const zone = @import("z_zone.zig");

@@ -10,7 +10,6 @@ const c = @cImport({
 
 const std = @import("std");
 const fmt = std.fmt;
-const io = std.io;
 const mem = std.mem;
 const posix = std.posix;
 
