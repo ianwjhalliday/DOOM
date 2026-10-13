@@ -1148,7 +1148,7 @@ fn M_WriteText(x: u16, y: u16, string: [*:0]const u8) void {
             break;
         }
 
-        c.V_DrawPatch(cx, cy, 0, @ptrCast(hu_stuff.hu_font[@intCast(fch)]));
+        c.V_DrawPatch(cx, cy, 0, hu_stuff.hu_font[@intCast(fch)]);
         cx += w;
     }
 }

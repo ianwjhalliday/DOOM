@@ -628,7 +628,7 @@ pub export fn G_Ticker() void {
         if (playeringame[i] != c.false) {
             const cmd = &players[i].cmd;
 
-            cmd.* = @as(*@TypeOf(players[i].cmd), @ptrCast(&d_net.netcmds[i][buf])).*;
+            cmd.* = d_net.netcmds[i][buf];
 
             if (demoplayback != c.false) {
                 G_ReadDemoTiccmd(cmd);

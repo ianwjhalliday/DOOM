@@ -226,7 +226,7 @@ fn F_TextWrite() void {
             break;
         }
 
-        V_DrawPatch(cx, cy, 0, @ptrCast(hu_stuff.hu_font[chidx]));
+        V_DrawPatch(cx, cy, 0, hu_stuff.hu_font[chidx]);
         cx += w;
     }
 }
@@ -462,7 +462,7 @@ fn F_CastPrint(text: []const u8) void {
         }
 
         const chidx: usize = @intCast(chup - hu_stuff.HU_FONTSTART);
-        V_DrawPatch(@intCast(cx), 180, 0, @ptrCast(hu_stuff.hu_font[chidx]));
+        V_DrawPatch(@intCast(cx), 180, 0, hu_stuff.hu_font[chidx]);
         const w = SHORT(hu_stuff.hu_font[chidx].width);
         cx += @intCast(w);
     }

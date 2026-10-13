@@ -106,7 +106,7 @@ pub fn destroy(ptr: anytype) void {
     if (info.size != .one) {
         @compileError("expected single pointer argument, found " ++ @typeName(ArgType));
     }
-    Z_Free(@ptrCast(ptr));
+    Z_Free(ptr);
 }
 
 /// You can pass `null` user if the tag is < Z_Tag.PurgeLevel
@@ -208,7 +208,7 @@ export fn Z_Malloc(requested_size: i32, tag: Z_Tag, user: ?*?*anyopaque) *anyopa
 
     base.id = ZONEID;
 
-    return @ptrCast(@as([*]u8, @ptrCast(base)) + @sizeOf(MemBlock));
+    return @as([*]u8, @ptrCast(base)) + @sizeOf(MemBlock);
 }
 
 pub export fn Z_Free(ptr: *anyopaque) void {

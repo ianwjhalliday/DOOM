@@ -287,7 +287,7 @@ fn P_LoadThings(lump: c_int) void {
         mt[i].type = SHORT(mt[i].type);
         mt[i].options = SHORT(mt[i].options);
 
-        P_SpawnMapThing(@ptrCast(&mt[i]));
+        P_SpawnMapThing(&mt[i]);
     }
 }
 
