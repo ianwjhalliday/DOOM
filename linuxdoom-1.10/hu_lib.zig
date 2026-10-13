@@ -1,8 +1,4 @@
-pub const c = @cImport({
-    @cInclude("r_defs.h");
-    @cInclude("r_main.h");
-    @cInclude("r_draw.h");
-});
+pub const c = @import("c");
 
 const std = @import("std");
 

@@ -1,13 +1,4 @@
-const c = @cImport({
-    @cInclude("d_event.h");
-    @cInclude("d_player.h");
-    @cInclude("p_local.h");
-    @cInclude("p_mobj.h");
-    @cInclude("p_spec.h");
-    @cInclude("r_main.h");
-    @cInclude("doomstat.h");
-    @cInclude("tables.h");
-});
+const c = @import("c");
 
 const doomdef = @import("doomdef.zig");
 const PowerType = doomdef.PowerType;

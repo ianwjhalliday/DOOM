@@ -1,6 +1,4 @@
-const c = @cImport({
-    @cInclude("info.h");
-});
+const c = @import("c");
 
 const AmmoType = @import("doomdef.zig").AmmoType;
 

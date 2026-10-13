@@ -1,7 +1,4 @@
-const c = @cImport({
-    @cInclude("doomtype.h");
-    @cInclude("doomdef.h");
-});
+const c = @import("c");
 
 
 //

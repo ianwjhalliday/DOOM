@@ -1,9 +1,4 @@
-const c = @cImport({
-    @cInclude("stdio.h");
-    @cInclude("unistd.h");
-    @cInclude("sys/time.h");
-    @cInclude("doomtype.h");
-});
+const c = @import("c_system");
 
 extern fn I_InitSound() void;
 extern fn I_ShutdownSound() void;

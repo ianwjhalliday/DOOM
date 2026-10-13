@@ -1,9 +1,4 @@
-const c = @cImport({
-    @cInclude("i_sound.h");
-    @cInclude("p_mobj.h");
-    @cInclude("r_main.h");
-    @cInclude("tables.h");
-});
+const c = @import("c");
 
 const std = @import("std");
 const i_system = @import("i_system.zig");

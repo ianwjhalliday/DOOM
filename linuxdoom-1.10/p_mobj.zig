@@ -1,17 +1,4 @@
-pub const c = @cImport({
-    // Basics.
-    @cInclude("tables.h");
-
-    // States are tied to finite states are
-    //  tied to animation frames.
-    // Needs precompiled tables/data structures.
-    @cInclude("info.h");
-
-    @cInclude("doomstat.h");
-    @cInclude("r_defs.h");
-    @cInclude("r_main.h");
-    @cInclude("p_local.h");
-});
+pub const c = @import("c");
 
 const std = @import("std");
 

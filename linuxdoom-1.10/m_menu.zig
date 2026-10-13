@@ -1,12 +1,4 @@
-const c = @cImport({
-    @cInclude("doomtype.h");
-    @cInclude("doomstat.h");
-    @cInclude("dstrings.h");
-    @cInclude("hu_stuff.h");
-    @cInclude("r_defs.h");
-    @cInclude("r_main.h");
-    @cInclude("v_video.h");
-});
+const c = @import("c");
 
 const std = @import("std");
 const fmt = std.fmt;

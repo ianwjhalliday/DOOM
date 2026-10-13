@@ -1,8 +1,4 @@
-const c = @cImport({
-    @cInclude("doomtype.h");
-    @cInclude("doomstat.h");
-    @cInclude("dstrings.h");
-});
+const c = @import("c");
 
 const std = @import("std");
 const i_system = @import("i_system.zig");

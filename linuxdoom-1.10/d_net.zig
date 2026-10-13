@@ -1,7 +1,4 @@
-const c = @cImport({
-    @cInclude("doomtype.h");
-    @cInclude("d_event.h");
-});
+const c = @import("c");
 
 const std = @import("std");
 

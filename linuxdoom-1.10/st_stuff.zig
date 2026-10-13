@@ -1,13 +1,4 @@
-pub const c = @cImport({
-    @cInclude("doomstat.h");
-    @cInclude("dstrings.h");
-    @cInclude("d_event.h");
-    @cInclude("d_player.h");
-    @cInclude("tables.h");
-    @cInclude("r_main.h");
-    @cInclude("sounds.h");
-    @cInclude("s_sound.h");
-});
+pub const c = @import("c");
 
 const player_t = @import("p_user.zig").player_t;
 

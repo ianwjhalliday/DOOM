@@ -1,12 +1,4 @@
-const c = @cImport({
-    @cInclude("info.h");
-    @cInclude("p_local.h");
-    @cInclude("p_mobj.h");
-    @cInclude("r_defs.h");
-    @cInclude("r_state.h");
-    @cInclude("s_sound.h");
-    @cInclude("sounds.h");
-});
+const c = @import("c");
 
 const S_StartSound = @import("s_sound.zig").S_StartSound_Zig;
 const p_mobj = @import("p_mobj.zig");

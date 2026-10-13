@@ -1,12 +1,4 @@
-const c = @cImport({
-    @cInclude("doomtype.h");
-    @cInclude("doomstat.h");
-    @cInclude("info.h");
-    @cInclude("dstrings.h");
-    @cInclude("p_local.h");
-    @cInclude("p_mobj.h");
-    @cInclude("r_main.h");
-});
+const c = @import("c");
 
 const am_map = @import("am_map.zig");
 const AM_Stop = am_map.AM_Stop;

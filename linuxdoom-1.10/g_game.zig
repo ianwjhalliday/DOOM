@@ -1,18 +1,4 @@
-pub const c = @cImport({
-    @cInclude("doomstat.h");
-    @cInclude("dstrings.h");
-    @cInclude("d_event.h");
-    @cInclude("d_player.h");
-    @cInclude("d_ticcmd.h");
-    @cInclude("hu_stuff.h");
-    @cInclude("info.h");
-    @cInclude("p_local.h");
-    @cInclude("p_saveg.h");
-    @cInclude("r_data.h");
-    @cInclude("r_draw.h");
-    @cInclude("r_main.h");
-    @cInclude("tables.h");
-});
+pub const c = @import("c");
 
 const std = @import("std");
 const fmt = std.fmt;

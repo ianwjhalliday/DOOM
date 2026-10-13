@@ -1,6 +1,4 @@
-const c = @cImport({
-    @cInclude("doomtype.h");
-});
+const c = @import("c");
 
 const doomdef = @import("doomdef.zig");
 const GameMode = doomdef.GameMode;

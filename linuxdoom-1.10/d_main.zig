@@ -1,13 +1,4 @@
-const c = @cImport({
-    @cInclude("doomstat.h");
-    @cInclude("doomtype.h");
-    @cInclude("dstrings.h");
-    @cInclude("d_event.h");
-    @cInclude("d_player.h");
-    @cInclude("r_main.h");
-    @cInclude("sounds.h");
-    @cInclude("v_video.h");
-});
+const c = @import("c");
 
 extern fn W_CheckNumForName(name: [*c]const u8) c_int;
 

@@ -1,8 +1,4 @@
-const c = @cImport({
-    @cInclude("dstrings.h");
-    @cInclude("r_state.h");
-    @cInclude("info.h");
-});
+const c = @import("c");
 
 const std = @import("std");
 

@@ -50,6 +50,36 @@ pub fn build(b: *std.Build) void {
         "-Wall", // TODO: What is zig's default on C warnings?
     };
 
+    // C headers are translated to Zig modules by the build, which the Zig
+    // files @import. (This replaces @cImport, removed in Zig 0.17.)
+    const c_doom = b.addTranslateC(.{
+        .root_source_file = b.path("cimport/doom.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    c_doom.addIncludePath(b.path("."));
+    c_doom.defineCMacro("NORMALUNIX", null);
+    c_doom.defineCMacro("LINUX", null);
+
+    const c_system = b.addTranslateC(.{
+        .root_source_file = b.path("cimport/system.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const c_net = b.addTranslateC(.{
+        .root_source_file = b.path("cimport/net.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const c_glfw = b.addTranslateC(.{
+        .root_source_file = b.path("cimport/glfw.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    c_glfw.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{ homebrew, "include" }) });
+
     // One module holds both the Zig code (rooted at i_main.zig, which reaches
     // the rest through @import) and the C files that haven't been converted yet.
     const mod = b.createModule(.{
@@ -57,15 +87,17 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
         .link_libc = true,
+        .imports = &.{
+            .{ .name = "c", .module = c_doom.createModule() },
+            .{ .name = "c_system", .module = c_system.createModule() },
+            .{ .name = "c_net", .module = c_net.createModule() },
+            .{ .name = "c_glfw", .module = c_glfw.createModule() },
+        },
     });
     mod.addCMacro("NORMALUNIX", "");
     mod.addCMacro("LINUX", "");
     mod.addCSourceFiles(.{ .files = &c_files, .flags = &cflags });
     mod.addIncludePath(b.path("."));
-    mod.addSystemIncludePath(.{ .cwd_relative = b.pathJoin(&.{ homebrew, "include" }) });
-    // TODO: Properly find and setup system include paths per platform
-    mod.addSystemIncludePath(.{ .cwd_relative = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include" });
-    mod.addFrameworkPath(.{ .cwd_relative = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks" });
     mod.addLibraryPath(.{ .cwd_relative = b.pathJoin(&.{ homebrew, "lib" }) });
     mod.linkSystemLibrary("glfw3", .{});
     // TODO: MacOS only frameworks

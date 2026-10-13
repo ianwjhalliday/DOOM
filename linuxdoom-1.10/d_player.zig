@@ -1,15 +1,4 @@
-const c = @cImport({
-    // The player data structure depends on a number
-    // of other structs: items (internal inventory),
-    // animation states (closely tied to the sprites
-    // used to represent them, unfortunately).
-    @cInclude("d_items.h");
-    @cInclude("p_pspr.h");
-
-    // In addition, the player is just a special
-    // case of the generic moving object/actor.
-    @cInclude("r_defs.h"); // required for subsector type
-});
+const c = @import("c");
 
 // Finally, for odd reasons, the player input
 // is buffered within the player data struct,

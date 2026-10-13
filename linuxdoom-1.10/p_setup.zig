@@ -1,14 +1,4 @@
-pub const c = @cImport({
-    @cInclude("info.h");
-    @cInclude("r_data.h");
-    @cInclude("r_defs.h");
-    @cInclude("r_things.h");
-    @cInclude("p_local.h");
-    @cInclude("p_mobj.h");
-    @cInclude("p_spec.h");
-    @cInclude("m_bbox.h");
-    @cInclude("tables.h");
-});
+pub const c = @import("c");
 
 const std = @import("std");
 

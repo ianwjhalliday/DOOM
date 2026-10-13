@@ -1,10 +1,4 @@
-const c = @cImport({
-    @cInclude("doomstat.h");
-    @cInclude("dstrings.h");
-    @cInclude("tables.h");
-    @cInclude("p_local.h");
-    @cInclude("r_state.h");
-});
+const c = @import("c");
 
 const std = @import("std");
 

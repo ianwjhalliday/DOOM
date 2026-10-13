@@ -1,11 +1,8 @@
 // NOTE: This file hasn't been tested. The original code hadn't been tested either.
 // It has only been translated more or less 1:1 and made to compile.
 
-const c = @cImport({
-    @cInclude("arpa/inet.h");
-    @cInclude("netdb.h");
-    @cInclude("doomstat.h");
-});
+const c = @import("c");
+const net = @import("c_net");
 
 const std = @import("std");
 const i_system = @import("i_system.zig");
@@ -230,9 +227,9 @@ pub export fn I_InitNetwork() void {
         sendaddress[@intCast(d_net.doomcom.numnodes)].port = mem.nativeToBig(u16, DOOMPORT);
         if (m_argv.myargv[@intCast(i)][0] == '.') {
             sendaddress[@intCast(d_net.doomcom.numnodes)].addr
-                = c.inet_addr(m_argv.myargv[@intCast(i)]+1);
+                = net.inet_addr(m_argv.myargv[@intCast(i)]+1);
         } else {
-            const hostentry = c.gethostbyname(m_argv.myargv[@intCast(i)]);
+            const hostentry = net.gethostbyname(m_argv.myargv[@intCast(i)]);
             if (hostentry == null) {
                 I_Error("gethostbyname: couldn't find %s", m_argv.myargv[@intCast(i)]);
             }

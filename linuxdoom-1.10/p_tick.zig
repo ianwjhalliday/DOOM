@@ -1,6 +1,4 @@
-const c = @cImport({
-    @cInclude("doomstat.h");
-});
+const c = @import("c");
 
 extern fn P_UpdateSpecials() void;
 

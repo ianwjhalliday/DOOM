@@ -1,6 +1,4 @@
-pub const c = @cImport({
-    @cInclude("v_video.h");
-});
+pub const c = @import("c");
 
 const std = @import("std");
 

@@ -1,7 +1,4 @@
-const c = @cImport({
-    @cInclude("d_event.h");
-    @cInclude("d_player.h");
-});
+const c = @import("c");
 
 const std = @import("std");
 const i_system = @import("i_system.zig");

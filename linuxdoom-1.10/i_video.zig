@@ -1,11 +1,4 @@
-const c = @cImport({
-    @cDefine("GLFW_INCLUDE_GLCOREARB", {});
-    if (builtin.target.os.tag.isDarwin()) {
-        @cDefine("GL_SILENCE_DEPRECATION", {});
-    }
-    @cInclude("GLFW/glfw3.h");
-    @cInclude("signal.h");
-});
+const c = @import("c_glfw");
 
 const builtin = @import("builtin");
 const std = @import("std");
