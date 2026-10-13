@@ -71,7 +71,7 @@ fn P_CalcHeight(player: *Player) void {
         return;
     }
 
-    const angle = (c.FINEANGLES / 20 * c.leveltime) & c.FINEMASK;
+    const angle = (c.FINEANGLES / 20 *% c.leveltime) & c.FINEMASK;
     const bob = FixedMul(@divTrunc(player.bob, 2), c.finesine[@intCast(angle)]);
 
 
@@ -133,7 +133,7 @@ fn P_MovePlayer(player: *Player) void {
 // Fall on your face when dying.
 // Decrease POV height to floor height.
 //
-const ANG5 = c.ANG90/18;
+const ANG5: c.angle_t = c.ANG90/18;
 
 fn P_DeathThink(player: *Player) void {
     c.P_MovePsprites(@ptrCast(player));
@@ -155,7 +155,7 @@ fn P_DeathThink(player: *Player) void {
         const angle = c.R_PointToAngle2(player.mo.?.x, player.mo.?.y, player.attacker.?.x, player.attacker.?.y);
         const delta = angle -% player.mo.?.angle;
 
-        if (delta < ANG5 or delta > -ANG5) {
+        if (delta < ANG5 or delta > -%ANG5) {
             // Looking at killer,
             //  so fade damage flash down.
             player.mo.?.angle = angle;
@@ -164,7 +164,7 @@ fn P_DeathThink(player: *Player) void {
                 player.damagecount -= 1;
             }
         } else if (delta < c.ANG180) {
-            player.mo.?.angle += ANG5;
+            player.mo.?.angle +%= ANG5;
         } else {
             player.mo.?.angle -%= ANG5;
         }

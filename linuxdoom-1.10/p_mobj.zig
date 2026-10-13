@@ -611,7 +611,7 @@ fn P_NightmareRespawn(mobj: *MObj) void {
     // inherit attributes from deceased one
     mo = P_SpawnMobj(x, y, z, mobj.type);
     mo.spawnpoint = mobj.spawnpoint;
-    mo.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) * c.ANG45;
+    mo.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) *% c.ANG45;
 
     if (mthing.options & MTF_AMBUSH != 0) {
         mo.flags |= MF_AMBUSH;
@@ -820,7 +820,7 @@ pub fn P_RespawnSpecials() void {
 
     mo = P_SpawnMobj(x, y, z, @intCast(i));
     mo.spawnpoint = mthing.*;
-    mo.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) * c.ANG45;
+    mo.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) *% c.ANG45;
 
     // pull it from the que
     iquetail = (iquetail + 1) % ITEMQUESIZE;
@@ -857,7 +857,7 @@ pub fn P_SpawnPlayer(mthing: *MapThing) void {
         mobj.flags |= @as(c_int, mthing.type - 1) << c.MF_TRANSSHIFT;
     }
 
-    mobj.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) * c.ANG45;
+    mobj.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) *% c.ANG45;
     mobj.player = p;
     mobj.health = p.health;
 
@@ -976,7 +976,7 @@ pub fn P_SpawnMapThing(mthing: *MapThing) void {
         g_game.totalitems += 1;
     }
 
-    mobj.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) * c.ANG45;
+    mobj.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) *% c.ANG45;
 
     if (mthing.options & c.MTF_AMBUSH != 0) {
         mobj.flags |= MF_AMBUSH;

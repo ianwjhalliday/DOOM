@@ -1421,7 +1421,7 @@ fn G_WriteDemoTiccmd(cmd: *TicCmd) void {
     demo_p += 1;
     demo_p[0] = @bitCast(cmd.sidemove);
     demo_p += 1;
-    demo_p[0] = @bitCast(@as(i8, @intCast((cmd.angleturn+128)>>8)));
+    demo_p[0] = @bitCast(@as(i8, @truncate((@as(c_int, cmd.angleturn) + 128) >> 8)));
     demo_p += 1;
     demo_p[0] = cmd.buttons;
     demo_p += 1;

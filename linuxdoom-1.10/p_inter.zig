@@ -790,7 +790,7 @@ pub export fn P_DamageMobj(target: *MObj, inflictor: ?*MObj, source: ?*MObj, _da
             and damage > target.health
             and target.z - inflictor.?.z > 64 * FRACUNIT
             and P_Random() & 1 != 0) {
-            ang += c.ANG180;
+            ang +%= c.ANG180;
             thrust *= 4;
         }
 
