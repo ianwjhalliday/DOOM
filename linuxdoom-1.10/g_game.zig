@@ -16,7 +16,6 @@ pub const c = @cImport({
 
 const std = @import("std");
 const fmt = std.fmt;
-const io = std.io;
 const mem = std.mem;
 
 const i_system = @import("i_system.zig");
@@ -1112,39 +1111,38 @@ fn G_DoLoadGame() void {
     const buffer = M_ReadFile(savename);
     defer z_zone.free(buffer);
 
-    var fbs = io.fixedBufferStream(buffer);
-    var reader = fbs.reader();
+    var reader: std.Io.Reader = .fixed(buffer);
 
     // skip the description field
-    reader.skipBytes(SAVESTRINGSIZE, .{}) catch unreachable;
+    reader.discardAll(SAVESTRINGSIZE) catch unreachable;
 
     var vcheck = [_]u8{0} ** VERSIONSIZE;
     _ = fmt.bufPrintZ(&vcheck, "version {d}", .{c.VERSION}) catch unreachable;
-    const version = reader.readBytesNoEof(VERSIONSIZE) catch unreachable;
-    if (!mem.eql(u8, &version, &vcheck)) {
+    const version = reader.takeArray(VERSIONSIZE) catch unreachable;
+    if (!mem.eql(u8, version, &vcheck)) {
         return;
     }
 
-    gameskill = @enumFromInt(reader.readByte() catch unreachable);
-    gameepisode = reader.readByte() catch unreachable;
-    gamemap = reader.readByte() catch unreachable;
+    gameskill = @enumFromInt(reader.takeByte() catch unreachable);
+    gameepisode = reader.takeByte() catch unreachable;
+    gamemap = reader.takeByte() catch unreachable;
     for (0..MAXPLAYERS) |j| {
-        playeringame[j] = reader.readByte() catch unreachable;
+        playeringame[j] = reader.takeByte() catch unreachable;
     }
 
     // load a base level
     G_InitNew(gameskill, gameepisode, gamemap);
 
     // get the times
-    const a = @as(c_int, reader.readByte() catch unreachable);
-    const b = @as(c_int, reader.readByte() catch unreachable);
-    const _c = @as(c_int, reader.readByte() catch unreachable);
+    const a = @as(c_int, reader.takeByte() catch unreachable);
+    const b = @as(c_int, reader.takeByte() catch unreachable);
+    const _c = @as(c_int, reader.takeByte() catch unreachable);
     c.leveltime = (a<<16) + (b<<8) + _c;
 
     // dearchive all the modifications
     // TODO: Eliminate the `save_p` global and pass `reader`
     // to the unarchive functions instead.
-    const pos: usize = fbs.getPos() catch unreachable;
+    const pos: usize = reader.seek;
     c.save_p = @constCast(&buffer[pos]);
     c.P_UnArchivePlayers();
     c.P_UnArchiveWorld();
@@ -1202,28 +1200,27 @@ fn G_DoSaveGame() void {
         ;
 
     var buffer = v_video.screens[1][0x4000..0x4000+SAVEGAMESIZE];
-    var fbs = io.fixedBufferStream(buffer);
-    var writer = fbs.writer();
+    var writer: std.Io.Writer = .fixed(buffer);
 
-    _ = writer.write(&savedescription) catch unreachable;
+    writer.writeAll(&savedescription) catch unreachable;
 
     var version = [_]u8{0} ** VERSIONSIZE;
     _ = fmt.bufPrintZ(&version, "version {d}", .{c.VERSION}) catch unreachable;
-    _ = writer.write(&version) catch unreachable;
+    writer.writeAll(&version) catch unreachable;
 
-    _ = writer.writeByte(@intCast(@intFromEnum(gameskill))) catch unreachable;
-    _ = writer.writeByte(@intCast(gameepisode)) catch unreachable;
-    _ = writer.writeByte(@intCast(gamemap)) catch unreachable;
+    writer.writeByte(@intCast(@intFromEnum(gameskill))) catch unreachable;
+    writer.writeByte(@intCast(gameepisode)) catch unreachable;
+    writer.writeByte(@intCast(gamemap)) catch unreachable;
     for (0..MAXPLAYERS) |i| {
-        _ = writer.writeByte(@intCast(playeringame[i])) catch unreachable;
+        writer.writeByte(@intCast(playeringame[i])) catch unreachable;
     }
     const lt: u32 = @intCast(c.leveltime);
-    _ = writer.writeByte(@truncate(lt>>16)) catch unreachable;
-    _ = writer.writeByte(@truncate(lt>>8)) catch unreachable;
-    _ = writer.writeByte(@truncate(lt)) catch unreachable;
+    writer.writeByte(@truncate(lt>>16)) catch unreachable;
+    writer.writeByte(@truncate(lt>>8)) catch unreachable;
+    writer.writeByte(@truncate(lt)) catch unreachable;
 
     // TODO: Use `writer` instead of `save_p` in archive functions
-    const pos: usize = fbs.getPos() catch unreachable;
+    const pos: usize = writer.end;
     c.save_p = &buffer[pos];
     c.P_ArchivePlayers();
     c.P_ArchiveWorld();
