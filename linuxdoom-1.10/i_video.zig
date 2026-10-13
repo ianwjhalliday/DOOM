@@ -180,6 +180,11 @@ pub fn I_InitGraphics() void {
 
     c.glfwMakeContextCurrent(window);
 
+    stderr.print("I_InitGraphics: GLFW {s}\n", .{c.glfwGetVersionString()}) catch {};
+    stderr.print("I_InitGraphics: OpenGL {s}, renderer '{s}'\n", .{
+        c.glGetString(c.GL_VERSION),
+        c.glGetString(c.GL_RENDERER),
+    }) catch {};
 
     // Load and compile shaders
     const vertexShader = c.glCreateShader(c.GL_VERTEX_SHADER);
