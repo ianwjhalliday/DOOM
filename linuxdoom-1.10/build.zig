@@ -71,6 +71,7 @@ pub fn build(b: *std.Build) void {
         });
         o.addIncludePath(.{ .path = "." });
         o.addSystemIncludePath(.{ .path = "/usr/local/include" });
+        o.addSystemIncludePath(.{ .path = "/opt/homebrew/include" }); // Homebrew on Apple Silicon
         // TODO: Properly find and setup system include paths per platform
         o.addSystemIncludePath(.{ .path = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include" });
         o.addFrameworkPath(.{ .path = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks" });
@@ -78,6 +79,8 @@ pub fn build(b: *std.Build) void {
         exe.addObject(o);
     }
     exe.linkLibC();
+    exe.addLibraryPath(.{ .path = "/usr/local/lib" });
+    exe.addLibraryPath(.{ .path = "/opt/homebrew/lib" }); // Homebrew on Apple Silicon
     exe.linkSystemLibrary("glfw3");
     // TODO: MacOS only frameworks
     exe.linkFramework("Cocoa");
