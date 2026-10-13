@@ -902,8 +902,6 @@ pub fn D_DoomMain() noreturn {
         // Check for fake IWAD with right name,
         // but w/o all the lumps of the registered version.
         if (doomstat.gamemode == .Registered) {
-            var i: usize = 0;
-            _ = i;
             for (names) |name| {
                 if (W_CheckNumForName(name) < 0) {
                     I_Error("\nThis is not the registered version.");
