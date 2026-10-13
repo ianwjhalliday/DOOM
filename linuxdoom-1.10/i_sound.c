@@ -151,6 +151,9 @@ void I_InitSound(void)
         I_Error("I_InitSound: Failed to open playback device.\n");
     }
 
+    fprintf(stderr, "I_InitSound: %s backend, device '%s'\n",
+        ma_get_backend_name(device.pContext->backend), device.playback.name);
+
     if (ma_device_start(&device) != MA_SUCCESS) {
         ma_device_uninit(&device);
         I_Error("I_InitSound: Failed to start playback device.\n");

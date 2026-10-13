@@ -87,6 +87,12 @@ pub fn build(b: *std.Build) void {
     exe.linkFramework("IOKit");
     exe.linkFramework("CoreFoundation");
     exe.linkFramework("OpenGL");
+    // miniaudio's default runtime linking dlopens "CoreFoundation.framework/CoreFoundation"
+    // by relative path, which newer macOS no longer resolves, so it silently falls back
+    // to the Null backend (no sound). Link the audio frameworks directly instead.
+    exe.defineCMacro("MA_NO_RUNTIME_LINKING", null);
+    exe.linkFramework("CoreAudio");
+    exe.linkFramework("AudioToolbox");
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
