@@ -30,5 +30,5 @@ pub export fn FixedDiv2(a : fixed_t, b: fixed_t) fixed_t {
         I_Error("FixedDiv: divide by zero");
     }
 
-    return @intFromFloat(c);
+    return @trunc(c);
 }

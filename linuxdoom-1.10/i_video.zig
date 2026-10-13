@@ -130,8 +130,8 @@ const GLFWCallback = struct {
         const doom_event = Event{
             .type = .Mouse,
             .data1 = mb_left | mb_right | mb_middle,
-            .data2 = @intFromFloat(dx * MOUSE_SENSITIVITY_FACTOR),
-            .data3 = @intFromFloat(-dy * MOUSE_SENSITIVITY_FACTOR),
+            .data2 = @trunc(dx * MOUSE_SENSITIVITY_FACTOR),
+            .data3 = @trunc(-dy * MOUSE_SENSITIVITY_FACTOR),
         };
 
         D_PostEvent(&doom_event);

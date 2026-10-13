@@ -103,10 +103,10 @@ const INITSCALEMTOF     = 0.2 * FRACUNIT;
 const F_PANINC          = 4;
 // how much zoom-in per tic
 // goes to 2x in 1 second
-const M_ZOOMIN          = @as(comptime_int, @intFromFloat(1.02*FRACUNIT));
+const M_ZOOMIN          = @as(comptime_int, @trunc(1.02*FRACUNIT));
 // how much zoom-out per tic
 // pulls out to 0.5x in 1 second
-const M_ZOOMOUT         = @as(comptime_int, @intFromFloat(@as(comptime_float, FRACUNIT)/1.02));
+const M_ZOOMOUT         = @as(comptime_int, @trunc(@as(comptime_float, FRACUNIT)/1.02));
 
 // translates between frame-buffer and map distances
 fn FTOM(x: fixed_t) fixed_t { return FixedMul(x << 16, scale_ftom); }
@@ -152,8 +152,8 @@ fn mline(ax: fixed_t, ay: fixed_t, bx: fixed_t, by: fixed_t) mline_t {
 
 fn mlinef(comptime ax: comptime_float, comptime ay: comptime_float, comptime bx: comptime_float, comptime by: comptime_float) mline_t {
     return mline(
-        @intFromFloat(ax), @intFromFloat(ay),
-        @intFromFloat(bx), @intFromFloat(by),
+        @trunc(ax), @trunc(ay),
+        @trunc(bx), @trunc(by),
     );
 }
 
@@ -276,7 +276,7 @@ var old_m_y: fixed_t = undefined;
 var f_oldloc: mpoint_t = undefined;
 
 // used by MTOF to scale from map-to-frame-buffer coords
-var scale_mtof: fixed_t = @intFromFloat(INITSCALEMTOF);
+var scale_mtof: fixed_t = @trunc(INITSCALEMTOF);
 // used by FTOM to scale from frame-buffer-to-map coords (=1/scale_mtof)
 var scale_ftom: fixed_t = undefined;
 
@@ -520,7 +520,7 @@ fn AM_LevelInit() void {
     AM_clearMarks();
 
     AM_findMinMaxBoundries();
-    scale_mtof = FixedDiv(min_scale_mtof, @intFromFloat(0.7 * FRACUNIT));
+    scale_mtof = FixedDiv(min_scale_mtof, @trunc(0.7 * FRACUNIT));
     if (scale_mtof > max_scale_mtof) {
         scale_mtof = min_scale_mtof;
     }
