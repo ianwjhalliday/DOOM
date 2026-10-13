@@ -432,7 +432,8 @@ fn WI_drawOnLnode(n: usize, cp: [*]*patch_t) void {
         V_DrawPatch(lnode.x, lnode.y, FB, cp[i]);
     } else {
         // DEBUG
-        const stderr = std.io.getStdErr().writer();
+        var stderr_writer = std.fs.File.stderr().writer(&.{});
+        const stderr = &stderr_writer.interface;
         stderr.print("Could not place patch on level {d}\n", .{n + 1}) catch {};
     }
 }

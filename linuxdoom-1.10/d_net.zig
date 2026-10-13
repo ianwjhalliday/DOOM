@@ -4,7 +4,36 @@ const c = @cImport({
 });
 
 const std = @import("std");
-const cWriter = std.io.cWriter;
+
+// std.io.cWriter was removed in Zig 0.15. This is a minimal unbuffered
+// std.Io.Writer over a C FILE, used for the -debugfile output.
+const CFileWriter = struct {
+    file: *std.c.FILE,
+    interface: std.Io.Writer,
+
+    fn init(file: *std.c.FILE) CFileWriter {
+        return .{
+            .file = file,
+            .interface = .{ .vtable = &.{ .drain = drain }, .buffer = &.{} },
+        };
+    }
+
+    fn drain(w: *std.Io.Writer, data: []const []const u8, splat: usize) std.Io.Writer.Error!usize {
+        const self: *CFileWriter = @alignCast(@fieldParentPtr("interface", w));
+        var n: usize = 0;
+        for (data[0 .. data.len - 1]) |bytes| {
+            try self.writeAll(bytes);
+            n += bytes.len;
+        }
+        const pattern = data[data.len - 1];
+        for (0..splat) |_| try self.writeAll(pattern);
+        return n + pattern.len * splat;
+    }
+
+    fn writeAll(self: *CFileWriter, bytes: []const u8) std.Io.Writer.Error!void {
+        if (std.c.fwrite(bytes.ptr, 1, bytes.len, self.file) != bytes.len) return error.WriteFailed;
+    }
+};
 
 const TicCmd = @import("d_ticcmd.zig").TicCmd;
 
@@ -253,7 +282,9 @@ fn HSendPacket(node: usize, flags: c_uint) void {
         else
             -1;
 
-        const w = cWriter(d_main.debugfile.?);
+        var debug_writer = CFileWriter.init(d_main.debugfile.?);
+
+        const w = &debug_writer.interface;
         w.print("send ({} + {}, R {}) [{}] ", .{
             ExpandTics(netbuffer.starttic),
             netbuffer.numtics,
@@ -301,7 +332,8 @@ fn HGetPacket() bool {
 
     if (doomcom.datalength != @as(c_short, @intCast(NetbufferSize()))) {
         if (d_main.debugfile != null) {
-            const w = cWriter(d_main.debugfile.?);
+            var debug_writer = CFileWriter.init(d_main.debugfile.?);
+            const w = &debug_writer.interface;
             w.print("bad packet length {}\n", .{doomcom.datalength}) catch unreachable;
         }
         return false;
@@ -309,14 +341,16 @@ fn HGetPacket() bool {
 
     if (NetbufferChecksum() != (netbuffer.checksum & NCMD_CHECKSUM)) {
         if (d_main.debugfile != null) {
-            const w = cWriter(d_main.debugfile.?);
+            var debug_writer = CFileWriter.init(d_main.debugfile.?);
+            const w = &debug_writer.interface;
             w.print("bad packet checksum\n", .{}) catch unreachable;
         }
         return false;
     }
 
     if (d_main.debugfile != null) {
-        const w = cWriter(d_main.debugfile.?);
+        var debug_writer = CFileWriter.init(d_main.debugfile.?);
+        const w = &debug_writer.interface;
 
         if (netbuffer.checksum & NCMD_SETUP != 0) {
             w.print("setup packet\n", .{}) catch unreachable;
@@ -392,7 +426,8 @@ fn GetPackets() void {
             and netbuffer.checksum & NCMD_RETRANSMIT != 0) {
             resendto[@intCast(netnode)] = ExpandTics(netbuffer.retransmitfrom);
             if (d_main.debugfile != null) {
-                const w = cWriter(d_main.debugfile.?);
+                var debug_writer = CFileWriter.init(d_main.debugfile.?);
+                const w = &debug_writer.interface;
                 w.print("retransmit from {}\n", .{resendto[@intCast(netnode)]}) catch unreachable;
             }
             resendcount[@intCast(netnode)] = RESENDCOUNT;
@@ -407,7 +442,8 @@ fn GetPackets() void {
 
         if (realend < nettics[@intCast(netnode)]) {
             if (d_main.debugfile != null) {
-                const w = cWriter(d_main.debugfile.?);
+                var debug_writer = CFileWriter.init(d_main.debugfile.?);
+                const w = &debug_writer.interface;
                 w.print("out of order packet ({} + {})\n", .{
                     realstart,
                     netbuffer.numtics,
@@ -420,7 +456,8 @@ fn GetPackets() void {
         if (realstart > nettics[@intCast(netnode)]) {
             // stop processing until the other system resends the missed tics
             if (d_main.debugfile != null) {
-                const w = cWriter(d_main.debugfile.?);
+                var debug_writer = CFileWriter.init(d_main.debugfile.?);
+                const w = &debug_writer.interface;
                 w.print("missed tics from {} ({} - {})\n", .{
                     netnode,
                     realstart,
@@ -554,7 +591,8 @@ fn D_ArbitrateNetStart() void {
     var gotinfo = [_]bool{false} ** MAXNETNODES;
     d_main.autostart = true;
 
-    const stdout = std.io.getStdOut().writer();
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    const stdout = &stdout_writer.interface;
     if (doomcom.consoleplayer != 0) {
         // listen for setup info from key player
         stdout.print("listening for network start info...\n", .{}) catch unreachable;
@@ -653,7 +691,8 @@ pub fn D_CheckNetGame() void {
         D_ArbitrateNetStart();
     }
 
-    const stdout = std.io.getStdOut().writer();
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    const stdout = &stdout_writer.interface;
     stdout.print("startskill {}  deathmatch: {}  startmap: {}  startepisode: {}\n", .{
         @intFromEnum(d_main.startskill),
         g_game.deathmatch,
@@ -762,7 +801,8 @@ pub fn TryRunTics() void {
     frameon += 1;
 
     if (d_main.debugfile != null) {
-        const w = cWriter(d_main.debugfile.?);
+        var debug_writer = CFileWriter.init(d_main.debugfile.?);
+        const w = &debug_writer.interface;
         w.print("=======real: {}  avail: {}  game: {}\n", .{
             realtics, availabletics, counts
         }) catch unreachable;

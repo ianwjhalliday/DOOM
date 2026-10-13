@@ -64,7 +64,8 @@ var mainWindow: ?*c.GLFWwindow = undefined;
 
 const GLFWCallback = struct {
     pub fn Error(err: c_int, description: [*c]const u8) callconv(.c) void {
-        const stderr = std.io.getStdErr().writer();
+        var stderr_writer = std.fs.File.stderr().writer(&.{});
+        const stderr = &stderr_writer.interface;
         stderr.print("I_GLFWErrorCallback: {} {s}\n", .{err, description}) catch {};
     }
 
@@ -141,7 +142,8 @@ fn sigint_handler(_: c_int) callconv(.c) void {
 }
 
 pub fn I_InitGraphics() void {
-    const stderr = std.io.getStdErr().writer();
+    var stderr_writer = std.fs.File.stderr().writer(&.{});
+    const stderr = &stderr_writer.interface;
     stderr.print("I_InitGraphics\n", .{}) catch {};
 
     // TODO: SIGINT handler should be somewhere else since not specific to graphics.

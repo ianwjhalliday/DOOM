@@ -191,7 +191,8 @@ var defaultfile: []const u8 = undefined;
 // M_SaveDefaults
 //
 pub fn M_SaveDefaults() void {
-    const stderr = io.getStdErr().writer();
+    var stderr_writer = std.fs.File.stderr().writer(&.{});
+    const stderr = &stderr_writer.interface;
     stderr.print("M_SaveDefaults: Saving to '{s}'\n", .{defaultfile}) catch {};
 
     const f = fs.cwd().createFile(defaultfile, .{}) catch {
@@ -199,9 +200,10 @@ pub fn M_SaveDefaults() void {
     };
     defer f.close();
 
-    var buf_stream = io.bufferedWriter(f.writer());
-    const st = buf_stream.writer();
-    defer buf_stream.flush() catch {};
+    var buffer: [1024]u8 = undefined;
+    var file_writer = f.writer(&buffer);
+    const st = &file_writer.interface;
+    defer st.flush() catch {};
 
     for (defaults) |default| {
         switch (default.d) {
@@ -227,33 +229,31 @@ pub fn M_LoadDefaults() void {
     const arg_i: usize = @intCast(M_CheckParm("-config"));
     if (arg_i > 0 and arg_i < m_argv.myargc - 1) {
         defaultfile = mem.span(m_argv.myargv[arg_i + 1]);
-        io.getStdOut().writer().print("\tdefault file: {s}\n", .{defaultfile}) catch {};
+        var stdout_writer = std.fs.File.stdout().writer(&.{});
+        stdout_writer.interface.print("\tdefault file: {s}\n", .{defaultfile}) catch {};
     } else {
         defaultfile = mem.span(@as([*:0]u8, &basedefault));
     }
 
-    const stderr = io.getStdErr().writer();
+    var stderr_writer = std.fs.File.stderr().writer(&.{});
+    const stderr = &stderr_writer.interface;
 
     // read the file in, overriding any set defaults
     if (fs.cwd().openFile(defaultfile, .{})) |f| {
         defer f.close();
 
-        var buf_stream = io.bufferedReader(f.reader());
-        const st = buf_stream.reader();
-
-        var line: [256]u8 = undefined;
-        var line_fbs = io.fixedBufferStream(&line);
-        const writer = line_fbs.writer();
+        // Lines longer than the buffer are an error (StreamTooLong).
+        var buffer: [256]u8 = undefined;
+        var file_reader = f.reader(&buffer);
+        const st = &file_reader.interface;
 
         while (true) {
-            line_fbs.reset();
-
             // Grab a line at at time and split it into the name and the value
-            st.streamUntilDelimiter(writer, '\n', null) catch |err| switch (err) {
-                error.EndOfStream => break,
-                else => stderr.print("M_LoadDefaults: error reading file: {s}\n", .{defaultfile}) catch {},
-            };
-            var it = mem.tokenizeAny(u8, line_fbs.getWritten(), " \t");
+            const line = st.takeDelimiter('\n') catch {
+                stderr.print("M_LoadDefaults: error reading file: {s}\n", .{defaultfile}) catch {};
+                break;
+            } orelse break;
+            var it = mem.tokenizeAny(u8, line, " \t");
 
             const name = it.next() orelse { break; };
             const value = it.rest();

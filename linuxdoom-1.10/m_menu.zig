@@ -804,7 +804,8 @@ fn M_Episode(choice: c_int) void {
     epi = choice;
     // Yet another hack...
     if (doomstat.gamemode == .Registered and choice > 2) {
-        const stderr = io.getStdErr().writer();
+        var stderr_writer = std.fs.File.stderr().writer(&.{});
+        const stderr = &stderr_writer.interface;
         stderr.print("M_Episode: 4th episode requires UltimateDOOM\n", .{}) catch {};
         epi = 0;
     }
@@ -1006,7 +1007,8 @@ fn M_ChangeDetail(choice: c_int) void {
     detailLevel = 1 - detailLevel;
 
     // FIXME - does not work. Remove anyway?
-    const stderr = io.getStdErr().writer();
+    var stderr_writer = std.fs.File.stderr().writer(&.{});
+    const stderr = &stderr_writer.interface;
     stderr.print("M_ChangeDetail: low detail mode n.a.\n", .{}) catch {};
 
     // R_SetViewSize (screenblocks, detailLevel);

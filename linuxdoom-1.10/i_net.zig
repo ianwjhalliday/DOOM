@@ -115,7 +115,8 @@ fn PacketGet() void {
 
     const S = struct { var first = true; };
     if (S.first) {
-        const stdout = std.io.getStdOut().writer();
+        var stdout_writer = std.fs.File.stdout().writer(&.{});
+        const stdout = &stdout_writer.interface;
         stdout.print("len={}:p=[0x{x} 0x{x}] \n", .{
             rc,
             mem.bytesAsValue(c_int, mem.asBytes(&sw)[0..4]).*,
@@ -187,7 +188,8 @@ pub export fn I_InitNetwork() void {
         DOOMPORT = std.fmt.parseInt(u16, mem.span(m_argv.myargv[@intCast(p+1)]), 0) catch {
             I_Error("Couldn't parse value for -port: '%s'\n", m_argv.myargv[@intCast(p+1)]);
         };
-        const stdout = std.io.getStdOut().writer();
+        var stdout_writer = std.fs.File.stdout().writer(&.{});
+        const stdout = &stdout_writer.interface;
         stdout.print("using alternate port {}\n", .{DOOMPORT}) catch unreachable;
     }
 

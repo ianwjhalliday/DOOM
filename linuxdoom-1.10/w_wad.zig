@@ -94,7 +94,8 @@ pub fn W_AddFile(_filename: []const u8) void {
         break :blk _filename[1..];
     } else _filename;
 
-    const stdout = std.io.getStdOut().writer();
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    const stdout = &stdout_writer.interface;
     const handle = std.posix.open(filename, .{ .ACCMODE = .RDONLY }, 0) catch {
         stdout.print(" couldn't open {s}\n", .{filename}) catch {};
         return;

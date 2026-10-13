@@ -346,7 +346,8 @@ fn D_DoomLoop() noreturn {
     if (M_CheckParm("-debugfile") != 0) {
         var buffer: [20]u8 = undefined;
         const filename = fmt.bufPrintZ(&buffer, "debug{}.txt", .{g_game.consoleplayer}) catch unreachable;
-        const stdout = std.io.getStdOut().writer();
+        var stdout_writer = std.fs.File.stdout().writer(&.{});
+        const stdout = &stdout_writer.interface;
         stdout.print("debug output to: {s}\n", .{filename}) catch unreachable;
         debugfile = std.c.fopen(filename, "w");
     }
@@ -562,7 +563,8 @@ fn IdentifyVersion() void {
         return;
     }
 
-    const stdout = std.io.getStdOut().writer();
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    const stdout = &stdout_writer.interface;
 
     if (posix.access(doom2fwad, posix.R_OK)) {
         doomstat.gamemode = .Commercial;
@@ -627,7 +629,8 @@ extern var myargc: c_int;
 extern var myargv: [*c][*c]u8;
 
 fn FindResponseFile() void {
-    const stdout = std.io.getStdOut().writer();
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    const stdout = &stdout_writer.interface;
     const MAXARGVS = 100;
 
     for (1..@intCast(myargc)) |i| {
@@ -744,7 +747,8 @@ pub fn D_DoomMain() noreturn {
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
     };
 
-    const stdout = std.io.getStdOut().writer();
+    var stdout_writer = std.fs.File.stdout().writer(&.{});
+    const stdout = &stdout_writer.interface;
     stdout.print("{s}\n", .{title}) catch unreachable;
 
     if (devparm) {
