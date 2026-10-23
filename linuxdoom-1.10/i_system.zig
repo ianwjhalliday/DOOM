@@ -60,6 +60,9 @@ var stdout_writer: CFileWriter = undefined;
 var stderr_writer: CFileWriter = undefined;
 
 pub fn initConsole() void {
+    // Line buffer stdout even when it isn't a terminal, so a redirected log
+    // interleaves it in order with the unbuffered stderr.
+    _ = c.setvbuf(c.stdout(), null, c._IOLBF, 0);
     stdout_writer = .init(@ptrCast(c.stdout()));
     stderr_writer = .init(@ptrCast(c.stderr()));
 }
