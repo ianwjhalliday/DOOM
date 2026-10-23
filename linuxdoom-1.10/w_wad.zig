@@ -203,7 +203,7 @@ pub fn W_Reload() void {
         I_Error("W_Reload: Failed to read WAD lump infos");
     };
 
-    for (reloadlump..@intCast(header.numlumps)) |i| {
+    for (reloadlump..reloadlump + @as(usize, @intCast(header.numlumps))) |i| {
         if (lumpcache[i] != null) {
             Z_Free(lumpcache[i].?);
         }
