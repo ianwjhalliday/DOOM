@@ -669,7 +669,7 @@ fn P_KillMobj(source: ?*MObj, target: *MObj) void {
         }
 
         if (target.player != null) {
-            const playeridx = @intFromPtr(target.player.?) - @intFromPtr(&g_game.players[0]);
+            const playeridx = target.player.? - &g_game.players[0];
             source.?.player.?.frags[playeridx] += 1;
         }
     } else if (g_game.netgame == c.false and target.flags & MF_COUNTKILL != 0) {
@@ -681,7 +681,7 @@ fn P_KillMobj(source: ?*MObj, target: *MObj) void {
     if (target.player != null) {
         // count environment kills against you
         if (source == null) {
-            const playeridx = @intFromPtr(target.player.?) - @intFromPtr(&g_game.players[0]);
+            const playeridx = target.player.? - &g_game.players[0];
             target.player.?.frags[playeridx] += 1;
         }
 

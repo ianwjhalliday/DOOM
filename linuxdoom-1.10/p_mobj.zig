@@ -446,7 +446,7 @@ fn P_XYMovement(mo: *MObj) void {
 
     if (mo.momx > -STOPSPEED and mo.momx < STOPSPEED and mo.momy > -STOPSPEED and mo.momy < STOPSPEED and (player == null or (player.?.cmd.forwardmove == 0 and player.?.cmd.sidemove == 0))) {
         // if in a walking frame, stop moving
-        if (player != null and @intFromPtr(player.?.mo.?.state.?) - @intFromPtr(&c.states[0]) - c.S_PLAY_RUN1 < 4) {
+        if (player != null and (player.?.mo.?.state.? - &c.states[0]) -% c.S_PLAY_RUN1 < 4) {
             _ = P_SetMobjState(player.?.mo.?, c.S_PLAY);
         }
 

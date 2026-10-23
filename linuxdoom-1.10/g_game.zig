@@ -826,7 +826,7 @@ fn G_CheckSpot(playernum: usize, mthing: *MapThing) bool {
 // called at level load and each death
 //
 pub fn G_DeathMatchSpawnPlayer(playernum: usize) void {
-    const selections = @divTrunc(@intFromPtr(p_setup.deathmatch_p) - @intFromPtr(&p_setup.deathmatchstarts[0]), @sizeOf(MapThing));
+    const selections = p_setup.deathmatch_p - &p_setup.deathmatchstarts[0];
     if (selections < 4) {
         I_Error("Only %i deathmatch spots, 4 required", selections);
     }
@@ -1218,7 +1218,7 @@ fn G_DoSaveGame() void {
 
     // TODO: buffer overrun is detected during writer api calls;
     // utilize those errors to detect and report this I_Error().
-    const length = @intFromPtr(c.save_p) - @intFromPtr(buffer.ptr);
+    const length = c.save_p - buffer.ptr;
     if (length > SAVEGAMESIZE) {
         I_Error("Savegame buffer overrun");
     }
@@ -1584,7 +1584,7 @@ pub fn G_CheckDemoStatus() bool {
     if (demorecording) {
         demo_p[0] = DEMOMARKER;
         demo_p += 1;
-        const len = @intFromPtr(demo_p) - @intFromPtr(demobuffer);
+        const len = demo_p - demobuffer;
         _ = M_WriteFile(demoname, demobuffer[0..len]);
         z_zone.free(demobufferslice);
         demorecording = false;

@@ -334,7 +334,7 @@ fn WritePCXfile(filename: []const u8, data: [*]const u8, width: c_int, height: c
     }
 
     // write output file
-    const length = @intFromPtr(pack) - @intFromPtr(pcx_buffer.ptr);
+    const length = pack - @as([*]u8, @ptrCast(pcx_buffer.ptr));
     _ = M_WriteFile(filename, mem.sliceAsBytes(pcx_buffer)[0..length]);
 }
 
