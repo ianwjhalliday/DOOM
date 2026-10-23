@@ -256,6 +256,7 @@ void I_InitMusic(void)
     if (!soundfont)
     {
         fprintf(stderr, "I_InitMusic: Failed to load soundfont '%s'. Music will not play.\n", sfFile);
+        return;
     }
 
     // Volume start at zero but it will be immediately updated by I_SetMusicVolume via S_Init
@@ -269,6 +270,8 @@ void I_ShutdownMusic(void)
 
 void I_SetMusicVolume(int volume)
 {
+    if (!soundfont)
+        return;
     tsf_set_volume(soundfont, volume / 15.0 * 0.65);
 }
 
@@ -392,7 +395,7 @@ musevent_t MUS_ParseEvent(byte** eventstream)
 
 void MUS_RenderSongSamples(int16_t* output, ma_uint32 frameCount)
 {
-    if (currentSong.handle == -1 || !currentSong.playing)
+    if (!soundfont || currentSong.handle == -1 || !currentSong.playing)
         return;
 
     // copy song and channel volumes locally because of multithreading
