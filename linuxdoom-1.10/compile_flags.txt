@@ -1,0 +1,6 @@
+-DNORMALUNIX
+-DLINUX
+-DMA_NO_RUNTIME_LINKING
+-I.
+-I/opt/homebrew/include
+-Wall
