@@ -20,7 +20,6 @@ const S_StartSound = s_sound.S_StartSound_Zig;
 const v_video = @import("v_video.zig");
 const V_DrawPatch = v_video.c.V_DrawPatch;
 const V_DrawPatchFlipped = v_video.V_DrawPatchFlipped;
-const V_MarkRect = v_video.V_MarkRect;
 const w_wad = @import("w_wad.zig");
 const W_CacheLumpName = w_wad.W_CacheLumpNameZig;
 const W_CacheLumpNameFmt = w_wad.W_CacheLumpNameFmt;
@@ -199,8 +198,6 @@ fn F_TextWrite() void {
             dest += w;
         }
     }
-
-    V_MarkRect(0, 0, doomdef.SCREENWIDTH, doomdef.SCREENHEIGHT);
 
     // draw some of the text onto the screen
     var cx: c_int = 10;
@@ -533,8 +530,6 @@ fn F_BunnyScroll() void {
 
     const p1 = W_CacheLumpName(*patch_t, "PFUB2", .Level);
     const p2 = W_CacheLumpName(*patch_t, "PFUB1", .Level);
-
-    V_MarkRect(0, 0, doomdef.SCREENWIDTH, doomdef.SCREENHEIGHT);
 
     var scrolled = 320 - @divTrunc(finalecount - 230, 2);
     if (scrolled > 320) {

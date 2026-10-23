@@ -16,6 +16,8 @@ const doomdef = @import("doomdef.zig");
 const MAXPLAYERS = doomdef.MAXPLAYERS;
 const Skill = doomdef.Skill;
 const doomstat = @import("doomstat.zig");
+const m_bbox = @import("m_bbox.zig");
+const BBox = m_bbox.BBox;
 const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
 const FixedDiv = m_fixed.FixedDiv;
@@ -435,8 +437,7 @@ fn P_GroupLines() void {
     var linebuffer = linebuffer_slice.ptr;
 
     for (sectors_slice) |*sector| {
-        var bbox: [4]fixed_t = undefined;
-        c.M_ClearBox(&bbox);
+        var bbox: BBox = .empty;
         sector.lines = linebuffer;
 
         var j: usize = 0;
@@ -444,8 +445,8 @@ fn P_GroupLines() void {
             if (li.frontsector == sector or li.backsector == sector) {
                 linebuffer[j] = li;
                 j += 1;
-                c.M_AddToBox(&bbox, li.v1.*.x, li.v1.*.y);
-                c.M_AddToBox(&bbox, li.v2.*.x, li.v2.*.y);
+                bbox.add(li.v1.*.x, li.v1.*.y);
+                bbox.add(li.v2.*.x, li.v2.*.y);
             }
         }
         if (j != sector.*.linecount) {
@@ -454,20 +455,20 @@ fn P_GroupLines() void {
         linebuffer += j;
 
         // set the degenmobj_t to the middle of the bounding box
-        sector.*.soundorg.x = @divTrunc(bbox[c.BOXRIGHT] + bbox[c.BOXLEFT], 2);
-        sector.*.soundorg.y = @divTrunc(bbox[c.BOXTOP] + bbox[c.BOXBOTTOM], 2);
+        sector.*.soundorg.x = @divTrunc(bbox.right + bbox.left, 2);
+        sector.*.soundorg.y = @divTrunc(bbox.top + bbox.bottom, 2);
 
         // adjust bounding box to map blocks
-        const blocktop = (bbox[c.BOXTOP] - bmaporgy + c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+        const blocktop = (bbox.top - bmaporgy + c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
         sector.*.blockbox[c.BOXTOP] = @min(blocktop, bmapheight - 1);
 
-        const blockbottom = (bbox[c.BOXBOTTOM] - bmaporgy - c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+        const blockbottom = (bbox.bottom - bmaporgy - c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
         sector.*.blockbox[c.BOXBOTTOM] = @max(blockbottom, 0);
 
-        const blockright = (bbox[c.BOXRIGHT] - bmaporgx + c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+        const blockright = (bbox.right - bmaporgx + c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
         sector.*.blockbox[c.BOXRIGHT] = @min(blockright, bmapwidth - 1);
 
-        const blockleft = (bbox[c.BOXLEFT] - bmaporgx - c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+        const blockleft = (bbox.left - bmaporgx - c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
         sector.*.blockbox[c.BOXLEFT] = @max(blockleft, 0);
     }
 }

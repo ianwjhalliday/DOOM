@@ -3,7 +3,6 @@ const M_Random = @import("m_random.zig").M_Random;
 const I_ReadScreen = @import("i_video.zig").I_ReadScreen;
 const v_video = @import("v_video.zig");
 const V_DrawBlock = v_video.V_DrawBlock;
-const V_MarkRect = v_video.V_MarkRect;
 
 pub const WipeStyle = enum {
     // simple gradual pixel change for 8-bit only
@@ -153,7 +152,6 @@ pub fn ScreenWipe(wipe: WipeStyle, width: u32, height: u32, ticks: usize) bool {
     }
 
     // do a piece of wipe-in
-    V_MarkRect(0, 0, width, height);
     const rc = switch (wipe) {
         .ColorXForm => wipe_doColorXForm(width, height, ticks),
         .Melt => wipe_doMelt(width, height, ticks),

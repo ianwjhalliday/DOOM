@@ -833,13 +833,6 @@ R_VideoErase
 // Draws the border around the view
 //  for different size windows?
 //
-void
-V_MarkRect
-( int		x,
-  int		y,
-  int		width,
-  int		height ); 
- 
 void R_DrawViewBorder (void) 
 { 
     int		top;
@@ -869,9 +862,6 @@ void R_DrawViewBorder (void)
 	R_VideoErase (ofs, side); 
 	ofs += SCREENWIDTH; 
     } 
-
-    // ? 
-    V_MarkRect (0,0,SCREENWIDTH, SCREENHEIGHT-SBARHEIGHT); 
 } 
  
  

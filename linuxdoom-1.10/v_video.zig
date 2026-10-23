@@ -13,7 +13,6 @@ const I_AllocLow = i_system.I_AllocLow;
 
 // Each screen is [SCREENWIDTH*SCREENHEIGHT]; 
 pub export var screens: [5][*]u8 = undefined;
-var dirtybox: [4]c_int = undefined; // TODO: Appears not to be used, remove?
 
 pub var usegamma: c_int = undefined;
 
@@ -101,14 +100,6 @@ pub const gammatable = [5][256]u8{
      251,252,252,253,254,254,255,255}
 };
 
-extern fn M_AddToBox(box: [*]fixed_t, x: fixed_t, y: fixed_t) void;
-
-pub export fn V_MarkRect(x: u32, y: u32, width: u32, height: u32) void {
-    M_AddToBox(&dirtybox, @intCast(x), @intCast(y));
-    M_AddToBox(&dirtybox, @intCast(x + width - 1), @intCast(y + height - 1));
-}
-
-
 //
 // V_CopyRect
 //
@@ -144,8 +135,6 @@ pub fn V_CopyRect(
     desty: u32,
     destscrn: u32,
 ) void {
-    V_MarkRect(destx, desty, width, height);
-
     var src: [*]u8 = screens[srcscrn] + doomdef.SCREENWIDTH * srcy + srcx;
     var dest: [*]u8 = screens[destscrn] + doomdef.SCREENWIDTH * desty + destx;
 
@@ -169,11 +158,6 @@ pub export fn V_DrawPatch(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
     const x: u32 = @intCast(@as(i64, _x) - SHORT(patch.leftoffset));
 
     const w = @as(u32, @intCast(SHORT(patch.width)));
-    const h = @as(u32, @intCast(SHORT(patch.height)));
-
-    if (scrn == 0) {
-        V_MarkRect(x, y, w, h);
-    }
 
     const desttop: [*]u8 = screens[scrn] + y * doomdef.SCREENWIDTH + x;
 
@@ -213,11 +197,6 @@ pub fn V_DrawPatchFlipped(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
     const x: u32 = @intCast(@as(i64, _x) - SHORT(patch.leftoffset));
 
     const w = @as(u32, @intCast(SHORT(patch.width)));
-    const h = @as(u32, @intCast(SHORT(patch.height)));
-
-    if (scrn == 0) {
-        V_MarkRect(x, y, w, h);
-    }
 
     const desttop: [*]u8 = screens[scrn] + y * doomdef.SCREENWIDTH + x;
 
@@ -252,8 +231,6 @@ pub fn V_DrawPatchFlipped(_x: u32, _y: u32, scrn: u32, patch: *c.patch_t) void {
 // Draw a linear block of pixels into the view buffer.
 //
 pub fn V_DrawBlock(x: u32, y: u32, scrn: u32, width: u32, height: u32, _src: [*]u8) void {
-    V_MarkRect(x, y, width, height);
-
     var dest = screens[scrn] + y * doomdef.SCREENWIDTH + x;
     var src = _src;
 

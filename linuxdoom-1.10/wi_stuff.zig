@@ -22,7 +22,6 @@ const S_ChangeMusic = s_sound.S_ChangeMusicEnum;
 const S_StartSound = s_sound.S_StartSound_Zig;
 const v_video = @import("v_video.zig");
 const V_DrawPatch = v_video.V_DrawPatchSigned;
-const V_MarkRect = v_video.V_MarkRect;
 const w_wad = @import("w_wad.zig");
 const W_CacheLumpName = w_wad.W_CacheLumpNameZig;
 const W_CacheLumpNameFmt = w_wad.W_CacheLumpNameFmt;
@@ -358,7 +357,6 @@ var lnames: []*patch_t = undefined;
 fn WI_slamBackground() void {
     const numpixels = SCREENWIDTH * SCREENHEIGHT;
     @memcpy(v_video.screens[0][0..numpixels], v_video.screens[1]);
-    V_MarkRect(0, 0, SCREENWIDTH, SCREENHEIGHT);
 }
 
 

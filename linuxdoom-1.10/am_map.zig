@@ -1225,7 +1225,4 @@ pub fn AM_Drawer() void {
 
     AM_drawCrosshair(XHAIRCOLORS);
     AM_drawMarks();
-
-    // TODO: Delete all dirtybox and V_MarkRect code
-    // V_MarkRect(f_x, f_y, f_w, f_h);
 }
