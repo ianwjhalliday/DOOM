@@ -92,8 +92,7 @@ export var numChannels: c_int = undefined;
 //  allocates channel buffer, sets S_sfx lookup.
 //
 pub fn S_Init(sfxVolume: c_int, musicVolume: c_int) void {
-    var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
-    const stderr = &stderr_writer.interface;
+    const stderr = i_system.stderr();
     stderr.print("S_Init: default sfx volume {}\n", .{sfxVolume}) catch {};
 
     // Whatever these did with DMX, these are rather dummies now.

@@ -6,6 +6,7 @@ const D_DoomMain = @import("d_main.zig").D_DoomMain;
 pub fn main(init: std.process.Init) noreturn {
     i_system.io = init.io;
     i_system.environ_map = init.environ_map;
+    i_system.initConsole();
 
     // The arena lives for the whole process, as the args must.
     const allocator = init.arena.allocator();

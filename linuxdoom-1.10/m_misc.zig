@@ -174,8 +174,7 @@ var defaultfile: []const u8 = undefined;
 // M_SaveDefaults
 //
 pub fn M_SaveDefaults() void {
-    var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
-    const stderr = &stderr_writer.interface;
+    const stderr = i_system.stderr();
     stderr.print("M_SaveDefaults: Saving to '{s}'\n", .{defaultfile}) catch {};
 
     const f = std.Io.Dir.cwd().createFile(i_system.io, defaultfile, .{}) catch {
@@ -212,14 +211,12 @@ pub fn M_LoadDefaults() void {
     const arg_i: usize = @intCast(M_CheckParm("-config"));
     if (arg_i > 0 and arg_i < m_argv.myargc - 1) {
         defaultfile = mem.span(m_argv.myargv[arg_i + 1]);
-        var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
-        stdout_writer.interface.print("\tdefault file: {s}\n", .{defaultfile}) catch {};
+        i_system.stdout().print("\tdefault file: {s}\n", .{defaultfile}) catch {};
     } else {
         defaultfile = mem.span(@as([*:0]u8, &basedefault));
     }
 
-    var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
-    const stderr = &stderr_writer.interface;
+    const stderr = i_system.stderr();
 
     // read the file in, overriding any set defaults
     if (std.Io.Dir.cwd().openFile(i_system.io, defaultfile, .{})) |f| {

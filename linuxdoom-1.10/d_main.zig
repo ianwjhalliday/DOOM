@@ -336,8 +336,7 @@ fn D_DoomLoop() noreturn {
     if (M_CheckParm("-debugfile") != 0) {
         var buffer: [20]u8 = undefined;
         const filename = fmt.bufPrintSentinel(&buffer, "debug{}.txt", .{g_game.consoleplayer}, 0) catch unreachable;
-        var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
-        const stdout = &stdout_writer.interface;
+        const stdout = i_system.stdout();
         stdout.print("debug output to: {s}\n", .{filename}) catch unreachable;
         debugfile = std.c.fopen(filename, "w");
     }
@@ -553,8 +552,7 @@ fn IdentifyVersion() void {
         return;
     }
 
-    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
-    const stdout = &stdout_writer.interface;
+    const stdout = i_system.stdout();
 
     if (std.Io.Dir.cwd().access(i_system.io, doom2fwad, .{ .read = true })) {
         doomstat.gamemode = .Commercial;
@@ -619,8 +617,7 @@ extern var myargc: c_int;
 extern var myargv: [*c][*c]u8;
 
 fn FindResponseFile() void {
-    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
-    const stdout = &stdout_writer.interface;
+    const stdout = i_system.stdout();
     const MAXARGVS = 100;
 
     for (1..@intCast(myargc)) |i| {
@@ -693,7 +690,6 @@ extern var sidemove: [2]c_int;
 extern var statcopy: *anyopaque;
 
 extern fn R_Init() void;
-extern fn fflush(stream: ?*anyopaque) c_int;
 
 pub fn toDoomBoolean(b: bool) c.boolean {
     return if (b) c.true else c.false;
@@ -734,8 +730,7 @@ pub fn D_DoomMain() noreturn {
             "                           ", .{ c.VERSION / 100, c.VERSION % 100 }),
     };
 
-    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
-    const stdout = &stdout_writer.interface;
+    const stdout = i_system.stdout();
     stdout.print("{s}\n", .{title}) catch unreachable;
 
     if (devparm) {
@@ -932,8 +927,6 @@ pub fn D_DoomMain() noreturn {
 
     stdout.print("R_Init: Init DOOM refresh daemon - ", .{}) catch unreachable;
     R_Init();
-    // R_Init prints via C printf, which is buffered separately from Zig stdout
-    _ = fflush(null);
 
     stdout.print("\nP_Init: Init Playloop state.\n", .{}) catch unreachable;
     P_Init();

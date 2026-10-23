@@ -1491,8 +1491,7 @@ fn G_DoPlayDemo() void {
     const demoversion = demo_p[0];
     demo_p += 1;
     if (demoversion != c.VERSION and (c.VERSION == 110 and demoversion != 109)) {
-        var stderr_writer = std.Io.File.stderr().writer(i_system.io, &.{});
-        const stderr = &stderr_writer.interface;
+        const stderr = i_system.stderr();
         stderr.print("Demo is from a different game version!\n", .{}) catch {};
         gameaction = .Nothing;
         return;

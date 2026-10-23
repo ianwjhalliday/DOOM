@@ -560,8 +560,7 @@ pub fn P_SetupLevel(episode: c_int, map: c_int) void {
     }
 
     if (false) {
-        var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
-        const stdout = &stdout_writer.interface;
+        const stdout = i_system.stdout();
         stdout.print("free memory: 0x{x}\n", .{z_zone.Z_FreeMemory()}) catch unreachable;
     }
 }

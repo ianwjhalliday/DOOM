@@ -22,6 +22,56 @@ pub var io: std.Io = undefined;
 // The process environment variables. Set by main().
 pub var environ_map: *const std.process.Environ.Map = undefined;
 
+// std.io.cWriter was removed in Zig 0.15. This is a minimal unbuffered
+// std.Io.Writer over a C FILE, used for the console and the -debugfile
+// output. The FILE does the buffering.
+pub const CFileWriter = struct {
+    file: *std.c.FILE,
+    interface: std.Io.Writer,
+
+    pub fn init(file: *std.c.FILE) CFileWriter {
+        return .{
+            .file = file,
+            .interface = .{ .vtable = &.{ .drain = drain }, .buffer = &.{} },
+        };
+    }
+
+    fn drain(w: *std.Io.Writer, data: []const []const u8, splat: usize) std.Io.Writer.Error!usize {
+        const self: *CFileWriter = @alignCast(@fieldParentPtr("interface", w));
+        var n: usize = 0;
+        for (data[0 .. data.len - 1]) |bytes| {
+            try self.writeAll(bytes);
+            n += bytes.len;
+        }
+        const pattern = data[data.len - 1];
+        for (0..splat) |_| try self.writeAll(pattern);
+        return n + pattern.len * splat;
+    }
+
+    fn writeAll(self: *CFileWriter, bytes: []const u8) std.Io.Writer.Error!void {
+        if (std.c.fwrite(bytes.ptr, 1, bytes.len, self.file) != bytes.len) return error.WriteFailed;
+    }
+};
+
+// Console output. Writes go through C's stdout and stderr streams, which the
+// C files print to as well, so output from both languages shares one buffer
+// and comes out in order. Set up by initConsole() at startup.
+var stdout_writer: CFileWriter = undefined;
+var stderr_writer: CFileWriter = undefined;
+
+pub fn initConsole() void {
+    stdout_writer = .init(@ptrCast(c.stdout()));
+    stderr_writer = .init(@ptrCast(c.stderr()));
+}
+
+pub fn stdout() *std.Io.Writer {
+    return &stdout_writer.interface;
+}
+
+pub fn stderr() *std.Io.Writer {
+    return &stderr_writer.interface;
+}
+
 const mb_used: c_int = 6;
 
 pub export fn I_Tactile(on: c_int, off: c_int, total: c_int) void {
@@ -97,18 +147,13 @@ pub fn I_AllocLow(length: c_int) ?[*]u8 {
 }
 
 pub export fn I_Error(errormsg: [*:0]const u8, ...) noreturn {
-    // NOTE: zig translate-c fails to parse stdio.h's `stderr` so
-    // open it manually here (and also can't case `2` to `*FILE`
-    // due to debug build alignment checks).
-    const stderr = c.fdopen(2, "w");
+    // Flush pending stdout first so the error comes after it.
+    _ = c.fflush(c.stdout());
     var argptr = @cVaStart();
-    _ = c.fprintf(stderr, "Error: ");
-    _ = c.vfprintf(stderr, errormsg, argptr);
-    _ = c.fprintf(stderr, "\n");
+    _ = c.fprintf(c.stderr(), "Error: ");
+    _ = c.vfprintf(c.stderr(), errormsg, argptr);
+    _ = c.fprintf(c.stderr(), "\n");
     @cVaEnd(&argptr);
-
-    _ = c.fflush(stderr);
-    _ = c.fclose(stderr);
 
     // Shutdown. Here might be other errors.
     if (g_game.demorecording) {

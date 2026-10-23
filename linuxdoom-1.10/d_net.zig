@@ -2,36 +2,6 @@ const c = @import("c");
 
 const std = @import("std");
 
-// std.io.cWriter was removed in Zig 0.15. This is a minimal unbuffered
-// std.Io.Writer over a C FILE, used for the -debugfile output.
-const CFileWriter = struct {
-    file: *std.c.FILE,
-    interface: std.Io.Writer,
-
-    fn init(file: *std.c.FILE) CFileWriter {
-        return .{
-            .file = file,
-            .interface = .{ .vtable = &.{ .drain = drain }, .buffer = &.{} },
-        };
-    }
-
-    fn drain(w: *std.Io.Writer, data: []const []const u8, splat: usize) std.Io.Writer.Error!usize {
-        const self: *CFileWriter = @alignCast(@fieldParentPtr("interface", w));
-        var n: usize = 0;
-        for (data[0 .. data.len - 1]) |bytes| {
-            try self.writeAll(bytes);
-            n += bytes.len;
-        }
-        const pattern = data[data.len - 1];
-        for (0..splat) |_| try self.writeAll(pattern);
-        return n + pattern.len * splat;
-    }
-
-    fn writeAll(self: *CFileWriter, bytes: []const u8) std.Io.Writer.Error!void {
-        if (std.c.fwrite(bytes.ptr, 1, bytes.len, self.file) != bytes.len) return error.WriteFailed;
-    }
-};
-
 const TicCmd = @import("d_ticcmd.zig").TicCmd;
 
 const i_net = @import("i_net.zig");
@@ -40,6 +10,7 @@ const I_InitNetwork = i_net.I_InitNetwork;
 
 const i_system = @import("i_system.zig");
 const I_Error = i_system.I_Error;
+const CFileWriter = i_system.CFileWriter;
 const I_GetTime = i_system.I_GetTime;
 const I_WaitVBL = i_system.I_WaitVBL;
 
@@ -588,8 +559,7 @@ fn D_ArbitrateNetStart() void {
     var gotinfo: [MAXNETNODES]bool = @splat(false);
     d_main.autostart = true;
 
-    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
-    const stdout = &stdout_writer.interface;
+    const stdout = i_system.stdout();
     if (doomcom.consoleplayer != 0) {
         // listen for setup info from key player
         stdout.print("listening for network start info...\n", .{}) catch unreachable;
@@ -688,8 +658,7 @@ pub fn D_CheckNetGame() void {
         D_ArbitrateNetStart();
     }
 
-    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
-    const stdout = &stdout_writer.interface;
+    const stdout = i_system.stdout();
     stdout.print("startskill {}  deathmatch: {}  startmap: {}  startepisode: {}\n", .{
         @backingInt(d_main.startskill),
         g_game.deathmatch,

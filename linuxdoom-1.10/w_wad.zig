@@ -95,8 +95,7 @@ pub fn W_AddFile(_filename: []const u8) void {
         break :blk _filename[1..];
     } else _filename;
 
-    var stdout_writer = std.Io.File.stdout().writer(i_system.io, &.{});
-    const stdout = &stdout_writer.interface;
+    const stdout = i_system.stdout();
     const file = std.Io.Dir.cwd().openFile(i_system.io, filename, .{}) catch {
         stdout.print(" couldn't open {s}\n", .{filename}) catch {};
         return;
