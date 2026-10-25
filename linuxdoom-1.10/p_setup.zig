@@ -67,7 +67,7 @@ export var nodes: [*]c.node_t = undefined;
 var nodes_slice: []c.node_t = undefined;
 
 export var numlines: c_int = undefined;
-export var lines: [*]c.line_t = undefined;
+pub export var lines: [*]c.line_t = undefined;
 var lines_slice: []c.line_t = undefined;
 
 export var numsides: c_int = undefined;
@@ -83,17 +83,16 @@ var sides_slice: []c.side_t = undefined;
 // by spatial subdivision in 2D.
 //
 // Blockmap size.
-export var bmapwidth: c_int = undefined;
-export var bmapheight: c_int = undefined;       // size in mapblocks
-export var blockmap: [*]c_short = undefined;    // int for larger maps
+pub var bmapwidth: c_int = undefined;
+pub var bmapheight: c_int = undefined;       // size in mapblocks
+pub var blockmap: [*]c_short = undefined;    // int for larger maps
 // offsets in blockmap are from here
-export var blockmaplump: [*]c_short = undefined;
+pub var blockmaplump: [*]c_short = undefined;
 // origin of block map
-export var bmaporgx: fixed_t = undefined;
-export var bmaporgy: fixed_t = undefined;
+pub export var bmaporgx: fixed_t = undefined;
+pub export var bmaporgy: fixed_t = undefined;
 // for thing chains
-var blocklinks_slice: []?[*]MObj = undefined;
-export var blocklinks: [*]?[*]MObj = undefined;
+pub var blocklinks: []?*MObj = undefined;
 
 
 // REJECT
@@ -401,9 +400,8 @@ fn P_LoadBlockMap(lump: c_int) void {
     bmapheight = blockmaplump[3];
 
     // clear out mobj chains
-    blocklinks_slice = z_zone.alloc(?[*]MObj, @intCast(bmapwidth * bmapheight), .Level, null);
-    @memset(blocklinks_slice, null);
-    blocklinks = blocklinks_slice.ptr;
+    blocklinks = z_zone.alloc(?*MObj, @intCast(bmapwidth * bmapheight), .Level, null);
+    @memset(blocklinks, null);
 }
 
 

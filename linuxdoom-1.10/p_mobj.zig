@@ -24,6 +24,9 @@ const hu_stuff = @import("hu_stuff.zig");
 const HU_Start = hu_stuff.HU_Start;
 const m_random = @import("m_random.zig");
 const P_Random = m_random.P_Random;
+const p_maputil = @import("p_maputil.zig");
+const P_SetThingPosition = p_maputil.P_SetThingPosition;
+const P_UnsetThingPosition = p_maputil.P_UnsetThingPosition;
 const p_setup = @import("p_setup.zig");
 const p_tick = @import("p_tick.zig");
 const P_AddThinker = p_tick.P_AddThinker;
@@ -706,7 +709,7 @@ pub export fn P_SpawnMobj(x: fixed_t, y: fixed_t, z: fixed_t, motype: c.mobjtype
     mobj.frame = @intCast(st.frame);
 
     // set subsector and/or block links
-    c.P_SetThingPosition(@ptrCast(mobj));
+    P_SetThingPosition(mobj);
 
     mobj.floorz = mobj.subsector.sector[0].floorheight;
     mobj.ceilingz = mobj.subsector.sector[0].ceilingheight;
@@ -755,7 +758,7 @@ pub export fn P_RemoveMobj(mobj: *MObj) void {
     }
 
     // unlink from sector and block lists
-    c.P_UnsetThingPosition(@ptrCast(mobj));
+    P_UnsetThingPosition(mobj);
 
     // stop any playing sound
     S_StopSound(mobj);
