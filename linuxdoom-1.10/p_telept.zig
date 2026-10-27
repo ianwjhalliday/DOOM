@@ -6,6 +6,7 @@ const p_mobj = @import("p_mobj.zig");
 const MObj = p_mobj.MObj;
 const MF_MISSILE = p_mobj.MF_MISSILE;
 const P_SpawnMobj = p_mobj.P_SpawnMobj;
+const p_setup = @import("p_setup.zig");
 pub const p_tick = @import("p_tick.zig");
 
 
@@ -27,7 +28,7 @@ pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) c_int {
 
     const tag = line.tag;
     for (0..@intCast(c.numsectors)) |i| {
-        if (c.sectors[i].tag != tag) continue;
+        if (p_setup.sectors[i].tag != tag) continue;
 
         var thinker = p_tick.thinkercap.next orelse &p_tick.thinkercap;
         while (thinker != &p_tick.thinkercap) : (thinker = thinker.next.?) {
@@ -44,7 +45,7 @@ pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) c_int {
             const sector = m.subsector.*.sector;
 
             // wrong sector
-            if (sector != &c.sectors[i]) continue;
+            if (sector != &p_setup.sectors[i]) continue;
 
             const oldx = thing.x;
             const oldy = thing.y;

@@ -1183,7 +1183,7 @@ fn AM_drawPlayers() void {
 }
 
 fn AM_drawThings(color: u8) void {
-    for (c.sectors[0..@intCast(c.numsectors)]) |sector| {
+    for (p_setup.sectors[0..@intCast(c.numsectors)]) |sector| {
         var t = sector.thinglist;
         while (t != null) : (t = t[0].snext) {
             AM_drawLineCharacter(&thintriangle_guy, 16 << FRACBITS, t[0].angle, color + lightlev, t[0].x, t[0].y);

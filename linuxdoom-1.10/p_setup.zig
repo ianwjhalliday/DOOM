@@ -51,19 +51,21 @@ const z_zone = @import("z_zone.zig");
 //
 pub var vertexes: []c.vertex_t = undefined;
 
-var segs_slice: []c.seg_t = undefined;
-export var segs: [*]c.seg_t = undefined;
+// TODO: Switch all zig uses to the slices
 
-export var numsectors: c_int = undefined;
-export var sectors: [*]c.sector_t = undefined;
-var sectors_slice: []c.sector_t = undefined;
+var segs_slice: []c.seg_t = undefined;
+pub export var segs: [*]c.seg_t = undefined;
+
+pub export var numsectors: c_int = undefined;
+pub export var sectors: [*]c.sector_t = undefined;
+pub var sectors_slice: []c.sector_t = undefined;
 
 export var numsubsectors: c_int = undefined;
-export var subsectors: [*]c.subsector_t = undefined;
+pub export var subsectors: [*]c.subsector_t = undefined;
 var subsectors_slice: []c.subsector_t = undefined;
 
-export var numnodes: c_int = undefined;
-export var nodes: [*]c.node_t = undefined;
+pub export var numnodes: c_int = undefined;
+pub export var nodes: [*]c.node_t = undefined;
 var nodes_slice: []c.node_t = undefined;
 
 export var numlines: c_int = undefined;
@@ -102,7 +104,7 @@ pub var blocklinks: []?*MObj = undefined;
 // Without special effect, this could be
 //  used as a PVS lookup as well.
 //
-export var rejectmatrix: [*]u8 = undefined;
+pub var rejectmatrix: [*]u8 = undefined;
 
 
 // Maintain single and multi player starting spots.

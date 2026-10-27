@@ -153,8 +153,6 @@ typedef struct
 
 fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
 
-extern fixed_t		opentop;
-extern fixed_t 		openbottom;
 extern fixed_t		openrange;
 
 void 	P_LineOpening (line_t* linedef);

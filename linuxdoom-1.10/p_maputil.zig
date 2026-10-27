@@ -128,7 +128,7 @@ fn P_MakeDivline(li: *const c.line_t, dl: *c.divline_t) void {
 
 /// Returns the fractional intercept point along the first divline.
 /// This is only called by the addthings and addlines traversers.
-fn P_InterceptVector(v2: *const c.divline_t, v1: *const c.divline_t) fixed_t {
+pub fn P_InterceptVector(v2: *const c.divline_t, v1: *const c.divline_t) fixed_t {
     const den = FixedMul(v1.dy >> 8, v2.dx) - FixedMul(v1.dx >> 8, v2.dy);
 
     if (den == 0) {
@@ -140,8 +140,8 @@ fn P_InterceptVector(v2: *const c.divline_t, v1: *const c.divline_t) fixed_t {
     return FixedDiv(num, den);
 }
 
-pub export var opentop: fixed_t = 0;
-pub export var openbottom: fixed_t = 0;
+pub var opentop: fixed_t = 0;
+pub var openbottom: fixed_t = 0;
 pub export var openrange: fixed_t = 0;
 pub var lowfloor: fixed_t = 0;
 

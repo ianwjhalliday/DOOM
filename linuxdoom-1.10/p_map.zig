@@ -37,6 +37,7 @@ const MF_SPECIAL = p_mobj.MF_SPECIAL;
 const MF_TELEPORT = p_mobj.MF_TELEPORT;
 const MObj = p_mobj.MObj;
 const p_setup = @import("p_setup.zig");
+const p_sight = @import("p_sight.zig");
 const p_tick = @import("p_tick.zig");
 const r_sky = @import("r_sky.zig");
 const s_sound = @import("s_sound.zig");
@@ -647,9 +648,6 @@ pub var attackrange: fixed_t = 0;
 
 var aimslope: fixed_t = 0;
 
-extern var topslope: fixed_t;
-extern var bottomslope: fixed_t;
-
 /// Sets linetarget and aimslope when a target is aimed at
 fn PTR_AimTraverse(in: *c.intercept_t) bool {
     if (in.isaline != c.false) {
@@ -672,19 +670,19 @@ fn PTR_AimTraverse(in: *c.intercept_t) bool {
 
         if (li.*.frontsector.*.floorheight != li.*.backsector.*.floorheight) {
             const slope = FixedDiv(p_maputil.openbottom - shootz, dist);
-            if (slope > bottomslope) {
-                bottomslope = slope;
+            if (slope > p_sight.bottomslope) {
+                p_sight.bottomslope = slope;
             }
         }
 
         if (li.*.frontsector.*.ceilingheight != li.*.backsector.*.ceilingheight) {
             const slope = FixedDiv(p_maputil.opentop - shootz, dist);
-            if (slope < topslope) {
-                topslope = slope;
+            if (slope < p_sight.topslope) {
+                p_sight.topslope = slope;
             }
         }
 
-        if (topslope <= bottomslope) {
+        if (p_sight.topslope <= p_sight.bottomslope) {
             return false; // stop
         }
 
@@ -705,23 +703,23 @@ fn PTR_AimTraverse(in: *c.intercept_t) bool {
     const dist = FixedMul(attackrange, in.frac);
     var thingtopslope = FixedDiv(th.z + th.height - shootz, dist);
 
-    if (thingtopslope < bottomslope) {
+    if (thingtopslope < p_sight.bottomslope) {
         return true; // shot over the thing
     }
 
     var thingbottomslope = FixedDiv(th.z - shootz, dist);
 
-    if (thingbottomslope > topslope) {
+    if (thingbottomslope > p_sight.topslope) {
         return true; // shot under the thing
     }
 
     // this thing can be hit!
-    if (thingtopslope > topslope) {
-        thingtopslope = topslope;
+    if (thingtopslope > p_sight.topslope) {
+        thingtopslope = p_sight.topslope;
     }
 
-    if (thingbottomslope < bottomslope) {
-        thingbottomslope = bottomslope;
+    if (thingbottomslope < p_sight.bottomslope) {
+        thingbottomslope = p_sight.bottomslope;
     }
 
     aimslope = @divTrunc(thingtopslope + thingbottomslope, 2);
@@ -841,8 +839,8 @@ pub export fn P_AimLineAttack(th: *MObj, _angle: c.angle_t, distance: fixed_t) f
     shootz = th.z + (th.height >> 1) + 8 * FRACUNIT;
 
     // can't shoot outside view angles
-    topslope = @divTrunc(100 * FRACUNIT, 160);
-    bottomslope = @divTrunc(-100 * FRACUNIT, 160);
+    p_sight.topslope = @divTrunc(100 * FRACUNIT, 160);
+    p_sight.bottomslope = @divTrunc(-100 * FRACUNIT, 160);
 
     attackrange = distance;
     linetarget = null;
@@ -933,7 +931,7 @@ fn PIT_RadiusAttack(thing: *MObj) callconv(.c) c.boolean {
         return c.true; // out of range
     }
 
-    if (c.P_CheckSight(@ptrCast(thing), @ptrCast(bombspot)) != c.false) {
+    if (p_sight.P_CheckSight(thing, bombspot) != c.false) {
         // must be in direct path
         p_inter.P_DamageMobj(thing, bombspot, bombsource, bombdamage - dist);
     }
