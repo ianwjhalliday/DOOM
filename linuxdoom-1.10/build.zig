@@ -122,4 +122,9 @@ pub fn build(b: *std.Build) void {
 
     const run_step = b.step("run", "Run doomzig");
     run_step.dependOn(&run_cmd.step);
+
+    // Compiles without installing. zls build-on-save runs this step to report
+    // compile errors as diagnostics.
+    const check = b.step("check", "Compile without installing, for zls build-on-save");
+    check.dependOn(&exe.step);
 }
