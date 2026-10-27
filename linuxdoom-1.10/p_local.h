@@ -152,33 +152,18 @@ typedef struct
 } intercept_t;
 
 fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
-int 	P_PointOnLineSide (fixed_t x, fixed_t y, line_t* line);
-int 	P_BoxOnLineSide (fixed_t* tmbox, line_t* ld);
 
 extern fixed_t		opentop;
 extern fixed_t 		openbottom;
 extern fixed_t		openrange;
-extern fixed_t		lowfloor;
 
 void 	P_LineOpening (line_t* linedef);
 
-boolean P_BlockLinesIterator (int x, int y, boolean(*func)(line_t*) );
 boolean P_BlockThingsIterator (int x, int y, boolean(*func)(mobj_t*) );
 
 #define PT_ADDLINES		1
 #define PT_ADDTHINGS	2
 #define PT_EARLYOUT		4
-
-extern divline_t	trace;
-
-boolean
-P_PathTraverse
-( fixed_t	x1,
-  fixed_t	y1,
-  fixed_t	x2,
-  fixed_t	y2,
-  int		flags,
-  boolean	(*trav) (intercept_t *));
 
 void P_UnsetThingPosition (mobj_t* thing);
 void P_SetThingPosition (mobj_t* thing);
@@ -192,17 +177,12 @@ void P_SetThingPosition (mobj_t* thing);
 // if within "tmfloorz - tmceilingz".
 extern boolean		floatok;
 extern fixed_t		tmfloorz;
-extern fixed_t		tmceilingz;
 
-
-extern	line_t*		ceilingline;
 
 boolean P_CheckPosition (mobj_t *thing, fixed_t x, fixed_t y);
 boolean P_TryMove (mobj_t* thing, fixed_t x, fixed_t y);
 boolean P_TeleportMove (mobj_t* thing, fixed_t x, fixed_t y);
-void	P_SlideMove (mobj_t* mo);
 boolean P_CheckSight (mobj_t* t1, mobj_t* t2);
-void 	P_UseLines (player_t* player);
 
 boolean P_ChangeSector (sector_t* sector, boolean crunch);
 

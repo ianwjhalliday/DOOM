@@ -10,6 +10,7 @@ const g_game = @import("g_game.zig");
 const I_Error = @import("i_system.zig").I_Error;
 
 const m_fixed = @import("m_fixed.zig");
+const FixedAbs = m_fixed.FixedAbs;
 const FixedMul = m_fixed.FixedMul;
 const FRACBITS = m_fixed.FRACBITS;
 
@@ -469,8 +470,8 @@ fn S_AdjustSoundParams(listener: *mobj_t, source: *mobj_t, vol: *c_int, sep: *c_
     _ = pitch;
     // calculate the distance to sound origin
     //  and clip it if necessary
-    const adx: c_int = @intCast(@abs(listener.x - source.x));
-    const ady: c_int = @intCast(@abs(listener.y - source.y));
+    const adx = FixedAbs(listener.x - source.x);
+    const ady = FixedAbs(listener.y - source.y);
 
     // From _GG1_ p.428. Appox. eucledian distance fast.
     var approx_dist = adx + ady - ((if (adx < ady) adx else ady) >> 1);

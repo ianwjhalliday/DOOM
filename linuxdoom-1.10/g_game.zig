@@ -1023,7 +1023,7 @@ fn G_DoCompleted() void {
         wminfo.plyr[i].skills = players[i].killcount;
         wminfo.plyr[i].sitems = players[i].itemcount;
         wminfo.plyr[i].ssecret = players[i].secretcount;
-        wminfo.plyr[i].stime = c.leveltime;
+        wminfo.plyr[i].stime = p_tick.leveltime;
         wminfo.plyr[i].frags = players[i].frags;
     }
 
@@ -1123,7 +1123,7 @@ fn G_DoLoadGame() void {
     const a = @as(c_int, reader.takeByte() catch unreachable);
     const b = @as(c_int, reader.takeByte() catch unreachable);
     const _c = @as(c_int, reader.takeByte() catch unreachable);
-    c.leveltime = (a<<16) + (b<<8) + _c;
+    p_tick.leveltime = (a<<16) + (b<<8) + _c;
 
     // dearchive all the modifications
     // TODO: Eliminate the `save_p` global and pass `reader`
@@ -1200,7 +1200,7 @@ fn G_DoSaveGame() void {
     for (0..MAXPLAYERS) |i| {
         writer.writeByte(@intCast(playeringame[i])) catch unreachable;
     }
-    const lt: u32 = @intCast(c.leveltime);
+    const lt: u32 = @intCast(p_tick.leveltime);
     writer.writeByte(@truncate(lt>>16)) catch unreachable;
     writer.writeByte(@truncate(lt>>8)) catch unreachable;
     writer.writeByte(@truncate(lt)) catch unreachable;

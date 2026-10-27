@@ -8,6 +8,11 @@ pub const FRACUNIT = 1 << FRACBITS;
 
 pub const fixed_t = c_int;
 
+/// abs() with C's result for minInt: returns minInt instead of overflowing.
+pub fn FixedAbs(x: fixed_t) fixed_t {
+    return @bitCast(@abs(x));
+}
+
 pub export fn FixedMul(a: fixed_t, b: fixed_t) fixed_t {
     // TODO: Is truncation expected here?
     return @truncate((@as(c_longlong, a) * @as(c_longlong, b)) >> FRACBITS);

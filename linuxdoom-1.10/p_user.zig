@@ -15,9 +15,13 @@ const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
 const FixedMul = m_fixed.FixedMul;
 
+const p_map = @import("p_map.zig");
+
 const p_mobj = @import("p_mobj.zig");
 const MF_SHADOW = p_mobj.MF_SHADOW;
 const P_SetMobjState = p_mobj.P_SetMobjState;
+
+const p_tick = @import("p_tick.zig");
 
 // Index of the special effects (INVUL inverse) map.
 const INVERSECOLORMAP = 32;
@@ -62,7 +66,7 @@ fn P_CalcHeight(player: *Player) void {
         return;
     }
 
-    const angle = (c.FINEANGLES / 20 *% c.leveltime) & c.FINEMASK;
+    const angle = (c.FINEANGLES / 20 *% p_tick.leveltime) & c.FINEMASK;
     const bob = FixedMul(@divTrunc(player.bob, 2), c.finesine[@intCast(angle)]);
 
 
@@ -249,7 +253,7 @@ pub export fn P_PlayerThink(player: *Player) void {
     // check for use
     if (cmd.buttons & c.BT_USE != 0) {
         if (player.usedown == c.false) {
-            c.P_UseLines(@ptrCast(player));
+            p_map.P_UseLines(player);
             player.usedown = c.true;
         }
     } else {

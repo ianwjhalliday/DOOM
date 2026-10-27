@@ -24,6 +24,7 @@ const hu_stuff = @import("hu_stuff.zig");
 const HU_Start = hu_stuff.HU_Start;
 const m_random = @import("m_random.zig");
 const P_Random = m_random.P_Random;
+const p_map = @import("p_map.zig");
 const p_maputil = @import("p_maputil.zig");
 const P_SetThingPosition = p_maputil.P_SetThingPosition;
 const P_UnsetThingPosition = p_maputil.P_UnsetThingPosition;
@@ -392,16 +393,16 @@ fn P_XYMovement(mo: *MObj) void {
             ymove = 0;
         }
 
-        if (c.P_TryMove(@ptrCast(mo), ptryx, ptryy) == c.false) {
+        if (p_map.P_TryMove(mo, ptryx, ptryy) == c.false) {
             // blocked move
             if (mo.player != null) {
                 // try to slide along it
-                c.P_SlideMove(@ptrCast(mo));
+                p_map.P_SlideMove(mo);
             } else if (mo.flags & MF_MISSILE != 0) {
                 // explode a missile
-                if (c.ceilingline != null and
-                    c.ceilingline[0].backsector != null and
-                    c.ceilingline[0].backsector[0].ceilingpic == r_sky.skyflatnum)
+                if (p_map.ceilingline != null and
+                    p_map.ceilingline.?.backsector != null and
+                    p_map.ceilingline.?.backsector[0].ceilingpic == r_sky.skyflatnum)
                 {
                     // Hack to prevent missiles exploding
                     // against the sky.
@@ -479,7 +480,7 @@ fn P_ZMovement(mo: *MObj) void {
     if (mo.flags & MF_FLOAT != 0 and mo.target != null) {
         // float down towards target if too close
         if (mo.flags & MF_SKULLFLY == 0 and mo.flags & MF_INFLOAT == 0) {
-            const dist = c.P_AproxDistance(mo.x - mo.target.?.x, mo.y - mo.target.?.y);
+            const dist = p_maputil.P_AproxDistance(mo.x - mo.target.?.x, mo.y - mo.target.?.y);
 
             const delta = (mo.target.?.z + (mo.height >> 1)) - mo.z;
 
@@ -572,7 +573,7 @@ fn P_NightmareRespawn(mobj: *MObj) void {
     const y = @as(fixed_t, mobj.spawnpoint.y) << FRACBITS;
 
     // somthing is occupying it's position?
-    if (c.P_CheckPosition(@ptrCast(mobj), x, y) == c.false) {
+    if (p_map.P_CheckPosition(mobj, x, y) == c.false) {
         return; // no respawn
     }
 
@@ -983,8 +984,6 @@ pub fn P_SpawnMapThing(mthing: *MapThing) void {
 //
 // P_SpawnPuff
 //
-extern var attackrange: fixed_t;
-
 pub export fn P_SpawnPuff(x: fixed_t, y: fixed_t, z: fixed_t) void {
     const z_jittered = z + ((P_Random() - P_Random()) << 10);
 
@@ -997,7 +996,7 @@ pub export fn P_SpawnPuff(x: fixed_t, y: fixed_t, z: fixed_t) void {
     }
 
     // don't make punches spark on the wall
-    if (attackrange == c.MELEERANGE) {
+    if (p_map.attackrange == c.MELEERANGE) {
         _ = P_SetMobjState(th, c.S_PUFF3);
     }
 }
@@ -1043,7 +1042,7 @@ fn P_CheckMissileSpawn(th: *MObj) void {
     th.y += th.momy >> 1;
     th.z += th.momz >> 1;
 
-    if (c.P_TryMove(@ptrCast(th), th.x, th.y) == c.false) {
+    if (p_map.P_TryMove(th, th.x, th.y) == c.false) {
         P_ExplodeMissile(th);
     }
 }
@@ -1072,7 +1071,7 @@ pub export fn P_SpawnMissile(source: *MObj, dest: *MObj, motype: c.mobjtype_t) *
     th.momx = FixedMul(th.info.speed, c.finecosine[an]);
     th.momy = FixedMul(th.info.speed, c.finesine[an]);
 
-    var dist = c.P_AproxDistance(dest.x - source.x, dest.y - source.y);
+    var dist = p_maputil.P_AproxDistance(dest.x - source.x, dest.y - source.y);
     dist = @divTrunc(dist, th.info.speed);
 
     if (dist < 1) {
@@ -1094,18 +1093,18 @@ pub export fn P_SpawnMissile(source: *MObj, dest: *MObj, motype: c.mobjtype_t) *
 pub export fn P_SpawnPlayerMissile(source: *MObj, motype: c.mobjtype_t) void {
     // see which target is to be aimed at
     var an = source.angle;
-    var slope = c.P_AimLineAttack(@ptrCast(source), an, 16 * 64 * FRACUNIT);
+    var slope = p_map.P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
 
-    if (c.linetarget == null) {
+    if (p_map.linetarget == null) {
         an +%= 1 << 26;
-        slope = c.P_AimLineAttack(@ptrCast(source), an, 16 * 64 * FRACUNIT);
+        slope = p_map.P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
 
-        if (c.linetarget == null) {
+        if (p_map.linetarget == null) {
             an -= 2 << 26;
-            slope = c.P_AimLineAttack(@ptrCast(source), an, 16 * 64 * FRACUNIT);
+            slope = p_map.P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
         }
 
-        if (c.linetarget == null) {
+        if (p_map.linetarget == null) {
             an = source.angle;
             slope = 0;
         }

@@ -1,7 +1,9 @@
 const c = @import("c");
 
 const S_StartSound = @import("s_sound.zig").S_StartSound_Zig;
+const p_map = @import("p_map.zig");
 const p_mobj = @import("p_mobj.zig");
+const MObj = p_mobj.MObj;
 const MF_MISSILE = p_mobj.MF_MISSILE;
 const P_SpawnMobj = p_mobj.P_SpawnMobj;
 pub const p_tick = @import("p_tick.zig");
@@ -10,7 +12,7 @@ pub const p_tick = @import("p_tick.zig");
 //
 // TELEPORTATION
 //
-pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *c.mobj_t) c_int {
+pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) c_int {
 
     // don't teleport missiles
     if (thing.flags & MF_MISSILE != 0) {
@@ -48,14 +50,14 @@ pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *c.mobj_t) c_int 
             const oldy = thing.y;
             const oldz = thing.z;
 
-            if (c.P_TeleportMove(thing, m.x, m.y) == 0) {
+            if (p_map.P_TeleportMove(thing, m.x, m.y) == c.false) {
                 return 0;
             }
 
             thing.z = thing.floorz; // FIXME: not needed?
 
             if (thing.player != null) {
-                thing.player.*.viewz = thing.z + thing.player.*.viewheight;
+                thing.player.?.viewz = thing.z + thing.player.?.viewheight;
             }
 
             // spawn teleport fog at source and destination

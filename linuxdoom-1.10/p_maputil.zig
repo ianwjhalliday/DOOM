@@ -5,6 +5,7 @@ const m_bbox = @import("m_bbox.zig");
 const BBox = m_bbox.BBox;
 const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
+const FixedAbs = m_fixed.FixedAbs;
 const FixedDiv = m_fixed.FixedDiv;
 const FixedMul = m_fixed.FixedMul;
 const FRACBITS = m_fixed.FRACBITS;
@@ -17,8 +18,8 @@ const p_setup = @import("p_setup.zig");
 
 /// Gives an estimation of distance (not exact)
 pub export fn P_AproxDistance(dx: fixed_t, dy: fixed_t) fixed_t {
-    const adx: fixed_t = @bitCast(@abs(dx));
-    const ady: fixed_t = @bitCast(@abs(dy));
+    const adx = FixedAbs(dx);
+    const ady = FixedAbs(dy);
     if (adx < ady) {
         return adx + ady - (adx >> 1);
     }
@@ -26,7 +27,7 @@ pub export fn P_AproxDistance(dx: fixed_t, dy: fixed_t) fixed_t {
 }
 
 /// Returns 0 (front side) or 1 (back side)
-pub export fn P_PointOnLineSide(x: fixed_t, y: fixed_t, line: *const c.line_t) c_int {
+pub fn P_PointOnLineSide(x: fixed_t, y: fixed_t, line: *const c.line_t) c_int {
     if (line.dx == 0) {
         if (x <= line.v1.*.x) {
             return @intFromBool(line.dy > 0);
@@ -55,7 +56,7 @@ pub export fn P_PointOnLineSide(x: fixed_t, y: fixed_t, line: *const c.line_t) c
 
 /// Considers the line to be infinite
 /// Returns 0 (front side) or 1 (back side), or -1 if box crosses the line.
-pub export fn P_BoxOnLineSide(tmbox: *const BBox, ld: *const c.line_t) c_int {
+pub fn P_BoxOnLineSide(tmbox: *const BBox, ld: *const c.line_t) c_int {
     const p1: c_int, const p2: c_int = switch (ld.slopetype) {
         c.ST_HORIZONTAL => blk: {
             const flip = ld.dx < 0;
@@ -139,10 +140,10 @@ fn P_InterceptVector(v2: *const c.divline_t, v1: *const c.divline_t) fixed_t {
     return FixedDiv(num, den);
 }
 
-export var opentop: fixed_t = 0;
-export var openbottom: fixed_t = 0;
-export var openrange: fixed_t = 0;
-export var lowfloor: fixed_t = 0;
+pub export var opentop: fixed_t = 0;
+pub export var openbottom: fixed_t = 0;
+pub export var openrange: fixed_t = 0;
+pub var lowfloor: fixed_t = 0;
 
 /// Sets opentop and openbottom to the window through a two sided line.
 pub export fn P_LineOpening(linedef: *const c.line_t) void {
@@ -256,12 +257,15 @@ pub export fn P_SetThingPosition(thing: *MObj) void {
 // exit with false without checking anything else.
 //
 
+pub const LineVisitor = *const fn (*c.line_t) bool;
+pub const ThingVisitor = *const fn (*MObj) callconv(.c) c.boolean;
+
 /// The validcount flags are used to avoid checking lines that are marked in
 /// multiple mapblocks, so increment validcount before the first call to
 /// P_BlockLinesIterator, then make one or more calls to it.
-pub export fn P_BlockLinesIterator(x: c_int, y: c_int, func: *const fn (*c.line_t) callconv(.c) c.boolean) c.boolean {
+pub fn P_BlockLinesIterator(x: c_int, y: c_int, func: LineVisitor) bool {
     if (x < 0 or y < 0 or x >= p_setup.bmapwidth or y >= p_setup.bmapheight) {
-        return c.true;
+        return true;
     }
 
     const offset: usize = @intCast(p_setup.blockmap[@intCast(y * p_setup.bmapwidth + x)]);
@@ -276,15 +280,15 @@ pub export fn P_BlockLinesIterator(x: c_int, y: c_int, func: *const fn (*c.line_
 
         ld.validcount = c.validcount;
 
-        if (func(ld) == c.false) {
-            return c.false;
+        if (!func(ld)) {
+            return false;
         }
     }
 
-    return c.true; // everything was checked
+    return true; // everything was checked
 }
 
-pub export fn P_BlockThingsIterator(x: c_int, y: c_int, func: *const fn (*MObj) callconv(.c) c.boolean) c.boolean {
+pub export fn P_BlockThingsIterator(x: c_int, y: c_int, func: ThingVisitor) c.boolean {
     if (x < 0 or y < 0 or x >= p_setup.bmapwidth or y >= p_setup.bmapheight) {
         return c.true;
     }
@@ -306,7 +310,7 @@ const MAXINTERCEPTS = 128;
 var intercepts: [MAXINTERCEPTS]c.intercept_t = undefined;
 var intercept_n: usize = 0;
 
-pub export var trace: c.divline_t = undefined;
+pub var trace: c.divline_t = undefined;
 var earlyout = false;
 
 /// Looks for lines in the given block that intercept the given trace to add
@@ -314,7 +318,7 @@ var earlyout = false;
 ///
 /// A line is crossed if its endpoints are on opposite sides of the trace.
 /// Returns true if earlyout and a solid line hit.
-fn PIT_AddLineIntercepts(ld: *c.line_t) callconv(.c) c.boolean {
+fn PIT_AddLineIntercepts(ld: *c.line_t) bool {
     // avoid precision problems with two routines
     const s1: c_int, const s2: c_int = if (trace.dx > FRACUNIT * 16 or trace.dy > FRACUNIT * 16 or trace.dx < -FRACUNIT * 16 or trace.dy < -FRACUNIT * 16) .{
         P_PointOnDivlineSide(ld.v1.*.x, ld.v1.*.y, &trace),
@@ -325,7 +329,7 @@ fn PIT_AddLineIntercepts(ld: *c.line_t) callconv(.c) c.boolean {
     };
 
     if (s1 == s2) {
-        return c.true; // line isn't crossed
+        return true; // line isn't crossed
     }
 
     // hit the line
@@ -334,12 +338,12 @@ fn PIT_AddLineIntercepts(ld: *c.line_t) callconv(.c) c.boolean {
     const frac = P_InterceptVector(&trace, &dl);
 
     if (frac < 0) {
-        return c.true; // behind source
+        return true; // behind source
     }
 
     // try to early out the check
     if (earlyout and frac < FRACUNIT and ld.backsector == null) {
-        return c.false; // stop checking
+        return false; // stop checking
     }
 
     intercepts[intercept_n] = .{
@@ -349,7 +353,7 @@ fn PIT_AddLineIntercepts(ld: *c.line_t) callconv(.c) c.boolean {
     };
     intercept_n += 1;
 
-    return c.true; // continue
+    return true; // continue
 }
 
 fn PIT_AddThingIntercepts(thing: *MObj) callconv(.c) c.boolean {
@@ -395,10 +399,10 @@ fn PIT_AddThingIntercepts(thing: *MObj) callconv(.c) c.boolean {
     return c.true; // keep going
 }
 
-pub const Traverser = *const fn (*c.intercept_t) callconv(.c) c.boolean;
+pub const Traverser = *const fn (*c.intercept_t) bool;
 
 /// Returns true if the traverser function returns true for all lines.
-fn P_TraverseIntercepts(func: Traverser, maxfrac: fixed_t) c.boolean {
+fn P_TraverseIntercepts(func: Traverser, maxfrac: fixed_t) bool {
     var in: *c.intercept_t = undefined;
 
     for (0..intercept_n) |_| {
@@ -412,17 +416,17 @@ fn P_TraverseIntercepts(func: Traverser, maxfrac: fixed_t) c.boolean {
         }
 
         if (dist > maxfrac) {
-            return c.true; // checked everything in range
+            return true; // checked everything in range
         }
 
-        if (func(in) == c.false) {
-            return c.false; // don't bother going farther
+        if (!func(in)) {
+            return false; // don't bother going farther
         }
 
         in.frac = std.math.maxInt(fixed_t);
     }
 
-    return c.true; // everything was traversed
+    return true; // everything was traversed
 }
 
 fn onBlockBoundary(v: fixed_t, origin: fixed_t) bool {
@@ -436,7 +440,7 @@ fn fracInBlock(v: fixed_t) fixed_t {
 
 /// Traces a line from x1,y1 to x2,y2, calling the traverser function for
 /// each. Returns true if the traverser function returns true for all lines.
-pub export fn P_PathTraverse(_x1: fixed_t, _y1: fixed_t, _x2: fixed_t, _y2: fixed_t, flags: c_int, trav: Traverser) c.boolean {
+pub fn P_PathTraverse(_x1: fixed_t, _y1: fixed_t, _x2: fixed_t, _y2: fixed_t, flags: c_int, trav: Traverser) bool {
     var x1 = _x1;
     var y1 = _y1;
     var x2 = _x2;
@@ -480,9 +484,9 @@ pub export fn P_PathTraverse(_x1: fixed_t, _y1: fixed_t, _x2: fixed_t, _y2: fixe
     const yt2 = y2 >> c.MAPBLOCKSHIFT;
 
     const mapxstep: c_int, const xpartial, const ystep = if (xt2 > xt1) .{
-        1, FRACUNIT - fracInBlock(x1), FixedDiv(y2 - y1, @intCast(@abs(x2 - x1)))
+        1, FRACUNIT - fracInBlock(x1), FixedDiv(y2 - y1, FixedAbs(x2 - x1))
     } else if (xt2 < xt1) .{
-        -1, fracInBlock(x1), FixedDiv(y2 - y1, @intCast(@abs(x2 - x1)))
+        -1, fracInBlock(x1), FixedDiv(y2 - y1, FixedAbs(x2 - x1))
     } else .{
         0, FRACUNIT, 256 * FRACUNIT
     };
@@ -490,9 +494,9 @@ pub export fn P_PathTraverse(_x1: fixed_t, _y1: fixed_t, _x2: fixed_t, _y2: fixe
     var yintercept = (y1 >> c.MAPBTOFRAC) + FixedMul(xpartial, ystep);
 
     const mapystep: c_int, const ypartial, const xstep = if (yt2 > yt1) .{
-        1, FRACUNIT - fracInBlock(y1), FixedDiv(x2 - x1, @intCast(@abs(y2 - y1)))
+        1, FRACUNIT - fracInBlock(y1), FixedDiv(x2 - x1, FixedAbs(y2 - y1))
     } else if (yt2 < yt1) .{
-        -1, fracInBlock(y1), FixedDiv(x2 - x1, @intCast(@abs(y2 - y1)))
+        -1, fracInBlock(y1), FixedDiv(x2 - x1, FixedAbs(y2 - y1))
     } else .{
         0, FRACUNIT, 256 * FRACUNIT
     };
@@ -506,14 +510,14 @@ pub export fn P_PathTraverse(_x1: fixed_t, _y1: fixed_t, _x2: fixed_t, _y2: fixe
 
     for (0..64) |_| {
         if (flags & c.PT_ADDLINES != 0) {
-            if (P_BlockLinesIterator(mapx, mapy, PIT_AddLineIntercepts) == c.false) {
-                return c.false; // early out
+            if (!P_BlockLinesIterator(mapx, mapy, PIT_AddLineIntercepts)) {
+                return false; // early out
             }
         }
 
         if (flags & c.PT_ADDTHINGS != 0) {
             if (P_BlockThingsIterator(mapx, mapy, PIT_AddThingIntercepts) == c.false) {
-                return c.false; // early out
+                return false; // early out
             }
         }
 
