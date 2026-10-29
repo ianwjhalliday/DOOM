@@ -295,6 +295,14 @@ pub const Sfx = enum {
     NUMSFX
 };
 
+pub fn asSfx(n: c_int) Sfx {
+    return @fromBackingInt(@intCast(n));
+}
+
+pub fn sfxOffset(base: Sfx, n: c_int) Sfx {
+    return @fromBackingInt(@intCast(@backingInt(base) + n));
+}
+
 // NOTE: CONSIDER: Can generate the enums from the raw_music and raw_sfx
 // tables. However, the LSP currently cannot figure out the enums when they
 // are done this way. So instead the enums are produced manually above. If

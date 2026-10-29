@@ -73,7 +73,7 @@ pub export var lines: [*]c.line_t = undefined;
 var lines_slice: []c.line_t = undefined;
 
 export var numsides: c_int = undefined;
-export var sides: [*]c.side_t = undefined;
+pub export var sides: [*]c.side_t = undefined;
 var sides_slice: []c.side_t = undefined;
 
 
@@ -91,8 +91,8 @@ pub var blockmap: [*]c_short = undefined;    // int for larger maps
 // offsets in blockmap are from here
 pub var blockmaplump: [*]c_short = undefined;
 // origin of block map
-pub export var bmaporgx: fixed_t = undefined;
-pub export var bmaporgy: fixed_t = undefined;
+pub var bmaporgx: fixed_t = undefined;
+pub var bmaporgy: fixed_t = undefined;
 // for thing chains
 pub var blocklinks: []?*MObj = undefined;
 

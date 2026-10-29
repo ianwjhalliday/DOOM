@@ -50,9 +50,9 @@ var tmx: fixed_t = 0;
 var tmy: fixed_t = 0;
 
 /// If `floatok` true, move would be ok if within `tmfloorz - tmceilingz`.
-pub export var floatok: c.boolean = c.false;
+pub var floatok = false;
 
-pub export var tmfloorz: fixed_t = 0;
+pub var tmfloorz: fixed_t = 0;
 var tmceilingz: fixed_t = 0;
 var tmdropoffz: fixed_t = 0;
 
@@ -63,24 +63,24 @@ pub var ceilingline: ?*const c.line_t = null;
 // keep track of special lines as they are hit, but don't process them until
 // the move is proven valid
 const MAXSPECIALCROSS = 8;
-pub export var spechit: [MAXSPECIALCROSS]*c.line_t = undefined;
-pub export var numspechit: usize = 0;
+pub var spechit: [MAXSPECIALCROSS]*c.line_t = undefined;
+pub var numspechit: usize = 0;
 
-fn PIT_StompThing(thing: *MObj) callconv(.c) c.boolean {
+fn PIT_StompThing(thing: *MObj) bool {
     if (thing.flags & MF_SHOOTABLE == 0) {
-        return c.true;
+        return true;
     }
 
     const blockdist = thing.radius + tmthing.radius;
 
     if (FixedAbs(thing.x - tmx) >= blockdist or FixedAbs(thing.y - tmy) >= blockdist) {
         // didn't hit it
-        return c.true;
+        return true;
     }
 
     // don't clip against self
     if (thing == tmthing) {
-        return c.true;
+        return true;
     }
 
     // TODO: Consider: This monster stomp hack ought to be controllable in the
@@ -88,15 +88,15 @@ fn PIT_StompThing(thing: *MObj) callconv(.c) c.boolean {
     //
     // monsters don't stomp things except on boss level
     if (tmthing.player == null and g_game.gamemap != 30) {
-        return c.false;
+        return false;
     }
 
     p_inter.P_DamageMobj(thing, tmthing, tmthing, 10000);
 
-    return c.true;
+    return true;
 }
 
-pub export fn P_TeleportMove(thing: *MObj, x: fixed_t, y: fixed_t) c.boolean {
+pub fn P_TeleportMove(thing: *MObj, x: fixed_t, y: fixed_t) bool {
     // kill anything occupying the position
     tmthing = thing;
     tmflags = thing.flags;
@@ -131,8 +131,8 @@ pub export fn P_TeleportMove(thing: *MObj, x: fixed_t, y: fixed_t) c.boolean {
     while (bx <= xh) : (bx += 1) {
         var by = yl;
         while (by <= yh) : (by += 1) {
-            if (p_maputil.P_BlockThingsIterator(bx, by, PIT_StompThing) == c.false) {
-                return c.false;
+            if (!p_maputil.P_BlockThingsIterator(bx, by, PIT_StompThing)) {
+                return false;
             }
         }
     }
@@ -147,7 +147,7 @@ pub export fn P_TeleportMove(thing: *MObj, x: fixed_t, y: fixed_t) c.boolean {
 
     p_maputil.P_SetThingPosition(thing);
 
-    return c.true;
+    return true;
 }
 
 fn PIT_CheckLine(ld: *c.line_t) bool {
@@ -208,20 +208,20 @@ fn PIT_CheckLine(ld: *c.line_t) bool {
     return true;
 }
 
-fn PIT_CheckThing(thing: *MObj) callconv(.c) c.boolean {
+fn PIT_CheckThing(thing: *MObj) bool {
     if (thing.flags & (MF_SOLID | MF_SPECIAL | MF_SHOOTABLE) == 0) {
-        return c.true;
+        return true;
     }
 
     const blockdist = thing.radius + tmthing.radius;
 
     if (FixedAbs(thing.x - tmx) >= blockdist or FixedAbs(thing.y - tmy) >= blockdist) {
-        return c.true; // didn't hit it
+        return true; // didn't hit it
     }
 
     // don't clip against self
     if (thing == tmthing) {
-        return c.true;
+        return true;
     }
 
     // check for skulls slamming into things
@@ -237,17 +237,17 @@ fn PIT_CheckThing(thing: *MObj) callconv(.c) c.boolean {
 
         _ = p_mobj.P_SetMobjState(tmthing, @intCast(tmthing.info.*.spawnstate));
 
-        return c.false; // stop moving
+        return false; // stop moving
     }
 
     // missiles can hit other things
     if (tmthing.flags & MF_MISSILE != 0) {
         // see if it went over / under
         if (tmthing.z > thing.z + thing.height) {
-            return c.true; // overhead
+            return true; // overhead
         }
         if (tmthing.z + tmthing.height < thing.z) {
-            return c.true; // underneath
+            return true; // underneath
         }
 
         if (tmthing.target != null and (tmthing.target.?.type == thing.type or
@@ -256,19 +256,19 @@ fn PIT_CheckThing(thing: *MObj) callconv(.c) c.boolean {
         {
             // Don't hit some species as originator
             if (thing == tmthing.target) {
-                return c.true;
+                return true;
             }
 
             if (thing.type != c.MT_PLAYER) {
                 // Explode, but do no damage.
                 // Let players missile other players.
-                return c.false;
+                return false;
             }
         }
 
         if (thing.flags & MF_SHOOTABLE == 0) {
             // didn't do any damage
-            return d_main.toDoomBoolean(thing.flags & MF_SOLID == 0);
+            return thing.flags & MF_SOLID == 0;
         }
 
         // damage / explode
@@ -276,7 +276,7 @@ fn PIT_CheckThing(thing: *MObj) callconv(.c) c.boolean {
         p_inter.P_DamageMobj(thing, tmthing, tmthing.target, damage);
 
         // don't traverse any more
-        return c.false;
+        return false;
     }
 
     // check for special pickup
@@ -286,10 +286,10 @@ fn PIT_CheckThing(thing: *MObj) callconv(.c) c.boolean {
             // can remove thing
             p_inter.P_TouchSpecialThing(thing, tmthing);
         }
-        return d_main.toDoomBoolean(!solid);
+        return !solid;
     }
 
-    return d_main.toDoomBoolean(thing.flags & MF_SOLID == 0);
+    return thing.flags & MF_SOLID == 0;
 }
 
 /// Checks whether `thing` could stand at (x, y). Its current position is
@@ -303,7 +303,7 @@ fn PIT_CheckThing(thing: *MObj) callconv(.c) c.boolean {
 ///   tmdropoffz            lowest floor contacted (monsters avoid dropoffs)
 ///   ceilingline           line that set tmceilingz, if any
 ///   spechit, numspechit   special lines crossed, for P_TryMove to trigger
-pub export fn P_CheckPosition(thing: *MObj, x: fixed_t, y: fixed_t) c.boolean {
+pub fn P_CheckPosition(thing: *MObj, x: fixed_t, y: fixed_t) bool {
     // TODO: Consider refactoring the duplicate code between here and
     // P_TeleportMove, something like
     // `fn setupCheck(thing: *MObj, x: fixed_t, y: fixed_t) void`
@@ -331,7 +331,7 @@ pub export fn P_CheckPosition(thing: *MObj, x: fixed_t, y: fixed_t) c.boolean {
     numspechit = 0;
 
     if (tmflags & MF_NOCLIP != 0) {
-        return c.true;
+        return true;
     }
 
     // Check things first, possibly picking things up. The bounding box is
@@ -348,8 +348,8 @@ pub export fn P_CheckPosition(thing: *MObj, x: fixed_t, y: fixed_t) c.boolean {
         while (bx <= xh) : (bx += 1) {
             var by = yl;
             while (by <= yh) : (by += 1) {
-                if (p_maputil.P_BlockThingsIterator(bx, by, PIT_CheckThing) == c.false) {
-                    return c.false;
+                if (!p_maputil.P_BlockThingsIterator(bx, by, PIT_CheckThing)) {
+                    return false;
                 }
             }
         }
@@ -367,40 +367,40 @@ pub export fn P_CheckPosition(thing: *MObj, x: fixed_t, y: fixed_t) c.boolean {
             var by = yl;
             while (by <= yh) : (by += 1) {
                 if (!p_maputil.P_BlockLinesIterator(bx, by, PIT_CheckLine)) {
-                    return c.false;
+                    return false;
                 }
             }
         }
     }
 
-    return c.true;
+    return true;
 }
 
 /// Attempt to move to a new position, crossing special lines unless
 /// MF_TELEPORT is set.
-pub export fn P_TryMove(thing: *MObj, x: fixed_t, y: fixed_t) c.boolean {
-    floatok = c.false;
-    if (P_CheckPosition(thing, x, y) == c.false) {
-        return c.false; // solid wall or thing
+pub fn P_TryMove(thing: *MObj, x: fixed_t, y: fixed_t) bool {
+    floatok = false;
+    if (!P_CheckPosition(thing, x, y)) {
+        return false; // solid wall or thing
     }
 
     if (thing.flags & MF_NOCLIP == 0) {
         if (tmceilingz - tmfloorz < thing.height) {
-            return c.false; // doesn't fit
+            return false; // doesn't fit
         }
 
-        floatok = c.true;
+        floatok = true;
 
         if (thing.flags & MF_TELEPORT == 0 and tmceilingz - thing.z < thing.height) {
-            return c.false; // mobj must lower itself to fit
+            return false; // mobj must lower itself to fit
         }
 
         if (thing.flags & MF_TELEPORT == 0 and tmfloorz - thing.z > 24 * FRACUNIT) {
-            return c.false; // too big a step up
+            return false; // too big a step up
         }
 
         if (thing.flags & (MF_DROPOFF | MF_FLOAT) == 0 and tmfloorz - tmdropoffz > 24 * FRACUNIT) {
-            return c.false; // don't stand over a dropoff
+            return false; // don't stand over a dropoff
         }
     }
 
@@ -433,7 +433,7 @@ pub export fn P_TryMove(thing: *MObj, x: fixed_t, y: fixed_t) c.boolean {
         }
     }
 
-    return c.true;
+    return true;
 }
 
 /// Takes a valid thing and adjusts the thing.floorz, thing.ceilingz, and
@@ -599,7 +599,7 @@ pub fn P_SlideMove(mo: *MObj) void {
             const newx = FixedMul(mo.momx, bestslidefrac);
             const newy = FixedMul(mo.momy, bestslidefrac);
 
-            if (P_TryMove(mo, mo.x + newx, mo.y + newy) == c.false) {
+            if (!P_TryMove(mo, mo.x + newx, mo.y + newy)) {
                 // do a stair step
                 break;
             }
@@ -624,7 +624,7 @@ pub fn P_SlideMove(mo: *MObj) void {
         mo.momx = tmxmove;
         mo.momy = tmymove;
 
-        if (P_TryMove(mo, mo.x + tmxmove, mo.y + tmymove) != c.false) {
+        if (P_TryMove(mo, mo.x + tmxmove, mo.y + tmymove)) {
             // good
             return;
         }
@@ -632,7 +632,7 @@ pub fn P_SlideMove(mo: *MObj) void {
     }
 
     // do a stairstep
-    if (P_TryMove(mo, mo.x, mo.y + mo.momy) == c.false) {
+    if (!P_TryMove(mo, mo.x, mo.y + mo.momy)) {
         _ = P_TryMove(mo, mo.x + mo.momx, mo.y);
     }
 }
@@ -913,14 +913,14 @@ var bombspot: *MObj = undefined;
 var bombdamage: c_int = 0;
 
 /// "bombsource" is the creature that caused the explosion at "bombspot".
-fn PIT_RadiusAttack(thing: *MObj) callconv(.c) c.boolean {
+fn PIT_RadiusAttack(thing: *MObj) bool {
     if (thing.flags & MF_SHOOTABLE == 0) {
-        return c.true;
+        return true;
     }
 
     // Boss spider and cyborg take no damage from concussion.
     if (thing.type == c.MT_CYBORG or thing.type == c.MT_SPIDER) {
-        return c.true;
+        return true;
     }
 
     const dx = FixedAbs(thing.x - bombspot.x);
@@ -928,19 +928,19 @@ fn PIT_RadiusAttack(thing: *MObj) callconv(.c) c.boolean {
     const dist = @max(0, (@max(dx, dy) - thing.radius) >> FRACBITS);
 
     if (dist >= bombdamage) {
-        return c.true; // out of range
+        return true; // out of range
     }
 
-    if (p_sight.P_CheckSight(thing, bombspot) != c.false) {
+    if (p_sight.P_CheckSight(thing, bombspot)) {
         // must be in direct path
         p_inter.P_DamageMobj(thing, bombspot, bombsource, bombdamage - dist);
     }
 
-    return c.true;
+    return true;
 }
 
 /// Source is the creature that caused the explosion at spot.
-pub export fn P_RadiusAttack(spot: *MObj, source: ?*MObj, damage: c_int) void {
+pub fn P_RadiusAttack(spot: *MObj, source: ?*MObj, damage: c_int) void {
     const dist = (damage + c.MAXRADIUS) << FRACBITS;
     const yh = (spot.y + dist - p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
     const yl = (spot.y - dist - p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
@@ -963,10 +963,10 @@ pub export fn P_RadiusAttack(spot: *MObj, source: ?*MObj, damage: c_int) void {
 var crushchange: bool = false;
 var nofit: bool = false;
 
-fn PIT_ChangeSector(thing: *MObj) callconv(.c) c.boolean {
+fn PIT_ChangeSector(thing: *MObj) bool {
     if (P_ThingHeightClip(thing)) {
         // keep checking
-        return c.true;
+        return true;
     }
 
     // crunch bodies into giblets
@@ -978,7 +978,7 @@ fn PIT_ChangeSector(thing: *MObj) callconv(.c) c.boolean {
         thing.radius = 0;
 
         // keep checking
-        return c.true;
+        return true;
     }
 
     // crunch dropped items
@@ -986,12 +986,12 @@ fn PIT_ChangeSector(thing: *MObj) callconv(.c) c.boolean {
         p_mobj.P_RemoveMobj(thing);
 
         // keep checking
-        return c.true;
+        return true;
     }
 
     if (thing.flags & MF_SHOOTABLE == 0) {
         // assume it is bloody gibs or something; keep checking
-        return c.true;
+        return true;
     }
 
     nofit = true;
@@ -1006,7 +1006,7 @@ fn PIT_ChangeSector(thing: *MObj) callconv(.c) c.boolean {
     }
 
     // keep checking (crush other things)
-    return c.true;
+    return true;
 }
 
 /// SECTOR HEIGHT CHANGING

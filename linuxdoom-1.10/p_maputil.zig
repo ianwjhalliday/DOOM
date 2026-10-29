@@ -17,7 +17,7 @@ const MObj = p_mobj.MObj;
 const p_setup = @import("p_setup.zig");
 
 /// Gives an estimation of distance (not exact)
-pub export fn P_AproxDistance(dx: fixed_t, dy: fixed_t) fixed_t {
+pub fn P_AproxDistance(dx: fixed_t, dy: fixed_t) fixed_t {
     const adx = FixedAbs(dx);
     const ady = FixedAbs(dy);
     if (adx < ady) {
@@ -142,11 +142,11 @@ pub fn P_InterceptVector(v2: *const c.divline_t, v1: *const c.divline_t) fixed_t
 
 pub var opentop: fixed_t = 0;
 pub var openbottom: fixed_t = 0;
-pub export var openrange: fixed_t = 0;
+pub var openrange: fixed_t = 0;
 pub var lowfloor: fixed_t = 0;
 
 /// Sets opentop and openbottom to the window through a two sided line.
-pub export fn P_LineOpening(linedef: *const c.line_t) void {
+pub fn P_LineOpening(linedef: *const c.line_t) void {
     if (linedef.sidenum[1] == -1) {
         // single sided line
         openrange = 0;
@@ -172,7 +172,7 @@ pub export fn P_LineOpening(linedef: *const c.line_t) void {
 /// Unlinks a thing from block map and sectors. On each position change,
 /// BLOCKMAP and other lookups maintaining lists of things inside these
 /// structures need to be updated.
-pub export fn P_UnsetThingPosition(thing: *MObj) void {
+pub fn P_UnsetThingPosition(thing: *MObj) void {
     if (thing.flags & MF_NOSECTOR == 0) {
         // inert things don't need to be in blockmap?
         // unlink from subsector
@@ -258,7 +258,7 @@ pub export fn P_SetThingPosition(thing: *MObj) void {
 //
 
 pub const LineVisitor = *const fn (*c.line_t) bool;
-pub const ThingVisitor = *const fn (*MObj) callconv(.c) c.boolean;
+pub const ThingVisitor = *const fn (*MObj) bool;
 
 /// The validcount flags are used to avoid checking lines that are marked in
 /// multiple mapblocks, so increment validcount before the first call to
@@ -288,19 +288,19 @@ pub fn P_BlockLinesIterator(x: c_int, y: c_int, func: LineVisitor) bool {
     return true; // everything was checked
 }
 
-pub export fn P_BlockThingsIterator(x: c_int, y: c_int, func: ThingVisitor) c.boolean {
+pub fn P_BlockThingsIterator(x: c_int, y: c_int, func: ThingVisitor) bool {
     if (x < 0 or y < 0 or x >= p_setup.bmapwidth or y >= p_setup.bmapheight) {
-        return c.true;
+        return true;
     }
 
     var link = p_setup.blocklinks[@intCast(y * p_setup.bmapwidth + x)];
     while (link) |mobj| : (link = mobj.bnext) {
-        if (func(mobj) == c.false) {
-            return c.false;
+        if (!func(mobj)) {
+            return false;
         }
     }
 
-    return c.true; // everything was checked
+    return true; // everything was checked
 }
 
 //
@@ -356,7 +356,7 @@ fn PIT_AddLineIntercepts(ld: *c.line_t) bool {
     return true; // continue
 }
 
-fn PIT_AddThingIntercepts(thing: *MObj) callconv(.c) c.boolean {
+fn PIT_AddThingIntercepts(thing: *MObj) bool {
     // check a corner to corner cross section for hit
     const x1 = thing.x - thing.radius;
     const x2 = thing.x + thing.radius;
@@ -373,7 +373,7 @@ fn PIT_AddThingIntercepts(thing: *MObj) callconv(.c) c.boolean {
     const s2 = P_PointOnDivlineSide(x2, y2, &trace);
 
     if (s1 == s2) {
-        return c.true; // line isn't crossed
+        return true; // line isn't crossed
     }
 
     const dl = c.divline_t{
@@ -386,7 +386,7 @@ fn PIT_AddThingIntercepts(thing: *MObj) callconv(.c) c.boolean {
     const frac = P_InterceptVector(&trace, &dl);
 
     if (frac < 0) {
-        return c.true; // behind source
+        return true; // behind source
     }
 
     intercepts[intercept_n] = .{
@@ -396,7 +396,7 @@ fn PIT_AddThingIntercepts(thing: *MObj) callconv(.c) c.boolean {
     };
     intercept_n += 1;
 
-    return c.true; // keep going
+    return true; // keep going
 }
 
 pub const Traverser = *const fn (*c.intercept_t) bool;
@@ -516,7 +516,7 @@ pub fn P_PathTraverse(_x1: fixed_t, _y1: fixed_t, _x2: fixed_t, _y2: fixed_t, fl
         }
 
         if (flags & c.PT_ADDTHINGS != 0) {
-            if (P_BlockThingsIterator(mapx, mapy, PIT_AddThingIntercepts) == c.false) {
+            if (!P_BlockThingsIterator(mapx, mapy, PIT_AddThingIntercepts)) {
                 return false; // early out
             }
         }

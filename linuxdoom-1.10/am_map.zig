@@ -1029,8 +1029,8 @@ fn AM_drawMline(ml: *mline_t, color: u8) void {
 fn AM_drawGrid(color: u8) void {
     // Figure out start of vertical gridlines
     var start = m_x;
-    if (@mod(start - c.bmaporgx, c.MAPBLOCKUNITS << FRACBITS) != 0) {
-        start += (c.MAPBLOCKUNITS << FRACBITS) - @mod(start - c.bmaporgx, c.MAPBLOCKUNITS << FRACBITS);
+    if (@mod(start - p_setup.bmaporgx, c.MAPBLOCKUNITS << FRACBITS) != 0) {
+        start += (c.MAPBLOCKUNITS << FRACBITS) - @mod(start - p_setup.bmaporgx, c.MAPBLOCKUNITS << FRACBITS);
     }
     var end = m_x + m_w;
 
@@ -1047,8 +1047,8 @@ fn AM_drawGrid(color: u8) void {
 
     // Figure out start of horizontal gridlines
     start = m_y;
-    if (@mod(start - c.bmaporgy, c.MAPBLOCKUNITS << FRACBITS) != 0) {
-        start += (c.MAPBLOCKUNITS << FRACBITS) - @mod(start - c.bmaporgy, c.MAPBLOCKUNITS << FRACBITS);
+    if (@mod(start - p_setup.bmaporgy, c.MAPBLOCKUNITS << FRACBITS) != 0) {
+        start += (c.MAPBLOCKUNITS << FRACBITS) - @mod(start - p_setup.bmaporgy, c.MAPBLOCKUNITS << FRACBITS);
     }
     end = m_y + m_h;
 

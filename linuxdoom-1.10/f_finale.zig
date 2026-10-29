@@ -13,6 +13,7 @@ const LONG = m_swap.LONG;
 const SHORT = m_swap.SHORT;
 const sounds = @import("sounds.zig");
 const Sfx = sounds.Sfx;
+const asSfx = sounds.asSfx;
 const s_sound = @import("s_sound.zig");
 const S_ChangeMusicEnum = s_sound.S_ChangeMusicEnum;
 const S_StartMusic = s_sound.S_StartMusic;
@@ -306,7 +307,7 @@ fn F_CastTicker() void {
         moinfo = c.mobjinfo[castorder[castnum].type];
 
         if (moinfo.seesound != 0) {
-            S_StartSound(null, @fromBackingInt(@intCast(moinfo.seesound)));
+            S_StartSound(null, asSfx(moinfo.seesound));
         }
 
         caststate = &c.states[@intCast(moinfo.seestate)];
@@ -424,7 +425,7 @@ fn F_CastResponder(ev: *Event) bool {
     castframes = 0;
     castattacking = false;
     if (c.mobjinfo[castorder[castnum].type].deathsound != 0) {
-        S_StartSound(null, @fromBackingInt(@intCast(c.mobjinfo[castorder[castnum].type].deathsound)));
+        S_StartSound(null, asSfx(c.mobjinfo[castorder[castnum].type].deathsound));
     }
 
     return true;

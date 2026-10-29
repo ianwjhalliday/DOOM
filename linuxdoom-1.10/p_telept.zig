@@ -33,7 +33,7 @@ pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) c_int {
         var thinker = p_tick.thinkercap.next orelse &p_tick.thinkercap;
         while (thinker != &p_tick.thinkercap) : (thinker = thinker.next.?) {
             // not a mobj
-            if (thinker.function.acp1 != @as(p_tick.actionf_p1, @ptrCast(&c.P_MobjThinker))) {
+            if (thinker.function.acp1 != p_mobj.mobj_thinker) {
                 continue;
             }
 
@@ -51,7 +51,7 @@ pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) c_int {
             const oldy = thing.y;
             const oldz = thing.z;
 
-            if (p_map.P_TeleportMove(thing, m.x, m.y) == c.false) {
+            if (!p_map.P_TeleportMove(thing, m.x, m.y)) {
                 return 0;
             }
 

@@ -176,7 +176,7 @@ fn P_DeathThink(player: *Player) void {
 //
 // P_PlayerThink
 //
-pub export fn P_PlayerThink(player: *Player) void {
+pub fn P_PlayerThink(player: *Player) void {
     // fixme: do this in the cheat code
     if (player.cheats & CF_NOCLIP != 0) {
         player.mo.?.flags |= c.MF_NOCLIP;

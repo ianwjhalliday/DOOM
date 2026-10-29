@@ -84,12 +84,6 @@ void P_DropWeapon (player_t* player);
 
 
 //
-// P_USER
-//
-void	P_PlayerThink (player_t* player);
-
-
-//
 // P_MOBJ
 //
 #define ONFLOORZ		MININT
@@ -98,13 +92,7 @@ void	P_PlayerThink (player_t* player);
 // Time interval for item respawning.
 #define ITEMQUESIZE		128
 
-extern mapthing_t	itemrespawnque[ITEMQUESIZE];
-extern int		itemrespawntime[ITEMQUESIZE];
-extern int		iquehead;
-extern int		iquetail;
 
-
-void P_RespawnSpecials (void);
 
 mobj_t*
 P_SpawnMobj
@@ -117,9 +105,6 @@ void 	P_RemoveMobj (mobj_t* th);
 boolean	P_SetMobjState (mobj_t* mobj, statenum_t state);
 void 	P_MobjThinker (mobj_t* mobj);
 
-void	P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z);
-void 	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage);
-mobj_t* P_SpawnMissile (mobj_t* source, mobj_t* dest, mobjtype_t type);
 void	P_SpawnPlayerMissile (mobj_t* source, mobjtype_t type);
 
 
@@ -151,19 +136,10 @@ typedef struct
     }			d;
 } intercept_t;
 
-fixed_t P_AproxDistance (fixed_t dx, fixed_t dy);
-
-extern fixed_t		openrange;
-
-void 	P_LineOpening (line_t* linedef);
-
-boolean P_BlockThingsIterator (int x, int y, boolean(*func)(mobj_t*) );
-
 #define PT_ADDLINES		1
 #define PT_ADDTHINGS	2
 #define PT_EARLYOUT		4
 
-void P_UnsetThingPosition (mobj_t* thing);
 void P_SetThingPosition (mobj_t* thing);
 
 
@@ -171,16 +147,6 @@ void P_SetThingPosition (mobj_t* thing);
 // P_MAP
 //
 
-// If "floatok" true, move would be ok
-// if within "tmfloorz - tmceilingz".
-extern boolean		floatok;
-extern fixed_t		tmfloorz;
-
-
-boolean P_CheckPosition (mobj_t *thing, fixed_t x, fixed_t y);
-boolean P_TryMove (mobj_t* thing, fixed_t x, fixed_t y);
-boolean P_TeleportMove (mobj_t* thing, fixed_t x, fixed_t y);
-boolean P_CheckSight (mobj_t* t1, mobj_t* t2);
 
 boolean P_ChangeSector (sector_t* sector, boolean crunch);
 
@@ -200,21 +166,6 @@ P_LineAttack
   fixed_t	slope,
   int		damage );
 
-void
-P_RadiusAttack
-( mobj_t*	spot,
-  mobj_t*	source,
-  int		damage );
-
-
-
-//
-// P_SETUP
-//
-extern byte*		rejectmatrix;	// for fast sight rejection
-extern fixed_t		bmaporgx;
-extern fixed_t		bmaporgy;	// origin of block map
-
 
 
 //
@@ -222,11 +173,6 @@ extern fixed_t		bmaporgy;	// origin of block map
 //
 extern int		maxammo[NUMAMMO];
 extern int		clipammo[NUMAMMO];
-
-void
-P_TouchSpecialThing
-( mobj_t*	special,
-  mobj_t*	toucher );
 
 void
 P_DamageMobj

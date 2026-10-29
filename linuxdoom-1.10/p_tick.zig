@@ -2,10 +2,8 @@ const c = @import("c");
 
 extern fn P_UpdateSpecials() void;
 
-const P_RespawnSpecials = @import("p_mobj.zig").P_RespawnSpecials;
-const player_t = @import("p_user.zig").player_t;
-const P_PlayerThink = @import("p_user.zig").P_PlayerThink;
-const MAXPLAYERS = @import("doomdef.zig").MAXPLAYERS;
+const p_mobj = @import("p_mobj.zig");
+const p_user = @import("p_user.zig");
 
 const g_game = @import("g_game.zig");
 const m_menu = @import("m_menu.zig");
@@ -125,13 +123,13 @@ pub fn P_Ticker() void {
 
     for (&g_game.players, 0..) |*player, i| {
         if (c.playeringame[i] != c.false) {
-            P_PlayerThink(player);
+            p_user.P_PlayerThink(player);
         }
     }
 
     P_RunThinkers();
     P_UpdateSpecials();
-    P_RespawnSpecials();
+    p_mobj.P_RespawnSpecials();
 
     // for par times
     leveltime += 1;

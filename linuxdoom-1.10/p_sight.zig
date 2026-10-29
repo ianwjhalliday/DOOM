@@ -1,6 +1,5 @@
 const c = @import("c");
 
-const d_main = @import("d_main.zig");
 const doomdata = @import("doomdata.zig");
 const m_fixed = @import("m_fixed.zig");
 const FRACBITS = m_fixed.FRACBITS;
@@ -34,7 +33,7 @@ fn P_DivlineSide(x: fixed_t, y: fixed_t, node: *const c.divline_t) usize {
     }
 
     if (node.dy == 0) {
-        // BUG: Is this a copy-paste bug? Shouldn't it be y == node.y?
+        // BUG: vanilla doom compares x, intended y == node.y. Kept for demo sync.
         if (x == node.y) {
             return 2;
         }
@@ -189,7 +188,7 @@ fn P_CrossBSPNode(bspnum: c_int) bool {
 
 /// Returns true if a straight line between t1 and t2 is unobstructed.
 /// Uses REJECT.
-pub export fn P_CheckSight(t1: *MObj, t2: *MObj) c.boolean {
+pub fn P_CheckSight(t1: *MObj, t2: *MObj) bool {
     // First check for trivial rejection.
 
     // Determine subsector entries in REJECT table.
@@ -202,7 +201,7 @@ pub export fn P_CheckSight(t1: *MObj, t2: *MObj) c.boolean {
     // Check in REJECT table.
     if (p_setup.rejectmatrix[bytenum] & bitnum != 0) {
         // can't possibly be connected
-        return c.false;
+        return false;
     }
 
     // An unobstructed LOS is possible. Now look from eyes of t1 to any part
@@ -221,5 +220,5 @@ pub export fn P_CheckSight(t1: *MObj, t2: *MObj) c.boolean {
     strace.dy = t2.y - t1.y;
 
     // the head node is the last node output
-    return d_main.toDoomBoolean(P_CrossBSPNode(p_setup.numnodes - 1));
+    return P_CrossBSPNode(p_setup.numnodes - 1);
 }

@@ -63,6 +63,8 @@ const P_RemoveMobj = p_mobj.P_RemoveMobj;
 const P_SpawnMobj = p_mobj.P_SpawnMobj;
 const P_SpawnPlayer = p_mobj.P_SpawnPlayer;
 
+const p_map = @import("p_map.zig");
+
 const p_setup = @import("p_setup.zig");
 const P_SetupLevel = p_setup.P_SetupLevel;
 
@@ -78,8 +80,6 @@ const s_sound = @import("s_sound.zig");
 const S_StartSound = s_sound.S_StartSound_Zig;
 const S_PauseSound = s_sound.S_PauseSound;
 const S_ResumeSound = s_sound.S_ResumeSound;
-
-const Sfx = @import("sounds.zig").Sfx;
 
 const st_stuff = @import("st_stuff.zig");
 const ST_Ticker = st_stuff.ST_Ticker;
@@ -595,7 +595,7 @@ extern var rndindex: c_int;
 //
 pub export fn G_Ticker() void {
     // do player reborns if needed
-    for (playeringame, players, 0..) |pig, player, i| {
+    for (playeringame, &players, 0..) |pig, *player, i| {
         if (pig != c.false and player.playerstate == .Reborn) {
             G_DoReborn(i);
         }
@@ -766,8 +766,6 @@ pub fn G_PlayerReborn(player: c_uint) void {
     p.maxammo = c.maxammo;
 }
 
-extern fn P_CheckPosition(thing: @TypeOf(players[0].mo), x: c.fixed_t, y: c.fixed_t) c.boolean;
-
 //
 // G_CheckSpot
 // Returns false if the player cannot be respawned
@@ -789,7 +787,7 @@ fn G_CheckSpot(playernum: usize, mthing: *MapThing) bool {
     const x: c.fixed_t = @as(c.fixed_t, mthing.x) << c.FRACBITS;
     const y: c.fixed_t = @as(c.fixed_t, mthing.y) << c.FRACBITS;
 
-    if (P_CheckPosition(players[playernum].mo, x, y) == c.false) {
+    if (!p_map.P_CheckPosition(players[playernum].mo.?, x, y)) {
         return false;
     }
 
@@ -913,7 +911,7 @@ var cpars = [32]c_int{
 var secretexit = false;
 extern var pagename: [*:0]u8;
 
-export fn G_ExitLevel() void {
+pub export fn G_ExitLevel() void {
     secretexit = false;
     gameaction = .Completed;
 }
@@ -1151,7 +1149,7 @@ fn G_DoLoadGame() void {
         var thinker = p_tick.thinkercap.next orelse &p_tick.thinkercap;
         while (thinker != &p_tick.thinkercap) : (thinker = thinker.next.?) {
             // not a mobj
-            if (thinker.function.acp1 != @as(p_tick.actionf_p1, @ptrCast(&c.P_MobjThinker))) {
+            if (thinker.function.acp1 != p_mobj.mobj_thinker) {
                 continue;
             }
 

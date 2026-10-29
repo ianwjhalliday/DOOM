@@ -289,7 +289,7 @@ pub fn P_GivePower(player: *Player, power: PowerType) bool {
 //
 // P_TouchSpecialThing
 //
-pub export fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
+pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
     const delta = special.z - toucher.z;
 
     if (delta > toucher.height or delta < -8 * FRACUNIT) {
@@ -775,7 +775,9 @@ pub export fn P_DamageMobj(target: *MObj, inflictor: ?*MObj, source: ?*MObj, _da
             target.x,
             target.y
         );
-        var thrust = @divTrunc(damage * (FRACUNIT >> 3) * 100, target.info.mass);
+        // vanilla overflows on huge damage (telefrag, pain elemental skull), which
+        // pulls the target toward the inflictor. Wrap to keep that behavior.
+        var thrust = @divTrunc(damage *% (FRACUNIT >> 3) *% 100, target.info.mass);
 
         // make fall forwards sometimes
         if (damage < 40

@@ -37,6 +37,8 @@ const r_sky = @import("r_sky.zig");
 const s_sound = @import("s_sound.zig");
 const S_StartSound = s_sound.S_StartSound_Zig;
 const S_StopSound = s_sound.S_StopSound;
+const sounds = @import("sounds.zig");
+const asSfx = sounds.asSfx;
 const st_stuff = @import("st_stuff.zig");
 const ST_Start = st_stuff.ST_Start;
 const z_zone = @import("z_zone.zig");
@@ -193,7 +195,18 @@ pub const MF_TRANSLATION: c_int = 0xc000000;
 // Hmm ???.
 pub const MF_TRANSSHIFT: c_int = 26;
 
-
+pub const DirType = enum(c_int) {
+    East,
+    NorthEast,
+    North,
+    NorthWest,
+    West,
+    SouthWest,
+    South,
+    SouthEast,
+    NoDir,
+    _, // non-exhaustive since we need to guard against corrupted save games
+};
 
 // Map Object definition.
 // WARNING: MObj must be an `extern` struct and must have `thinker: Thinker`
@@ -249,7 +262,7 @@ pub const MObj = extern struct {
     health: c_int,
 
     // Movement direction, movement generation (zig-zagging).
-    movedir: c_int,     // 0-7
+    movedir: DirType, // 0-7 and NoDir
     movecount: c_int,   // when 0, select a new dir
 
     // Thing being chased/attacked (or NULL),
@@ -335,7 +348,7 @@ fn P_ExplodeMissile(mo: *MObj) void {
     mo.flags &= ~MF_MISSILE;
 
     if (mo.info.deathsound != 0) {
-        S_StartSound(mo, @fromBackingInt(@intCast(mo.info.deathsound)));
+        S_StartSound(mo, asSfx(mo.info.deathsound));
     }
 }
 
@@ -393,7 +406,7 @@ fn P_XYMovement(mo: *MObj) void {
             ymove = 0;
         }
 
-        if (p_map.P_TryMove(mo, ptryx, ptryy) == c.false) {
+        if (!p_map.P_TryMove(mo, ptryx, ptryy)) {
             // blocked move
             if (mo.player != null) {
                 // try to slide along it
@@ -573,7 +586,7 @@ fn P_NightmareRespawn(mobj: *MObj) void {
     const y = @as(fixed_t, mobj.spawnpoint.y) << FRACBITS;
 
     // somthing is occupying it's position?
-    if (p_map.P_CheckPosition(mobj, x, y) == c.false) {
+    if (!p_map.P_CheckPosition(mobj, x, y)) {
         return; // no respawn
     }
 
@@ -614,6 +627,9 @@ fn P_NightmareRespawn(mobj: *MObj) void {
     P_RemoveMobj(mobj);
 }
 
+
+/// simplify currentthinker pointer comparisons against P_MobjThinker
+pub const mobj_thinker: p_tick.actionf_p1 = @ptrCast(&P_MobjThinker);
 
 //
 // P_MobjThinker
@@ -723,7 +739,7 @@ pub export fn P_SpawnMobj(x: fixed_t, y: fixed_t, z: fixed_t, motype: c.mobjtype
         mobj.z = z;
     }
 
-    mobj.thinker.function.acp1 = @ptrCast(&P_MobjThinker);
+    mobj.thinker.function.acp1 = mobj_thinker;
 
     P_AddThinker(&mobj.thinker);
 
@@ -984,7 +1000,7 @@ pub fn P_SpawnMapThing(mthing: *MapThing) void {
 //
 // P_SpawnPuff
 //
-pub export fn P_SpawnPuff(x: fixed_t, y: fixed_t, z: fixed_t) void {
+pub fn P_SpawnPuff(x: fixed_t, y: fixed_t, z: fixed_t) void {
     const z_jittered = z + ((P_Random() - P_Random()) << 10);
 
     const th = P_SpawnMobj(x, y, z_jittered, c.MT_PUFF);
@@ -1005,7 +1021,7 @@ pub export fn P_SpawnPuff(x: fixed_t, y: fixed_t, z: fixed_t) void {
 //
 // P_SpawnBlood
 //
-pub export fn P_SpawnBlood(x: fixed_t, y: fixed_t, z: fixed_t, damage: c_int) void {
+pub fn P_SpawnBlood(x: fixed_t, y: fixed_t, z: fixed_t, damage: c_int) void {
     const z_jittered = z + ((P_Random() - P_Random()) << 10);
 
     const th = P_SpawnMobj(x, y, z_jittered, c.MT_BLOOD);
@@ -1042,7 +1058,7 @@ fn P_CheckMissileSpawn(th: *MObj) void {
     th.y += th.momy >> 1;
     th.z += th.momz >> 1;
 
-    if (p_map.P_TryMove(th, th.x, th.y) == c.false) {
+    if (!p_map.P_TryMove(th, th.x, th.y)) {
         P_ExplodeMissile(th);
     }
 }
@@ -1051,11 +1067,11 @@ fn P_CheckMissileSpawn(th: *MObj) void {
 //
 // P_SpawnMissile
 //
-pub export fn P_SpawnMissile(source: *MObj, dest: *MObj, motype: c.mobjtype_t) *MObj {
+pub fn P_SpawnMissile(source: *MObj, dest: *MObj, motype: c.mobjtype_t) *MObj {
     const th = P_SpawnMobj(source.x, source.y, source.z + 4*8*FRACUNIT, motype);
 
     if (th.info.seesound != 0) {
-        S_StartSound(th, @fromBackingInt(@intCast(th.info.seesound)));
+        S_StartSound(th, asSfx(th.info.seesound));
     }
 
     th.target = source;     // where it came from
@@ -1100,7 +1116,7 @@ pub export fn P_SpawnPlayerMissile(source: *MObj, motype: c.mobjtype_t) void {
         slope = p_map.P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
 
         if (p_map.linetarget == null) {
-            an -= 2 << 26;
+            an -%= 2 << 26;
             slope = p_map.P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
         }
 
@@ -1117,7 +1133,7 @@ pub export fn P_SpawnPlayerMissile(source: *MObj, motype: c.mobjtype_t) void {
     const th = P_SpawnMobj(x, y, z, motype);
 
     if (th.info.seesound != 0) {
-        S_StartSound(th, @fromBackingInt(@intCast(th.info.seesound)));
+        S_StartSound(th, asSfx(th.info.seesound));
     }
 
     th.target = source;
