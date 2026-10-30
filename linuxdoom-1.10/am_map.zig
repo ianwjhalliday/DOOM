@@ -1098,7 +1098,7 @@ fn AM_drawWalls() void {
                     AM_drawMline(&l, TSWALLCOLORS + lightlev);
                 }
             }
-        } else if (plr.powers[@backingInt(doomdef.PowerType.AllMap)] != 0) {
+        } else if (plr.power(.AllMap).* != 0) {
             if (line.flags & doomdata.ML_DONTDRAW == 0) {
                 AM_drawMline(&l, GRAYS + 3);
             }
@@ -1173,7 +1173,7 @@ fn AM_drawPlayers() void {
         }
 
         const color =
-            if (p.powers[@backingInt(doomdef.PowerType.Invisibility)] != c.false)
+            if (p.power(.Invisibility).* != c.false)
                 246 // *close* to black
             else
                 their_color;

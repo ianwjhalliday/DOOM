@@ -39,6 +39,7 @@ const MObj = p_mobj.MObj;
 const P_RemoveMobj = p_mobj.P_RemoveMobj;
 const P_SetMobjState = p_mobj.P_SetMobjState;
 const P_SpawnMobj = p_mobj.P_SpawnMobj;
+const p_pspr = @import("p_pspr.zig");
 const sounds = @import("sounds.zig");
 const Sfx = sounds.Sfx;
 const s_sound = @import("s_sound.zig");
@@ -49,8 +50,8 @@ const BONUSADD = 6;
 
 // a weapon is found with two clip loads,
 // a big item has five clip loads
-pub export const maxammo = [@backingInt(AmmoType.NUMAMMO)]c_int{200, 50, 300, 50};
-const clipammo = [@backingInt(AmmoType.NUMAMMO)]c_int{10, 4, 20, 1};
+pub export const maxammo = [AmmoType.count]c_int{200, 50, 300, 50};
+const clipammo = [AmmoType.count]c_int{10, 4, 20, 1};
 
 
 //
@@ -252,34 +253,33 @@ fn P_GiveCard(player: *Player, card: Card) void {
 // P_GivePower
 //
 pub fn P_GivePower(player: *Player, power: PowerType) bool {
-    const poweridx = @backingInt(power);
+    const pow = player.power(power);
 
     switch (power) {
         .Invulnerability => {
-            player.powers[poweridx] = PowerDuration.InvulnTics;
+            pow.* = PowerDuration.InvulnTics;
         },
         .Invisibility => {
-            player.powers[poweridx] = PowerDuration.InvisTics;
+            pow.* = PowerDuration.InvisTics;
             player.mo.?.flags |= MF_SHADOW;
         },
         .Infrared => {
-            player.powers[poweridx] = PowerDuration.InfraTics;
+            pow.* = PowerDuration.InfraTics;
         },
         .IronFeet => {
-            player.powers[poweridx] = PowerDuration.IronTics;
+            pow.* = PowerDuration.IronTics;
         },
         .Strength => {
             _ = P_GiveBody(player, 100);
-            player.powers[poweridx] = 1;
+            pow.* = 1;
         },
         .AllMap => {
-            if (player.powers[poweridx] != c.false) {
+            if (pow.* != c.false) {
                 return false;   // already got it
             }
 
-            player.powers[poweridx] = 1;
+            pow.* = c.true;
         },
-        else => unreachable,
     }
 
     return true;
@@ -687,7 +687,7 @@ fn P_KillMobj(source: ?*MObj, target: *MObj) void {
 
         target.flags &= ~MF_SOLID;
         target.player.?.playerstate = .Dead;
-        c.P_DropWeapon(@ptrCast(target.player));
+        p_pspr.P_DropWeapon(target.player.?);
 
         if (target.player == &g_game.players[g_game.consoleplayer]
             and c.automapactive != c.false) {
@@ -756,8 +756,7 @@ pub export fn P_DamageMobj(target: *MObj, inflictor: ?*MObj, source: ?*MObj, _da
         target.momz = 0;
     }
 
-    const player = target.player;
-    if (player != null and g_game.gameskill == .Baby) {
+    if (target.player != null and g_game.gameskill == .Baby) {
         damage >>= 1;   // take half damage in trainer mode
     }
 
@@ -794,7 +793,7 @@ pub export fn P_DamageMobj(target: *MObj, inflictor: ?*MObj, source: ?*MObj, _da
     }
 
     // player specific
-    if (player != null) {
+    if (target.player) |player| {
         // end of game hell hack
         if (target.subsector.sector[0].special == 11
             and damage >= target.health) {
@@ -805,38 +804,38 @@ pub export fn P_DamageMobj(target: *MObj, inflictor: ?*MObj, source: ?*MObj, _da
         // Below certain threshold,
         // ignore damage in GOD mode, or with INVUL power.
         if (damage < 1000
-            and (player.?.cheats & c.CF_GODMODE != 0
-                or player.?.powers[@backingInt(PowerType.Invulnerability)] != c.false)) {
+            and (player.cheats & c.CF_GODMODE != 0
+                or player.power(PowerType.Invulnerability).* != c.false)) {
             return;
         }
 
         var saved: c_int = 0;
-        if (player.?.armortype != 0) {
-            if (player.?.armortype == 1) {
+        if (player.armortype != 0) {
+            if (player.armortype == 1) {
                 saved = @divTrunc(damage, 3);
             } else {
                 saved = @divTrunc(damage, 2);
             }
 
-            if (player.?.armorpoints <= saved) {
+            if (player.armorpoints <= saved) {
                 // armor is used up
-                saved = player.?.armorpoints;
-                player.?.armortype = 0;
+                saved = player.armorpoints;
+                player.armortype = 0;
             }
-            player.?.armorpoints -= saved;
+            player.armorpoints -= saved;
             damage -= saved;
         }
 
-        player.?.health -= damage;  // mirror mobj health here for Dave
-        if (player.?.health < 0) {
-            player.?.health = 0;
+        player.health -= damage;  // mirror mobj health here for Dave
+        if (player.health < 0) {
+            player.health = 0;
         }
 
-        player.?.attacker = source;
-        player.?.damagecount += damage; // add damage after armor / invuln
+        player.attacker = source;
+        player.damagecount += damage; // add damage after armor / invuln
 
-        if (player.?.damagecount > 100) {
-            player.?.damagecount = 100; // teleport stomp does 10k points...
+        if (player.damagecount > 100) {
+            player.damagecount = 100; // teleport stomp does 10k points...
         }
 
         const temp = @max(damage, 100);

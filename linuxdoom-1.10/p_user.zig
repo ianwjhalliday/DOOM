@@ -21,6 +21,8 @@ const p_mobj = @import("p_mobj.zig");
 const MF_SHADOW = p_mobj.MF_SHADOW;
 const P_SetMobjState = p_mobj.P_SetMobjState;
 
+const p_pspr = @import("p_pspr.zig");
+
 const p_tick = @import("p_tick.zig");
 
 // Index of the special effects (INVUL inverse) map.
@@ -131,7 +133,7 @@ fn P_MovePlayer(player: *Player) void {
 const ANG5: c.angle_t = c.ANG90/18;
 
 fn P_DeathThink(player: *Player) void {
-    c.P_MovePsprites(@ptrCast(player));
+    p_pspr.P_MovePsprites(player);
 
     // fall to the ground
     if (player.viewheight > 6 * c.FRACUNIT) {
@@ -229,7 +231,7 @@ pub fn P_PlayerThink(player: *Player) void {
         if (newweapon == .Fist
             and player.weaponowned[@backingInt(WeaponType.Chainsaw)] != 0
             and !(player.readyweapon == .Chainsaw
-                and player.powers[@backingInt(PowerType.Strength)] != 0)) {
+                and player.power(PowerType.Strength).* != 0)) {
             newweapon = .Chainsaw;
         }
 
@@ -261,32 +263,32 @@ pub fn P_PlayerThink(player: *Player) void {
     }
 
     // cycle psprites
-    c.P_MovePsprites(@ptrCast(player));
+    p_pspr.P_MovePsprites(player);
 
     // Counters, time dependend power ups.
 
     // Strength counts up to diminish fade.
-    if (player.powers[@backingInt(PowerType.Strength)] != 0) {
-        player.powers[@backingInt(PowerType.Strength)] += 1;
+    if (player.power(PowerType.Strength).* != 0) {
+        player.power(PowerType.Strength).* += 1;
     }
 
-    if (player.powers[@backingInt(PowerType.Invulnerability)] != 0) {
-        player.powers[@backingInt(PowerType.Invulnerability)] -= 1;
+    if (player.power(PowerType.Invulnerability).* != 0) {
+        player.power(PowerType.Invulnerability).* -= 1;
     }
 
-    if (player.powers[@backingInt(PowerType.Invisibility)] != 0) {
-        player.powers[@backingInt(PowerType.Invisibility)] -= 1;
-        if (player.powers[@backingInt(PowerType.Invisibility)] == 0) {
+    if (player.power(PowerType.Invisibility).* != 0) {
+        player.power(PowerType.Invisibility).* -= 1;
+        if (player.power(PowerType.Invisibility).* == 0) {
             player.mo.?.flags &= ~MF_SHADOW;
         }
     }
 
-    if (player.powers[@backingInt(PowerType.Infrared)] != 0) {
-        player.powers[@backingInt(PowerType.Infrared)] -= 1;
+    if (player.power(PowerType.Infrared).* != 0) {
+        player.power(PowerType.Infrared).* -= 1;
     }
 
-    if (player.powers[@backingInt(PowerType.IronFeet)] != 0) {
-        player.powers[@backingInt(PowerType.IronFeet)] -= 1;
+    if (player.power(PowerType.IronFeet).* != 0) {
+        player.power(PowerType.IronFeet).* -= 1;
     }
 
     if (player.damagecount != 0) {
@@ -298,16 +300,16 @@ pub fn P_PlayerThink(player: *Player) void {
     }
 
     // Handling colormaps.
-    if (player.powers[@backingInt(PowerType.Invulnerability)] != 0) {
-        if (player.powers[@backingInt(PowerType.Invulnerability)] > 4 * 32
-            or player.powers[@backingInt(PowerType.Invulnerability)] & 8 != 0) {
+    if (player.power(PowerType.Invulnerability).* != 0) {
+        if (player.power(PowerType.Invulnerability).* > 4 * 32
+            or player.power(PowerType.Invulnerability).* & 8 != 0) {
             player.fixedcolormap = INVERSECOLORMAP;
         } else {
             player.fixedcolormap = 0;
         }
-    } else if (player.powers[@backingInt(PowerType.Infrared)] != 0) {
-        if (player.powers[@backingInt(PowerType.Infrared)] > 4 * 32
-            or player.powers[@backingInt(PowerType.Infrared)] & 8 != 0) {
+    } else if (player.power(PowerType.Infrared).* != 0) {
+        if (player.power(PowerType.Infrared).* > 4 * 32
+            or player.power(PowerType.Infrared).* & 8 != 0) {
             // almost full bright
             player.fixedcolormap = 1;
         } else {

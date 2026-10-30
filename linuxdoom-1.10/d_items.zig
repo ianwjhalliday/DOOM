@@ -1,15 +1,47 @@
 const c = @import("c");
 
-const AmmoType = @import("doomdef.zig").AmmoType;
+const doomdef = @import("doomdef.zig");
+const AmmoType = doomdef.AmmoType;
+const WeaponType = doomdef.WeaponType;
 
 pub const WeaponInfo = extern struct {
     ammo: AmmoType,
+    // TODO: Use `statenum_t` instead of c_int once no longer needed in C code
+    // to eliminate intCasts from c_int to statenum_t (which is unsigned)
     upstate: c_int,
     downstate: c_int,
     readystate: c_int,
     atkstate: c_int,
     flashstate: c_int,
 };
+
+pub fn weaponInfo(w: WeaponType) *const WeaponInfo {
+    return &weaponinfo[@backingInt(w)];
+}
+
+pub fn weaponAmmo(w: WeaponType) AmmoType {
+    return weaponInfo(w).ammo;
+}
+
+pub fn weaponUpState(w: WeaponType) c.statenum_t {
+    return @intCast(weaponInfo(w).upstate);
+}
+
+pub fn weaponDownState(w: WeaponType) c.statenum_t {
+    return @intCast(weaponInfo(w).downstate);
+}
+
+pub fn weaponReadyState(w: WeaponType) c.statenum_t {
+    return @intCast(weaponInfo(w).readystate);
+}
+
+pub fn weaponAttackState(w: WeaponType) c.statenum_t {
+    return @intCast(weaponInfo(w).atkstate);
+}
+
+pub fn weaponFlashState(w: WeaponType) c.statenum_t {
+    return @intCast(weaponInfo(w).flashstate);
+}
 
 pub export const weaponinfo = [_]WeaponInfo{
     .{

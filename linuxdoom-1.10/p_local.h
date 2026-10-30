@@ -76,14 +76,6 @@ void P_RemoveThinker (thinker_t* thinker);
 
 
 //
-// P_PSPR
-//
-void P_SetupPsprites (player_t* curplayer);
-void P_MovePsprites (player_t* curplayer);
-void P_DropWeapon (player_t* player);
-
-
-//
 // P_MOBJ
 //
 #define ONFLOORZ		MININT
@@ -94,24 +86,8 @@ void P_DropWeapon (player_t* player);
 
 
 
-mobj_t*
-P_SpawnMobj
-( fixed_t	x,
-  fixed_t	y,
-  fixed_t	z,
-  mobjtype_t	type );
-
 void 	P_RemoveMobj (mobj_t* th);
-boolean	P_SetMobjState (mobj_t* mobj, statenum_t state);
 void 	P_MobjThinker (mobj_t* mobj);
-
-void	P_SpawnPlayerMissile (mobj_t* source, mobjtype_t type);
-
-
-//
-// P_ENEMY
-//
-void P_NoiseAlert (mobj_t* target, mobj_t* emmiter);
 
 
 //
@@ -149,22 +125,6 @@ void P_SetThingPosition (mobj_t* thing);
 
 
 boolean P_ChangeSector (sector_t* sector, boolean crunch);
-
-extern mobj_t*	linetarget;	// who got hit (or NULL)
-
-fixed_t
-P_AimLineAttack
-( mobj_t*	t1,
-  angle_t	angle,
-  fixed_t	distance );
-
-void
-P_LineAttack
-( mobj_t*	t1,
-  angle_t	angle,
-  fixed_t	distance,
-  fixed_t	slope,
-  int		damage );
 
 
 

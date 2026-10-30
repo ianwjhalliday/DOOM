@@ -123,7 +123,7 @@ pub const Card = enum(c_uint) {
     YellowSkull,
     RedSkull,
 
-    NUMCARDS
+    pub const count = @typeInfo(Card).@"enum".field_names.len;
 };
 
 
@@ -145,7 +145,9 @@ pub const WeaponType = enum(c_uint) {
     NUMWEAPONS,
 
     // No pending weapon change.
-    NoChange
+    NoChange,
+
+    pub const count: usize = @backingInt(WeaponType.NUMWEAPONS);
 };
 
 
@@ -158,7 +160,9 @@ pub const AmmoType = enum(c_uint) {
 
     NUMAMMO,
 
-    NoAmmo      // Unlimited for chainsaw / fist.
+    NoAmmo,     // Unlimited for chainsaw / fist.
+
+    pub const count: usize = @backingInt(AmmoType.NUMAMMO);
 };
 
 
@@ -171,7 +175,7 @@ pub const PowerType = enum(c_uint) {
     AllMap,
     Infrared,
 
-    NUMPOWERS
+    pub const count = @typeInfo(PowerType).@"enum".field_names.len;
 };
 
 

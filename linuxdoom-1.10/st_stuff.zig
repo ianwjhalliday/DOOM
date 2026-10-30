@@ -235,7 +235,7 @@ var tallpercent: *patch_t = undefined;
 var shortnum: [10]*patch_t = undefined;
 
 // 3 key-cards, 3 skulls
-var keys: [@backingInt(Card.NUMCARDS)]*patch_t = undefined;
+var keys: [Card.count]*patch_t = undefined;
 
 // face status patches
 var faces: [ST_NUMFACES]*patch_t = undefined;
@@ -287,7 +287,7 @@ var st_oldhealth: c_int = -1;
 
 // used for evil grin
 // TODO: Convert to bool when Player.weaponowned is converted to bool
-var oldweaponsowned: [@backingInt(WeaponType.NUMWEAPONS)]c.boolean = @splat(c.false);
+var oldweaponsowned: [WeaponType.count]c.boolean = @splat(c.false);
 
 // count until face changes
 var st_facecount: c_int = 0;
@@ -530,7 +530,7 @@ pub fn ST_Responder(ev: *const Event) bool {
       else if (cht_CheckCheat(&cheat_choppers, @intCast(ev.data1)))
       {
         plyr.weaponowned[@backingInt(WeaponType.Chainsaw)] = c.true;
-        plyr.powers[@backingInt(PowerType.Invulnerability)] = c.true;
+        plyr.power(PowerType.Invulnerability).* = c.true;
         plyr.message = c.STSTR_CHOPPERS;
       }
       // 'mypos' for player position
@@ -755,7 +755,7 @@ fn ST_updateFaceWidget() void {
     {
         // invulnerability
         if ((plyr.cheats & c.CF_GODMODE) != 0
-            or plyr.powers[@backingInt(PowerType.Invulnerability)] != 0)
+            or plyr.power(PowerType.Invulnerability).* != 0)
         {
             S.priority = 4;
 
@@ -783,10 +783,10 @@ fn ST_updateWidgets() void {
     // must redirect the pointer if the ready weapon has changed.
     //  if (w_ready.data != plyr.readyweapon)
     //  {
-    if (d_items.weaponinfo[@backingInt(plyr.readyweapon)].ammo == .NoAmmo) {
+    if (d_items.weaponAmmo(plyr.readyweapon) == .NoAmmo) {
         w_ready.num = &S.largeammo;
     } else {
-        w_ready.num = &plyr.ammo[@backingInt(d_items.weaponinfo[@backingInt(plyr.readyweapon)].ammo)];
+        w_ready.num = plyr.readyAmmo();
     }
     //{
     // static int tic=0;
@@ -846,9 +846,9 @@ var st_palette: c_int = 0;
 fn ST_doPaletteStuff() void {
     var cnt = plyr.damagecount;
 
-    if (plyr.powers[@backingInt(PowerType.Strength)] != 0) {
+    if (plyr.power(PowerType.Strength).* != 0) {
         // slowly fade the berzerk out
-        const bzc = 12 - (plyr.powers[@backingInt(PowerType.Strength)]>>6);
+        const bzc = 12 - (plyr.power(PowerType.Strength).*>>6);
 
         if (bzc > cnt) {
             cnt = bzc;
@@ -872,8 +872,8 @@ fn ST_doPaletteStuff() void {
         }
 
         palette += STARTBONUSPALS;
-    } else if (plyr.powers[@backingInt(PowerType.IronFeet)] > 4*32
-              or plyr.powers[@backingInt(PowerType.IronFeet)]&8 != 0) {
+    } else if (plyr.power(PowerType.IronFeet).* > 4*32
+              or plyr.power(PowerType.IronFeet).*&8 != 0) {
         palette = RADIATIONPAL;
     } else {
         palette = 0;
@@ -961,7 +961,7 @@ fn ST_loadGraphics() void {
     tallpercent = W_CacheLumpName(*patch_t, "STTPRCNT", .Static);
 
     // key cards
-    for (0..@backingInt(Card.NUMCARDS)) |i| {
+    for (0..Card.count) |i| {
         keys[i] = W_CacheLumpNameFmt(*patch_t, "STKEYS{d}", .{ i }, .Static);
     }
 
@@ -1071,12 +1071,12 @@ fn ST_initData() void {
 
 fn ST_createWidgets() void {
     // ready weapon ammo
-    if (d_items.weaponinfo[@backingInt(plyr.readyweapon)].ammo != .NoAmmo) {
+    if (d_items.weaponAmmo(plyr.readyweapon) != .NoAmmo) {
         STlib_initNum(&w_ready,
                       ST_AMMOX,
                       ST_AMMOY,
                       &tallnum,
-                      &plyr.ammo[@backingInt(d_items.weaponinfo[@backingInt(plyr.readyweapon)].ammo)],
+                      plyr.readyAmmo(),
                       &st_statusbaron,
                       ST_AMMOWIDTH );
     }

@@ -638,7 +638,7 @@ pub fn P_SlideMove(mo: *MObj) void {
 }
 
 /// who got hit (or null)
-pub export var linetarget: ?*MObj = null;
+pub var linetarget: ?*MObj = null;
 var shootthing: *MObj = undefined;
 
 var shootz: fixed_t = 0;
@@ -830,7 +830,7 @@ fn PTR_ShootTraverse(in: *c.intercept_t) bool {
     return false;
 }
 
-pub export fn P_AimLineAttack(th: *MObj, _angle: c.angle_t, distance: fixed_t) fixed_t {
+pub fn P_AimLineAttack(th: *MObj, _angle: c.angle_t, distance: fixed_t) fixed_t {
     const angle = _angle >> c.ANGLETOFINESHIFT;
     shootthing = th;
 
@@ -855,7 +855,7 @@ pub export fn P_AimLineAttack(th: *MObj, _angle: c.angle_t, distance: fixed_t) f
 }
 
 /// If damage == 0, it is just a test trace that will leave linetarget set.
-pub export fn P_LineAttack(th: *MObj, _angle: c.angle_t, distance: fixed_t, slope: fixed_t, damage: c_int) void {
+pub fn P_LineAttack(th: *MObj, _angle: c.angle_t, distance: fixed_t, slope: fixed_t, damage: c_int) void {
     const angle = _angle >> c.ANGLETOFINESHIFT;
     shootthing = th;
     la_damage = damage;

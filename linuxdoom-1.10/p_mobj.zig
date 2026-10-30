@@ -28,6 +28,7 @@ const p_map = @import("p_map.zig");
 const p_maputil = @import("p_maputil.zig");
 const P_SetThingPosition = p_maputil.P_SetThingPosition;
 const P_UnsetThingPosition = p_maputil.P_UnsetThingPosition;
+const p_pspr = @import("p_pspr.zig");
 const p_setup = @import("p_setup.zig");
 const p_tick = @import("p_tick.zig");
 const P_AddThinker = p_tick.P_AddThinker;
@@ -297,7 +298,7 @@ pub const MObj = extern struct {
 // P_SetMobjState
 // Returns true if the mobj is still present.
 //
-pub export fn P_SetMobjState(mobj: *MObj, _state: c.statenum_t) bool {
+pub fn P_SetMobjState(mobj: *MObj, _state: c.statenum_t) bool {
     var state = _state;
     while (true) {
         if (state == c.S_NULL) {
@@ -697,7 +698,7 @@ pub export fn P_MobjThinker(mobj: *MObj) void {
 //
 // P_SpawnMobj
 //
-pub export fn P_SpawnMobj(x: fixed_t, y: fixed_t, z: fixed_t, motype: c.mobjtype_t) *MObj {
+pub fn P_SpawnMobj(x: fixed_t, y: fixed_t, z: fixed_t, motype: c.mobjtype_t) *MObj {
     const mobj = z_zone.create(MObj, .Level, null);
     mobj.* = std.mem.zeroes(MObj);
     const info = &c.mobjinfo[motype];
@@ -879,7 +880,7 @@ pub fn P_SpawnPlayer(mthing: *MapThing) void {
     p.viewheight = c.VIEWHEIGHT;
 
     // setup gun psprite
-    c.P_SetupPsprites(@ptrCast(p));
+    p_pspr.P_SetupPsprites(p);
 
     // give all cards in death match mode
     if (g_game.deathmatch != 0) {
@@ -1106,7 +1107,7 @@ pub fn P_SpawnMissile(source: *MObj, dest: *MObj, motype: c.mobjtype_t) *MObj {
 // P_SpawnPlayerMissile
 // Tries to aim at a nearby monster
 //
-pub export fn P_SpawnPlayerMissile(source: *MObj, motype: c.mobjtype_t) void {
+pub fn P_SpawnPlayerMissile(source: *MObj, motype: c.mobjtype_t) void {
     // see which target is to be aimed at
     var an = source.angle;
     var slope = p_map.P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);

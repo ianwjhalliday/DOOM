@@ -33,6 +33,7 @@ const MF_SOLID = p_mobj.MF_SOLID;
 const DirType = p_mobj.DirType;
 const MObj = p_mobj.MObj;
 const p_inter = @import("p_inter.zig");
+const p_pspr = @import("p_pspr.zig");
 const p_setup = @import("p_setup.zig");
 const p_sight = @import("p_sight.zig");
 const p_tick = @import("p_tick.zig");
@@ -1198,11 +1199,9 @@ pub export fn A_LoadShotgun2(player: *Player, _: *c.pspdef_t) void {
     s_sound.S_StartSound_Zig(player.mo, .dbload);
 }
 
-extern "c" fn A_ReFire(player: *Player, psp: *c.pspdef_t) void;
-
 pub export fn A_CloseShotgun2(player: *Player, psp: *c.pspdef_t) void {
     s_sound.S_StartSound_Zig(player.mo, .dbcls);
-    A_ReFire(player, psp);
+    p_pspr.A_ReFire(player, psp);
 }
 
 var braintargets: [32]*MObj = undefined;

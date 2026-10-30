@@ -343,7 +343,7 @@ pub fn G_BuildTiccmd(cmd: *TicCmd) void {
     }
 
     // chainsaw overrides
-    for (0..@backingInt(WeaponType.NUMWEAPONS)-1) |i| {
+    for (0..WeaponType.count-1) |i| {
         if (gamekeydown['1'+i]) {
             cmd.buttons |= @intCast(c.BT_CHANGE);
             cmd.buttons |= @intCast(i<<c.BT_WEAPONSHIFT);

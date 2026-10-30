@@ -3,6 +3,7 @@ const c = @import("c");
 // Finally, for odd reasons, the player input
 // is buffered within the player data struct,
 // as commands per game tick.
+const d_items = @import("d_items.zig");
 const doomdef = @import("doomdef.zig");
 const AmmoType = doomdef.AmmoType;
 const Card = doomdef.Card;
@@ -38,6 +39,18 @@ pub const CF_NOCLIP = 1;
 pub const CF_GODMODE = 2;
 pub const CF_NOMOMENTUM = 4;
 
+pub const PSprNum = enum {
+    Weapon,
+    Flash,
+
+    pub const count = @typeInfo(PSprNum).@"enum".field_names.len;
+};
+
+comptime {
+    const assert = @import("std").debug.assert;
+    // C still sizes psprites with NUMPSPRITES (d_player.h, p_saveg.c, r_things.c)
+    assert(PSprNum.count == c.NUMPSPRITES);
+}
 
 //
 // Extended player object info: player_t
@@ -66,8 +79,8 @@ pub const Player = extern struct {
     armortype: c_int,
 
     // Power ups. invinc and invis are tic counters.
-    powers: [@backingInt(PowerType.NUMPOWERS)]c_int,
-    cards: [@backingInt(Card.NUMCARDS)]c.boolean,
+    powers: [PowerType.count]c_int,
+    cards: [Card.count]c.boolean,
     backpack: c.boolean,
 
     // Frags, kills of other players.
@@ -77,9 +90,9 @@ pub const Player = extern struct {
     // Is wp_nochange if not changing.
     pendingweapon: WeaponType,
 
-    weaponowned: [@backingInt(WeaponType.NUMWEAPONS)]c.boolean,
-    ammo: [@backingInt(AmmoType.NUMAMMO)]c_int,
-    maxammo: [@backingInt(AmmoType.NUMAMMO)]c_int,
+    weaponowned: [WeaponType.count]c.boolean,
+    ammo: [AmmoType.count]c_int,
+    maxammo: [AmmoType.count]c_int,
 
     // True if button down last tic.
     attackdown: c_int,
@@ -119,10 +132,30 @@ pub const Player = extern struct {
     colormap: c_int,
 
     // Overlay view sprites (gun, etc).
-    psprites: [c.NUMPSPRITES]c.pspdef_t,
+    psprites: [PSprNum.count]c.pspdef_t,
 
     // True if secret level has been done.
     didsecret: c.boolean,
+
+    pub fn ammoOf(player: *Player, a: AmmoType) *c_int {
+        return &player.ammo[@backingInt(a)];
+    }
+
+    pub fn owns(player: *const Player, w: WeaponType) bool {
+        return player.weaponowned[@backingInt(w)] != c.false;
+    }
+
+    pub fn power(player: *Player, p: PowerType) *c_int {
+        return &player.powers[@backingInt(p)];
+    }
+
+    pub fn psprite(player: *Player, n: PSprNum) *c.pspdef_t {
+        return &player.psprites[@backingInt(n)];
+    }
+
+    pub fn readyAmmo(player: *Player) *c_int {
+        return player.ammoOf(d_items.weaponAmmo(player.readyweapon));
+    }
 };
 
 
