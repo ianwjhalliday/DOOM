@@ -17,6 +17,8 @@ const FixedAbs = m_fixed.FixedAbs;
 const FixedMul = m_fixed.FixedMul;
 const m_random = @import("m_random.zig");
 const P_Random = m_random.P_Random;
+const p_floor = @import("p_floor.zig");
+const p_inter = @import("p_inter.zig");
 const p_map = @import("p_map.zig");
 const p_maputil = @import("p_maputil.zig");
 const p_mobj = @import("p_mobj.zig");
@@ -32,7 +34,6 @@ const MF_SKULLFLY = p_mobj.MF_SKULLFLY;
 const MF_SOLID = p_mobj.MF_SOLID;
 const DirType = p_mobj.DirType;
 const MObj = p_mobj.MObj;
-const p_inter = @import("p_inter.zig");
 const p_pspr = @import("p_pspr.zig");
 const p_setup = @import("p_setup.zig");
 const p_sight = @import("p_sight.zig");
@@ -1157,19 +1158,19 @@ pub export fn A_BossDeath(actor: *MObj) void {
     if (doomstat.gamemode == .Commercial) {
         // gamemap is already determined above to be 7, if Commercial
         if (actor.type == c.MT_FATSO) {
-            _ = c.EV_DoFloor(&junk, c.lowerFloorToLowest);
+            _ = p_floor.EV_DoFloor(&junk, .lowerFloorToLowest);
         } else {
             // type already determined above to be MT_BABY, if not MT_FATSO
             junk.tag = 667;
-            _ = c.EV_DoFloor(&junk, c.raiseToTexture);
+            _ = p_floor.EV_DoFloor(&junk, .raiseToTexture);
         }
     } else switch (g_game.gameepisode) {
-        1 => _ = c.EV_DoFloor(&junk, c.lowerFloorToLowest),
+        1 => _ = p_floor.EV_DoFloor(&junk, .lowerFloorToLowest),
         4 => if (g_game.gamemap == 6) {
             _ = c.EV_DoDoor(&junk, c.blazeOpen);
         } else {
             // gamemap already determined above to be 8, if not 6
-            _ = c.EV_DoFloor(&junk, c.lowerFloorToLowest);
+            _ = p_floor.EV_DoFloor(&junk, .lowerFloorToLowest);
         },
         // killing e2m8 or e3m8 bosses exits the level
         else => g_game.G_ExitLevel(),
