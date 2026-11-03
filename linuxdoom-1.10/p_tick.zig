@@ -74,10 +74,12 @@ pub export fn P_AddThinker(thinker: *Thinker) void {
 //
 fn removeThinkerSentinel(...) callconv(.c) void {}
 pub export fn P_RemoveThinker(thinker: *Thinker) void {
-    // FIXME: NOP.
     thinker.function.acv = &removeThinkerSentinel;
 }
 
+pub fn isRemoved(thinker: *const Thinker) bool {
+    return thinker.function.acv == &removeThinkerSentinel;
+}
 
 //
 // P_RunThinkers
@@ -85,7 +87,7 @@ pub export fn P_RemoveThinker(thinker: *Thinker) void {
 fn P_RunThinkers() void {
     var currentthinker = thinkercap.next orelse &thinkercap;
     while (currentthinker != &thinkercap) {
-        if (currentthinker.function.acv == &removeThinkerSentinel) {
+        if (isRemoved(currentthinker)) {
             // time to remove it
             currentthinker.next.?.prev = currentthinker.prev;
             currentthinker.prev.?.next = currentthinker.next;

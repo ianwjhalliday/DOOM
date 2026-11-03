@@ -640,19 +640,13 @@ pub export fn P_MobjThinker(mobj: *MObj) void {
     if (mobj.momx != 0 or mobj.momy != 0 or mobj.flags & MF_SKULLFLY != 0) {
         P_XYMovement(mobj);
 
-        // FIXME: decent NOP/NULL/Nil function pointer please.
-        if (@as(isize, @bitCast(@intFromPtr(mobj.thinker.function.acv))) == -1) {
-            return; // mobj was removed
-        }
+        if (p_tick.isRemoved(&mobj.thinker)) return; // mobj was removed
     }
 
     if (mobj.z != mobj.floorz or mobj.momz != 0) {
         P_ZMovement(mobj);
 
-        // FIXME: decent NOP/NULL/Nil function pointer please.
-        if (@as(isize, @bitCast(@intFromPtr(mobj.thinker.function.acv))) == -1) {
-            return; // mobj was removed
-        }
+        if (p_tick.isRemoved(&mobj.thinker)) return; // mobj was removed
     }
 
     // cycle through states,
