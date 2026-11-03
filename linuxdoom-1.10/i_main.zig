@@ -7,6 +7,7 @@ const D_DoomMain = @import("d_main.zig").D_DoomMain;
 // Drop each one once a Zig import reaches it.
 comptime {
     _ = @import("p_enemy.zig");
+    _ = @import("p_plats.zig");
 }
 
 pub fn main(init: std.process.Init) noreturn {
