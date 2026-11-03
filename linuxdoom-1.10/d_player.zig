@@ -141,6 +141,10 @@ pub const Player = extern struct {
         return &player.ammo[@backingInt(a)];
     }
 
+    pub fn hasCard(player: *const Player, card: Card) bool {
+        return player.cards[@backingInt(card)] != c.false;
+    }
+
     pub fn owns(player: *const Player, w: WeaponType) bool {
         return player.weaponowned[@backingInt(w)] != c.false;
     }

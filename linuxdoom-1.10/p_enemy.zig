@@ -17,6 +17,7 @@ const FixedAbs = m_fixed.FixedAbs;
 const FixedMul = m_fixed.FixedMul;
 const m_random = @import("m_random.zig");
 const P_Random = m_random.P_Random;
+const p_doors = @import("p_doors.zig");
 const p_floor = @import("p_floor.zig");
 const p_inter = @import("p_inter.zig");
 const p_map = @import("p_map.zig");
@@ -411,7 +412,7 @@ pub export fn A_KeenDie(mo: *MObj) void {
 
     var junk: c.line_t = undefined;
     junk.tag = 666;
-    _ = c.EV_DoDoor(&junk, c.open);
+    _ = p_doors.EV_DoDoor(&junk, @fromBackingInt(c.open));
 }
 
 /// Stay in state until a player is sighted.
@@ -1167,7 +1168,7 @@ pub export fn A_BossDeath(actor: *MObj) void {
     } else switch (g_game.gameepisode) {
         1 => _ = p_floor.EV_DoFloor(&junk, .lowerFloorToLowest),
         4 => if (g_game.gamemap == 6) {
-            _ = c.EV_DoDoor(&junk, c.blazeOpen);
+            _ = p_doors.EV_DoDoor(&junk, @fromBackingInt(c.blazeOpen));
         } else {
             // gamemap already determined above to be 8, if not 6
             _ = p_floor.EV_DoFloor(&junk, .lowerFloorToLowest);

@@ -10,6 +10,7 @@ comptime {
     _ = @import("p_plats.zig");
     _ = @import("p_ceilng.zig");
     _ = @import("p_lights.zig");
+    _ = @import("p_doors.zig");
 }
 
 pub fn main(init: std.process.Init) noreturn {
