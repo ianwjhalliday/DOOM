@@ -1,0 +1,11 @@
+.{
+    .name = .doomzig,
+    .version = "0.0.0",
+    .fingerprint = 0xf7960cd6662bb04f, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.17.0",
+    .dependencies = .{},
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+    },
+}
