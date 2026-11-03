@@ -20,7 +20,6 @@ pub fn build(b: *std.Build) void {
         "i_sound.c",
         "tables.c",
         "m_swap.c",
-        "p_ceilng.c",
         "p_doors.c",
         "p_lights.c",
         "p_spec.c",

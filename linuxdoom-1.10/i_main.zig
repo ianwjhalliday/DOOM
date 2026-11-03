@@ -8,6 +8,7 @@ const D_DoomMain = @import("d_main.zig").D_DoomMain;
 comptime {
     _ = @import("p_enemy.zig");
     _ = @import("p_plats.zig");
+    _ = @import("p_ceilng.zig");
 }
 
 pub fn main(init: std.process.Init) noreturn {
