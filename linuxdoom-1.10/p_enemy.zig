@@ -38,6 +38,7 @@ const MObj = p_mobj.MObj;
 const p_pspr = @import("p_pspr.zig");
 const p_setup = @import("p_setup.zig");
 const p_sight = @import("p_sight.zig");
+const p_switch = @import("p_switch.zig");
 const p_tick = @import("p_tick.zig");
 const s_sound = @import("s_sound.zig");
 const sounds = @import("sounds.zig");
@@ -241,7 +242,7 @@ fn P_Move(actor: *MObj) bool {
         p_map.numspechit -= 1;
         const ld = p_map.spechit[p_map.numspechit];
         // if the special is not a door that can be opened return false
-        if (c.P_UseSpecialLine(@ptrCast(actor), ld, 0) != c.false) {
+        if (p_switch.P_UseSpecialLine(actor, ld, 0)) {
             good = true;
         }
     }

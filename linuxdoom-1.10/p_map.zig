@@ -38,6 +38,7 @@ const MF_TELEPORT = p_mobj.MF_TELEPORT;
 const MObj = p_mobj.MObj;
 const p_setup = @import("p_setup.zig");
 const p_sight = @import("p_sight.zig");
+const p_switch = @import("p_switch.zig");
 const p_tick = @import("p_tick.zig");
 const r_sky = @import("r_sky.zig");
 const s_sound = @import("s_sound.zig");
@@ -888,7 +889,7 @@ fn PTR_UseTraverse(in: *c.intercept_t) bool {
 
     const side = p_maputil.P_PointOnLineSide(usething.x, usething.y, in.d.line);
 
-    _ = c.P_UseSpecialLine(@ptrCast(usething), in.d.line, side);
+    _ = p_switch.P_UseSpecialLine(usething, in.d.line, side);
 
     // can't use for more than one special line in a row
     return false;

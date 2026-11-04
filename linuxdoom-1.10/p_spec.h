@@ -48,12 +48,6 @@ void    P_SpawnSpecials (void);
 void    P_UpdateSpecials (void);
 
 // when needed
-boolean
-P_UseSpecialLine
-( mobj_t*	thing,
-  line_t*	line,
-  int		side );
-
 void
 P_ShootSpecialLine
 ( mobj_t*	thing,
@@ -206,15 +200,6 @@ void    P_SpawnGlowingLight(sector_t* sector);
 //
 // P_SWITCH
 //
-typedef struct
-{
-    char	name1[9];
-    char	name2[9];
-    short	episode;
-    
-} switchlist_t;
-
-
 typedef enum
 {
     top,
@@ -252,8 +237,6 @@ void
 P_ChangeSwitchTexture
 ( line_t*	line,
   int		useAgain );
-
-void P_InitSwitchList(void);
 
 
 //

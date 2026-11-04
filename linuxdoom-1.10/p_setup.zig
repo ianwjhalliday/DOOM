@@ -32,6 +32,7 @@ const USHORT = m_swap.USHORT;
 const p_mobj = @import("p_mobj.zig");
 const MObj = p_mobj.MObj;
 const P_SpawnMapThing = p_mobj.P_SpawnMapThing;
+const p_switch = @import("p_switch.zig");
 const p_tick = @import("p_tick.zig");
 const P_InitThinkers = p_tick.P_InitThinkers;
 const s_sound = @import("s_sound.zig");
@@ -572,7 +573,7 @@ pub fn P_SetupLevel(episode: c_int, map: c_int) void {
 // P_Init
 //
 pub fn P_Init() void {
-    c.P_InitSwitchList();
+    p_switch.P_InitSwitchList();
     c.P_InitPicAnims();
     c.R_InitSprites(&c.sprnames);
 }

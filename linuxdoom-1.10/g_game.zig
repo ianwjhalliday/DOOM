@@ -917,7 +917,7 @@ pub export fn G_ExitLevel() void {
 }
 
 // Here's for the german edition.
-export fn G_SecretExitLevel() void {
+pub export fn G_SecretExitLevel() void {
     // IF NO WOLF3D LEVELS, NO SECRET EXIT!
     if (doomstat.gamemode == .Commercial and W_CheckNumForName("map31") < 0) {
         secretexit = false;
