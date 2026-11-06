@@ -3,16 +3,6 @@ const i_system = @import("i_system.zig");
 const m_argv = @import("m_argv.zig");
 const D_DoomMain = @import("d_main.zig").D_DoomMain;
 
-// Modules reachable only from C (info.c's state table calls the A_ actions).
-// Drop each one once a Zig import reaches it.
-comptime {
-    _ = @import("p_enemy.zig");
-    _ = @import("p_plats.zig");
-    _ = @import("p_ceilng.zig");
-    _ = @import("p_lights.zig");
-    _ = @import("p_doors.zig");
-}
-
 pub fn main(init: std.process.Init) noreturn {
     i_system.io = init.io;
     i_system.environ_map = init.environ_map;

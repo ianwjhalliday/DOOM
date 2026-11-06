@@ -1,8 +1,7 @@
 const c = @import("c");
 
-extern fn P_UpdateSpecials() void;
-
 const p_mobj = @import("p_mobj.zig");
+const p_spec = @import("p_spec.zig");
 const p_user = @import("p_user.zig");
 
 const g_game = @import("g_game.zig");
@@ -130,7 +129,7 @@ pub fn P_Ticker() void {
     }
 
     P_RunThinkers();
-    P_UpdateSpecials();
+    p_spec.P_UpdateSpecials();
     p_mobj.P_RespawnSpecials();
 
     // for par times

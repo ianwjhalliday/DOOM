@@ -11,6 +11,7 @@ const P_Random = m_random.P_Random;
 const p_floor = @import("p_floor.zig");
 const T_MovePlane = p_floor.T_MovePlane;
 const p_setup = @import("p_setup.zig");
+const p_spec = @import("p_spec.zig");
 const p_tick = @import("p_tick.zig");
 const s_sound = @import("s_sound.zig");
 const sounds = @import("sounds.zig");
@@ -128,13 +129,13 @@ fn initPlat(plat: *c.plat_t, init: PlatInit) void {
     s_sound.S_StartSound_Zig(@ptrCast(&plat.sector.*.soundorg), init.sfx);
 }
 
-pub export fn EV_DoPlat(line: *c.line_t, plattype: PlatType, amount: c_int) c_int {
+pub fn EV_DoPlat(line: *c.line_t, plattype: PlatType, amount: c_int) bool {
     if (plattype == .perpetualRaise) P_ActivateInStasis(line.tag);
 
     var secnum: c_int = -1;
-    var rtn: c_int = 0;
+    var rtn = false;
     while (true) {
-        secnum = c.P_FindSectorFromLineTag(line, secnum);
+        secnum = p_spec.P_FindSectorFromLineTag(line, secnum);
         if (secnum < 0) break;
 
         const sec = &p_setup.sectors_slice[@intCast(secnum)];
@@ -142,7 +143,7 @@ pub export fn EV_DoPlat(line: *c.line_t, plattype: PlatType, amount: c_int) c_in
         // Already moving? If so, keep going...
         if (sec.specialdata != null) continue;
 
-        rtn = 1;
+        rtn = true;
         const plat = z_zone.create(c.plat_t, .LevSpec, null);
         p_tick.P_AddThinker(@ptrCast(&plat.thinker));
 
@@ -162,7 +163,7 @@ pub export fn EV_DoPlat(line: *c.line_t, plattype: PlatType, amount: c_int) c_in
                     sec.floorheight + amount * FRACUNIT
                 else high: {
                     sec.special = 0; // No more damage, if applicable
-                    break :high c.P_FindNextHighestFloor(sec, sec.floorheight);
+                    break :high p_spec.P_FindNextHighestFloor(sec, sec.floorheight);
                 };
                 initPlat(plat, .{
                     .speed = PLATSPEED / 2,
@@ -178,7 +179,7 @@ pub export fn EV_DoPlat(line: *c.line_t, plattype: PlatType, amount: c_int) c_in
             },
             .downWaitUpStay, .blazeDWUS => initPlat(plat, .{
                 .speed = if (plattype == .blazeDWUS) PLATSPEED * 8 else PLATSPEED * 4,
-                .low = @min(sec.floorheight, c.P_FindLowestFloorSurrounding(sec)),
+                .low = @min(sec.floorheight, p_spec.P_FindLowestFloorSurrounding(sec)),
                 .high = sec.floorheight,
                 .wait = 35 * PLATWAIT,
                 .status = .Down,
@@ -186,8 +187,8 @@ pub export fn EV_DoPlat(line: *c.line_t, plattype: PlatType, amount: c_int) c_in
             }),
             .perpetualRaise => initPlat(plat, .{
                 .speed = PLATSPEED,
-                .low = @min(sec.floorheight, c.P_FindLowestFloorSurrounding(sec)),
-                .high = @max(sec.floorheight, c.P_FindHighestFloorSurrounding(sec)),
+                .low = @min(sec.floorheight, p_spec.P_FindLowestFloorSurrounding(sec)),
+                .high = @max(sec.floorheight, p_spec.P_FindHighestFloorSurrounding(sec)),
                 .wait = 35 * PLATWAIT,
                 .status = if (@mod(P_Random(), 2) == 0) .Up else .Down,
                 .sfx = .pstart,
@@ -200,7 +201,7 @@ pub export fn EV_DoPlat(line: *c.line_t, plattype: PlatType, amount: c_int) c_in
     return rtn;
 }
 
-pub export fn EV_StopPlat(line: *c.line_t) void {
+pub fn EV_StopPlat(line: *c.line_t) void {
     for (activeplats) |ap_slot| if (ap_slot) |ap| {
         if (ap.tag == line.tag and
             @as(PlatStatus, @fromBackingInt(ap.status)) != .InStasis)
@@ -212,7 +213,7 @@ pub export fn EV_StopPlat(line: *c.line_t) void {
     };
 }
 
-pub export var activeplats: [MAXPLATS]?*c.plat_t = @splat(null);
+pub var activeplats: [MAXPLATS]?*c.plat_t = @splat(null);
 
 fn P_ActivateInStasis(tag: c_int) void {
     for (activeplats) |ap_slot| if (ap_slot) |ap| {

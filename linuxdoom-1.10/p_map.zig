@@ -38,6 +38,7 @@ const MF_TELEPORT = p_mobj.MF_TELEPORT;
 const MObj = p_mobj.MObj;
 const p_setup = @import("p_setup.zig");
 const p_sight = @import("p_sight.zig");
+const p_spec = @import("p_spec.zig");
 const p_switch = @import("p_switch.zig");
 const p_tick = @import("p_tick.zig");
 const r_sky = @import("r_sky.zig");
@@ -428,7 +429,7 @@ pub fn P_TryMove(thing: *MObj, x: fixed_t, y: fixed_t) bool {
             const oldside = p_maputil.P_PointOnLineSide(oldx, oldy, ld);
             if (side != oldside) {
                 if (ld.special != 0) {
-                    c.P_CrossSpecialLine(@intCast(ld - p_setup.lines), oldside, @ptrCast(thing));
+                    p_spec.P_CrossSpecialLine(ld, oldside, thing);
                 }
             }
         }
@@ -734,7 +735,7 @@ fn PTR_ShootTraverse(in: *c.intercept_t) bool {
         const li = in.d.line;
 
         if (li.*.special != 0) {
-            c.P_ShootSpecialLine(@ptrCast(shootthing), li);
+            p_spec.P_ShootSpecialLine(shootthing, li);
         }
 
         if (li.*.flags & ML_TWOSIDED != 0) {

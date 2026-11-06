@@ -23,6 +23,8 @@ const P_SetMobjState = p_mobj.P_SetMobjState;
 
 const p_pspr = @import("p_pspr.zig");
 
+const p_spec = @import("p_spec.zig");
+
 const p_tick = @import("p_tick.zig");
 
 // Index of the special effects (INVUL inverse) map.
@@ -212,7 +214,7 @@ pub fn P_PlayerThink(player: *Player) void {
     P_CalcHeight(player);
 
     if (player.mo.?.subsector.sector[0].special != 0) {
-        c.P_PlayerInSpecialSector(@ptrCast(player));
+        p_spec.P_PlayerInSpecialSector(player);
     }
 
     // Check for weapon change.

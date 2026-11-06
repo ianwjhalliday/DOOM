@@ -13,16 +13,26 @@ const p_mobj = @import("p_mobj.zig");
 const MObj = p_mobj.MObj;
 const p_plats = @import("p_plats.zig");
 const p_setup = @import("p_setup.zig");
+const p_spec = @import("p_spec.zig");
 const s_sound = @import("s_sound.zig");
 const sounds = @import("sounds.zig");
 const Sfx = sounds.Sfx;
 
 const BUTTONTIME = 35; // 1 second, in ticks
+const MAXBUTTONS = 16; // 4 players, 4 buttons each at once, max.
 
-const ButtonWhere = enum(c_uint) {
+pub const ButtonWhere = enum(c_uint) {
     top,
     middle,
     bottom,
+};
+
+const Button = struct {
+    line: ?*c.line_t = null,
+    where: ButtonWhere = .top,
+    btexture: c_int = 0,
+    btimer: c_int = 0,
+    soundorg: ?*c.degenmobj_t = null,
 };
 
 const SwitchDef = struct {
@@ -83,7 +93,7 @@ var switchlist_buf: [alph_switch_list.len * 2]c_int = undefined;
 /// Off/on texture pairs for this game's switches. Entry i ^ 1 is entry i's partner.
 var switchlist: []c_int = &.{};
 
-pub export var buttonlist: [c.MAXBUTTONS]c.button_t = @splat(std.mem.zeroes(c.button_t));
+pub var buttonlist: [MAXBUTTONS]Button = @splat(.{});
 
 pub fn P_InitSwitchList() void {
     const episode: i32 = switch (doomstat.gamemode) {
@@ -117,10 +127,10 @@ fn P_StartButton(line: *c.line_t, w: ButtonWhere, texture: c_int, time: c_int) v
     for (&buttonlist) |*button| {
         if (button.btimer == 0) {
             button.line = line;
-            button.where = @backingInt(w);
+            button.where = w;
             button.btexture = texture;
             button.btimer = time;
-            button.soundorg = @ptrCast(&line.frontsector.*.soundorg);
+            button.soundorg = &line.frontsector.*.soundorg;
             return;
         }
     }
@@ -130,8 +140,8 @@ fn P_StartButton(line: *c.line_t, w: ButtonWhere, texture: c_int, time: c_int) v
 
 /// Function that changes wall texture.
 /// Tell it if switch is ok to use again (1=yes, it's a button).
-pub export fn P_ChangeSwitchTexture(line: *c.line_t, useAgain: c_int) void {
-    if (useAgain == 0) {
+pub fn P_ChangeSwitchTexture(line: *c.line_t, useAgain: bool) void {
+    if (!useAgain) {
         line.special = 0;
     }
 
@@ -154,7 +164,7 @@ pub export fn P_ChangeSwitchTexture(line: *c.line_t, useAgain: c_int) void {
 
         part.tex.* = @intCast(switchlist[i ^ 1]);
 
-        if (useAgain != 0) {
+        if (useAgain) {
             P_StartButton(line, part.where, tex, BUTTONTIME);
         }
         return;
@@ -201,168 +211,168 @@ pub fn P_UseSpecialLine(thing: *MObj, line: *c.line_t, side: c_int) bool {
         // Switches
 
         // Build Stairs
-        7 => if (p_floor.EV_BuildStairs(line, .build8) != 0) P_ChangeSwitchTexture(line, 0),
+        7 => if (p_floor.EV_BuildStairs(line, .build8)) P_ChangeSwitchTexture(line, false),
 
         // Change Donut
-        9 => if (c.EV_DoDonut(line) != 0) P_ChangeSwitchTexture(line, 0),
+        9 => if (p_spec.EV_DoDonut(line)) P_ChangeSwitchTexture(line, false),
 
         // Exit level
         11 => {
-            P_ChangeSwitchTexture(line, 0);
+            P_ChangeSwitchTexture(line, false);
             g_game.G_ExitLevel();
         },
 
         // Raise Floor 32 and change texture
-        14 => if (p_plats.EV_DoPlat(line, .raiseAndChange, 32) != 0) P_ChangeSwitchTexture(line, 0),
+        14 => if (p_plats.EV_DoPlat(line, .raiseAndChange, 32)) P_ChangeSwitchTexture(line, false),
 
         // Raise Floor 24 and change texture
-        15 => if (p_plats.EV_DoPlat(line, .raiseAndChange, 24) != 0) P_ChangeSwitchTexture(line, 0),
+        15 => if (p_plats.EV_DoPlat(line, .raiseAndChange, 24)) P_ChangeSwitchTexture(line, false),
 
         // Raise Floor to next highest floor
-        18 => if (p_floor.EV_DoFloor(line, .raiseFloorToNearest) != 0) P_ChangeSwitchTexture(line, 0),
+        18 => if (p_floor.EV_DoFloor(line, .raiseFloorToNearest)) P_ChangeSwitchTexture(line, false),
 
         // Raise Plat to next highest floor and change texture
-        20 => if (p_plats.EV_DoPlat(line, .raiseToNearestAndChange, 0) != 0) P_ChangeSwitchTexture(line, 0),
+        20 => if (p_plats.EV_DoPlat(line, .raiseToNearestAndChange, 0)) P_ChangeSwitchTexture(line, false),
 
         // PlatDownWaitUpStay
-        21 => if (p_plats.EV_DoPlat(line, .downWaitUpStay, 0) != 0) P_ChangeSwitchTexture(line, 0),
+        21 => if (p_plats.EV_DoPlat(line, .downWaitUpStay, 0)) P_ChangeSwitchTexture(line, false),
 
         // Lower Floor to lowest
-        23 => if (p_floor.EV_DoFloor(line, .lowerFloorToLowest) != 0) P_ChangeSwitchTexture(line, 0),
+        23 => if (p_floor.EV_DoFloor(line, .lowerFloorToLowest)) P_ChangeSwitchTexture(line, false),
 
         // Raise Door
-        29 => if (p_doors.EV_DoDoor(line, .normal) != 0) P_ChangeSwitchTexture(line, 0),
+        29 => if (p_doors.EV_DoDoor(line, .normal)) P_ChangeSwitchTexture(line, false),
 
         // Lower Ceiling to floor
-        41 => if (p_ceilng.EV_DoCeiling(line, .lowerToFloor) != 0) P_ChangeSwitchTexture(line, 0),
+        41 => if (p_ceilng.EV_DoCeiling(line, .lowerToFloor)) P_ChangeSwitchTexture(line, false),
 
         // Turbo Lower Floor
-        71 => if (p_floor.EV_DoFloor(line, .turboLower) != 0) P_ChangeSwitchTexture(line, 0),
+        71 => if (p_floor.EV_DoFloor(line, .turboLower)) P_ChangeSwitchTexture(line, false),
 
         // Ceiling Crush And Raise
-        49 => if (p_ceilng.EV_DoCeiling(line, .crushAndRaise) != 0) P_ChangeSwitchTexture(line, 0),
+        49 => if (p_ceilng.EV_DoCeiling(line, .crushAndRaise)) P_ChangeSwitchTexture(line, false),
 
         // Close Door
-        50 => if (p_doors.EV_DoDoor(line, .close) != 0) P_ChangeSwitchTexture(line, 0),
+        50 => if (p_doors.EV_DoDoor(line, .close)) P_ChangeSwitchTexture(line, false),
 
         // Secret EXIT
         51 => {
-            P_ChangeSwitchTexture(line, 0);
+            P_ChangeSwitchTexture(line, false);
             g_game.G_SecretExitLevel();
         },
 
         // Raise Floor Crush
-        55 => if (p_floor.EV_DoFloor(line, .raiseFloorCrush) != 0) P_ChangeSwitchTexture(line, 0),
+        55 => if (p_floor.EV_DoFloor(line, .raiseFloorCrush)) P_ChangeSwitchTexture(line, false),
 
         // Raise Floor
-        101 => if (p_floor.EV_DoFloor(line, .raiseFloor) != 0) P_ChangeSwitchTexture(line, 0),
+        101 => if (p_floor.EV_DoFloor(line, .raiseFloor)) P_ChangeSwitchTexture(line, false),
 
         // Lower Floor to Surrounding floor height
-        102 => if (p_floor.EV_DoFloor(line, .lowerFloor) != 0) P_ChangeSwitchTexture(line, 0),
+        102 => if (p_floor.EV_DoFloor(line, .lowerFloor)) P_ChangeSwitchTexture(line, false),
 
         // Open Door
-        103 => if (p_doors.EV_DoDoor(line, .open) != 0) P_ChangeSwitchTexture(line, 0),
+        103 => if (p_doors.EV_DoDoor(line, .open)) P_ChangeSwitchTexture(line, false),
 
         // Blazing Door Raise (faster than TURBO!)
-        111 => if (p_doors.EV_DoDoor(line, .blazeRaise) != 0) P_ChangeSwitchTexture(line, 0),
+        111 => if (p_doors.EV_DoDoor(line, .blazeRaise)) P_ChangeSwitchTexture(line, false),
 
         // Blazing Door Open (faster than TURBO!)
-        112 => if (p_doors.EV_DoDoor(line, .blazeOpen) != 0) P_ChangeSwitchTexture(line, 0),
+        112 => if (p_doors.EV_DoDoor(line, .blazeOpen)) P_ChangeSwitchTexture(line, false),
 
         // Blazing Door Close (faster than TURBO!)
-        113 => if (p_doors.EV_DoDoor(line, .blazeClose) != 0) P_ChangeSwitchTexture(line, 0),
+        113 => if (p_doors.EV_DoDoor(line, .blazeClose)) P_ChangeSwitchTexture(line, false),
 
         // Blazing PlatDownWaitUpStay
-        122 => if (p_plats.EV_DoPlat(line, .blazeDWUS, 0) != 0) P_ChangeSwitchTexture(line, 0),
+        122 => if (p_plats.EV_DoPlat(line, .blazeDWUS, 0)) P_ChangeSwitchTexture(line, false),
 
         // Build Stairs Turbo 16
-        127 => if (p_floor.EV_BuildStairs(line, .turbo16) != 0) P_ChangeSwitchTexture(line, 0),
+        127 => if (p_floor.EV_BuildStairs(line, .turbo16)) P_ChangeSwitchTexture(line, false),
 
         // Raise Floor Turbo
-        131 => if (p_floor.EV_DoFloor(line, .raiseFloorTurbo) != 0) P_ChangeSwitchTexture(line, 0),
+        131 => if (p_floor.EV_DoFloor(line, .raiseFloorTurbo)) P_ChangeSwitchTexture(line, false),
 
         133, // BlzOpenDoor BLUE
         135, // BlzOpenDoor RED
         137, // BlzOpenDoor YELLOW
-        => if (p_doors.EV_DoLockedDoor(line, .blazeOpen, thing) != 0) P_ChangeSwitchTexture(line, 0),
+        => if (p_doors.EV_DoLockedDoor(line, .blazeOpen, thing)) P_ChangeSwitchTexture(line, false),
 
         // Raise Floor 512
-        140 => if (p_floor.EV_DoFloor(line, .raiseFloor512) != 0) P_ChangeSwitchTexture(line, 0),
+        140 => if (p_floor.EV_DoFloor(line, .raiseFloor512)) P_ChangeSwitchTexture(line, false),
 
         // BUTTONS
 
         // Close Door
-        42 => if (p_doors.EV_DoDoor(line, .close) != 0) P_ChangeSwitchTexture(line, 1),
+        42 => if (p_doors.EV_DoDoor(line, .close)) P_ChangeSwitchTexture(line, true),
 
         // Lower Ceiling to Floor
-        43 => if (p_ceilng.EV_DoCeiling(line, .lowerToFloor) != 0) P_ChangeSwitchTexture(line, 1),
+        43 => if (p_ceilng.EV_DoCeiling(line, .lowerToFloor)) P_ChangeSwitchTexture(line, true),
 
         // Lower Floor to Surrounding floor height
-        45 => if (p_floor.EV_DoFloor(line, .lowerFloor) != 0) P_ChangeSwitchTexture(line, 1),
+        45 => if (p_floor.EV_DoFloor(line, .lowerFloor)) P_ChangeSwitchTexture(line, true),
 
         // Lower Floor to Lowest
-        60 => if (p_floor.EV_DoFloor(line, .lowerFloorToLowest) != 0) P_ChangeSwitchTexture(line, 1),
+        60 => if (p_floor.EV_DoFloor(line, .lowerFloorToLowest)) P_ChangeSwitchTexture(line, true),
 
         // Open Door
-        61 => if (p_doors.EV_DoDoor(line, .open) != 0) P_ChangeSwitchTexture(line, 1),
+        61 => if (p_doors.EV_DoDoor(line, .open)) P_ChangeSwitchTexture(line, true),
 
         // PlatDownWaitUpStay
-        62 => if (p_plats.EV_DoPlat(line, .downWaitUpStay, 1) != 0) P_ChangeSwitchTexture(line, 1),
+        62 => if (p_plats.EV_DoPlat(line, .downWaitUpStay, 1)) P_ChangeSwitchTexture(line, true),
 
         // Raise Door
-        63 => if (p_doors.EV_DoDoor(line, .normal) != 0) P_ChangeSwitchTexture(line, 1),
+        63 => if (p_doors.EV_DoDoor(line, .normal)) P_ChangeSwitchTexture(line, true),
 
         // Raise Floor to ceiling
-        64 => if (p_floor.EV_DoFloor(line, .raiseFloor) != 0) P_ChangeSwitchTexture(line, 1),
+        64 => if (p_floor.EV_DoFloor(line, .raiseFloor)) P_ChangeSwitchTexture(line, true),
 
         // Raise Floor 24 and change texture
-        66 => if (p_plats.EV_DoPlat(line, .raiseAndChange, 24) != 0) P_ChangeSwitchTexture(line, 1),
+        66 => if (p_plats.EV_DoPlat(line, .raiseAndChange, 24)) P_ChangeSwitchTexture(line, true),
 
         // Raise Floor 32 and change texture
-        67 => if (p_plats.EV_DoPlat(line, .raiseAndChange, 32) != 0) P_ChangeSwitchTexture(line, 1),
+        67 => if (p_plats.EV_DoPlat(line, .raiseAndChange, 32)) P_ChangeSwitchTexture(line, true),
 
         // Raise Floor Crush
-        65 => if (p_floor.EV_DoFloor(line, .raiseFloorCrush) != 0) P_ChangeSwitchTexture(line, 1),
+        65 => if (p_floor.EV_DoFloor(line, .raiseFloorCrush)) P_ChangeSwitchTexture(line, true),
 
         // Raise Plat to next highest floor and change texture
-        68 => if (p_plats.EV_DoPlat(line, .raiseToNearestAndChange, 0) != 0) P_ChangeSwitchTexture(line, 1),
+        68 => if (p_plats.EV_DoPlat(line, .raiseToNearestAndChange, 0)) P_ChangeSwitchTexture(line, true),
 
         // Raise Floor to next highest floor
-        69 => if (p_floor.EV_DoFloor(line, .raiseFloorToNearest) != 0) P_ChangeSwitchTexture(line, 1),
+        69 => if (p_floor.EV_DoFloor(line, .raiseFloorToNearest)) P_ChangeSwitchTexture(line, true),
 
         // Turbo Lower Floor
-        70 => if (p_floor.EV_DoFloor(line, .turboLower) != 0) P_ChangeSwitchTexture(line, 1),
+        70 => if (p_floor.EV_DoFloor(line, .turboLower)) P_ChangeSwitchTexture(line, true),
 
         // Blazing Door Raise (faster than TURBO!)
-        114 => if (p_doors.EV_DoDoor(line, .blazeRaise) != 0) P_ChangeSwitchTexture(line, 1),
+        114 => if (p_doors.EV_DoDoor(line, .blazeRaise)) P_ChangeSwitchTexture(line, true),
 
         // Blazing Door Open (faster than TURBO!)
-        115 => if (p_doors.EV_DoDoor(line, .blazeOpen) != 0) P_ChangeSwitchTexture(line, 1),
+        115 => if (p_doors.EV_DoDoor(line, .blazeOpen)) P_ChangeSwitchTexture(line, true),
 
         // Blazing Door Close (faster than TURBO!)
-        116 => if (p_doors.EV_DoDoor(line, .blazeClose) != 0) P_ChangeSwitchTexture(line, 1),
+        116 => if (p_doors.EV_DoDoor(line, .blazeClose)) P_ChangeSwitchTexture(line, true),
 
         // Blazing PlatDownWaitUpStay
-        123 => if (p_plats.EV_DoPlat(line, .blazeDWUS, 0) != 0) P_ChangeSwitchTexture(line, 1),
+        123 => if (p_plats.EV_DoPlat(line, .blazeDWUS, 0)) P_ChangeSwitchTexture(line, true),
 
         // Raise Floor Turbo
-        132 => if (p_floor.EV_DoFloor(line, .raiseFloorTurbo) != 0) P_ChangeSwitchTexture(line, 1),
+        132 => if (p_floor.EV_DoFloor(line, .raiseFloorTurbo)) P_ChangeSwitchTexture(line, true),
 
         99, // BlzOpenDoor BLUE
         134, // BlzOpenDoor RED
         136, // BlzOpenDoor YELLOW
-        => if (p_doors.EV_DoLockedDoor(line, .blazeOpen, thing) != 0) P_ChangeSwitchTexture(line, 1),
+        => if (p_doors.EV_DoLockedDoor(line, .blazeOpen, thing)) P_ChangeSwitchTexture(line, true),
 
         // Light Turn On
         138 => {
             p_lights.EV_LightTurnOn(line, 255);
-            P_ChangeSwitchTexture(line, 1);
+            P_ChangeSwitchTexture(line, true);
         },
 
         // Light Turn Off
         139 => {
             p_lights.EV_LightTurnOn(line, 35);
-            P_ChangeSwitchTexture(line, 1);
+            P_ChangeSwitchTexture(line, true);
         },
 
         else => {},

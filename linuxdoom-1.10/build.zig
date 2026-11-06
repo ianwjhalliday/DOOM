@@ -8,7 +8,6 @@ pub fn build(b: *std.Build) void {
         "dstrings.c",
         "i_sound.c",
         "tables.c",
-        "p_spec.c",
         "p_saveg.c",
         "r_bsp.c",
         "r_data.c",

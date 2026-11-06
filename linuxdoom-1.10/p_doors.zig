@@ -12,6 +12,7 @@ const p_mobj = @import("p_mobj.zig");
 const MObj = p_mobj.MObj;
 const p_floor = @import("p_floor.zig");
 const p_setup = @import("p_setup.zig");
+const p_spec = @import("p_spec.zig");
 const p_tick = @import("p_tick.zig");
 const T_MovePlane = p_floor.T_MovePlane;
 const s_sound = @import("s_sound.zig");
@@ -131,8 +132,8 @@ fn checkLock(player: *Player, lock: Lock) bool {
     return false;
 }
 
-pub export fn EV_DoLockedDoor(line: *c.line_t, doortype: DoorType, thing: *MObj) c_int {
-    const p = thing.player orelse return 0;
+pub fn EV_DoLockedDoor(line: *c.line_t, doortype: DoorType, thing: *MObj) bool {
+    const p = thing.player orelse return false;
 
     const lock: Lock = switch (line.special) {
         99, 133 => .{ .card = .BlueCard, .skull = .BlueSkull, .message = c.PD_BLUEO },
@@ -141,20 +142,20 @@ pub export fn EV_DoLockedDoor(line: *c.line_t, doortype: DoorType, thing: *MObj)
         else => return EV_DoDoor(line, doortype), // not locked
     };
 
-    if (!checkLock(p, lock)) return 0;
+    if (!checkLock(p, lock)) return false;
     return EV_DoDoor(line, doortype);
 }
 
 /// Doors open to 4 units below the lowest surrounding ceiling.
 fn doorOpenHeight(sector: *c.sector_t) fixed_t {
-    return c.P_FindLowestCeilingSurrounding(sector) - 4 * FRACUNIT;
+    return p_spec.P_FindLowestCeilingSurrounding(sector) - 4 * FRACUNIT;
 }
 
-pub export fn EV_DoDoor(line: *c.line_t, doortype: DoorType) c_int {
+pub fn EV_DoDoor(line: *c.line_t, doortype: DoorType) bool {
     var secnum: c_int = -1;
-    var rtn: c_int = 0;
+    var rtn = false;
     while (true) {
-        secnum = c.P_FindSectorFromLineTag(line, secnum);
+        secnum = p_spec.P_FindSectorFromLineTag(line, secnum);
         if (secnum < 0) break;
 
         const sec = &p_setup.sectors_slice[@intCast(secnum)];
@@ -162,7 +163,7 @@ pub export fn EV_DoDoor(line: *c.line_t, doortype: DoorType) c_int {
         if (sec.specialdata != null) continue;
 
         // new door thinker
-        rtn = 1;
+        rtn = true;
         const door = z_zone.create(c.vldoor_t, .LevSpec, null);
         p_tick.P_AddThinker(@ptrCast(&door.thinker));
         sec.specialdata = door;
@@ -191,7 +192,7 @@ pub export fn EV_DoDoor(line: *c.line_t, doortype: DoorType) c_int {
     return rtn;
 }
 
-pub export fn EV_VerticalDoor(line: *c.line_t, thing: *MObj) void {
+pub fn EV_VerticalDoor(line: *c.line_t, thing: *MObj) void {
     const blue: Lock = .{ .card = .BlueCard, .skull = .BlueSkull, .message = c.PD_BLUEK };
     const yellow: Lock = .{ .card = .YellowCard, .skull = .YellowSkull, .message = c.PD_YELLOWK };
     const red: Lock = .{ .card = .RedCard, .skull = .RedSkull, .message = c.PD_REDK };
@@ -257,7 +258,7 @@ pub export fn EV_VerticalDoor(line: *c.line_t, thing: *MObj) void {
     if (doortype == .open or doortype == .blazeOpen) line.special = 0;
 }
 
-pub export fn P_SpawnDoorCloseIn30(sec: *c.sector_t) void {
+pub fn P_SpawnDoorCloseIn30(sec: *c.sector_t) void {
     const door = z_zone.create(c.vldoor_t, .LevSpec, null);
 
     p_tick.P_AddThinker(@ptrCast(&door.thinker));
@@ -278,7 +279,7 @@ pub export fn P_SpawnDoorCloseIn30(sec: *c.sector_t) void {
     door.topcountdown = 30 * 35;
 }
 
-pub export fn P_SpawnDoorRaiseIn5Mins(sec: *c.sector_t, _: c_int) void {
+pub fn P_SpawnDoorRaiseIn5Mins(sec: *c.sector_t) void {
     const door = z_zone.create(c.vldoor_t, .LevSpec, null);
 
     p_tick.P_AddThinker(@ptrCast(&door.thinker));

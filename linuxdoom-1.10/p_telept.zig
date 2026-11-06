@@ -13,17 +13,17 @@ pub const p_tick = @import("p_tick.zig");
 //
 // TELEPORTATION
 //
-pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) c_int {
+pub fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) bool {
 
     // don't teleport missiles
     if (thing.flags & MF_MISSILE != 0) {
-        return 0;
+        return false;
     }
 
     // Don't teleport if hit back of line,
     //  so you can get out of teleporter.
     if (side == 1) {
-        return 0;
+        return false;
     }
 
     const tag = line.tag;
@@ -52,7 +52,7 @@ pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) c_int {
             const oldz = thing.z;
 
             if (!p_map.P_TeleportMove(thing, m.x, m.y)) {
-                return 0;
+                return false;
             }
 
             thing.z = thing.floorz; // FIXME: not needed?
@@ -79,8 +79,8 @@ pub export fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) c_int {
             thing.momx = 0;
             thing.momy = 0;
             thing.momz = 0;
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }

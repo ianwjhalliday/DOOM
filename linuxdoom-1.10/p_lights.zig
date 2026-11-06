@@ -3,20 +3,29 @@ const c = @import("c");
 const m_random = @import("m_random.zig");
 const P_Random = m_random.P_Random;
 const p_setup = @import("p_setup.zig");
+const p_spec = @import("p_spec.zig");
 const p_tick = @import("p_tick.zig");
 const z_zone = @import("z_zone.zig");
 
 const GLOWSPEED = 8;
 const STROBEBRIGHT = 5;
-const FASTDARK = 15;
-const SLOWDARK = 35;
+pub const FASTDARK = 15;
+pub const SLOWDARK = 35;
 
 const GlowDirection = enum(c_int) {
     Down = -1,
     Up = 1,
 };
 
-fn T_FireFlicker(flick: *c.fireflicker_t) void {
+const FireFlicker = extern struct {
+    thinker: c.thinker_t,
+    sector: *c.sector_t,
+    count: c_int,
+    maxlight: c_int,
+    minlight: c_int,
+};
+
+fn T_FireFlicker(flick: *FireFlicker) void {
     const sector: *c.sector_t = flick.sector;
 
     flick.count -= 1;
@@ -33,19 +42,19 @@ fn T_FireFlicker(flick: *c.fireflicker_t) void {
     flick.count = 4;
 }
 
-pub export fn P_SpawnFireFlicker(sector: *c.sector_t) void {
+pub fn P_SpawnFireFlicker(sector: *c.sector_t) void {
     // Note that we are resetting sector attributes.
     // Nothing special about it during gameplay.
     sector.special = 0;
 
-    const flick = z_zone.create(c.fireflicker_t, .LevSpec, null);
+    const flick = z_zone.create(FireFlicker, .LevSpec, null);
 
     p_tick.P_AddThinker(@ptrCast(&flick.thinker));
 
     flick.thinker.function.acp1 = @ptrCast(&T_FireFlicker);
     flick.sector = sector;
     flick.maxlight = sector.lightlevel;
-    flick.minlight = c.P_FindMinSurroundingLight(sector, sector.lightlevel) + 16;
+    flick.minlight = p_spec.P_FindMinSurroundingLight(sector, sector.lightlevel) + 16;
     flick.count = 4;
 }
 
@@ -64,7 +73,7 @@ pub export fn T_LightFlash(flash: *c.lightflash_t) void {
     }
 }
 
-pub export fn P_SpawnLightFlash(sector: *c.sector_t) void {
+pub fn P_SpawnLightFlash(sector: *c.sector_t) void {
     // nothing special about it during gameplay
     sector.special = 0;
 
@@ -75,7 +84,7 @@ pub export fn P_SpawnLightFlash(sector: *c.sector_t) void {
     flash.thinker.function.acp1 = @ptrCast(&T_LightFlash);
     flash.sector = sector;
     flash.maxlight = sector.lightlevel;
-    flash.minlight = c.P_FindMinSurroundingLight(sector, sector.lightlevel);
+    flash.minlight = p_spec.P_FindMinSurroundingLight(sector, sector.lightlevel);
     // BUG: 64 isn't a 2^n-1 mask like mintime's 7, so P_Random() & maxtime
     // is 0 or 64 and the bright phase lasts 1 or 65 tics, not 1 to 64.
     flash.maxtime = 64;
@@ -98,7 +107,7 @@ pub export fn T_StrobeFlash(flash: *c.strobe_t) void {
     }
 }
 
-pub export fn P_SpawnStrobeFlash(sector: *c.sector_t, fastOrSlow: c_int, inSync: c.boolean) void {
+pub fn P_SpawnStrobeFlash(sector: *c.sector_t, fastOrSlow: c_int, inSync: bool) void {
     const flash = z_zone.create(c.strobe_t, .LevSpec, null);
 
     p_tick.P_AddThinker(@ptrCast(&flash.thinker));
@@ -108,42 +117,42 @@ pub export fn P_SpawnStrobeFlash(sector: *c.sector_t, fastOrSlow: c_int, inSync:
     flash.brighttime = STROBEBRIGHT;
     flash.thinker.function.acp1 = @ptrCast(&T_StrobeFlash);
     flash.maxlight = sector.lightlevel;
-    flash.minlight = c.P_FindMinSurroundingLight(sector, sector.lightlevel);
+    flash.minlight = p_spec.P_FindMinSurroundingLight(sector, sector.lightlevel);
 
     if (flash.minlight == flash.maxlight) flash.minlight = 0;
 
     // nothing special about it during gameplay
     sector.special = 0;
 
-    flash.count = if (inSync == c.false) @mod(P_Random(), 8) + 1 else 1;
+    flash.count = if (inSync) 1 else @mod(P_Random(), 8) + 1;
 }
 
-pub export fn EV_StartLightStrobing(line: *c.line_t) void {
+pub fn EV_StartLightStrobing(line: *c.line_t) void {
     var secnum: c_int = -1;
     while (true) {
-        secnum = c.P_FindSectorFromLineTag(line, secnum);
+        secnum = p_spec.P_FindSectorFromLineTag(line, secnum);
         if (secnum < 0) break;
 
         const sec = &p_setup.sectors_slice[@intCast(secnum)];
 
         if (sec.specialdata != null) continue;
 
-        P_SpawnStrobeFlash(sec, SLOWDARK, c.false);
+        P_SpawnStrobeFlash(sec, SLOWDARK, false);
     }
 }
 
-pub export fn EV_TurnTagLightsOff(line: *c.line_t) void {
+pub fn EV_TurnTagLightsOff(line: *c.line_t) void {
     for (p_setup.sectors_slice) |*sector| if (sector.tag == line.tag) {
         var min = sector.lightlevel;
         for (sector.lines[0..@intCast(sector.linecount)]) |l| {
-            const s: *c.sector_t = c.getNextSector(l, sector) orelse continue;
+            const s = p_spec.getNextSector(l, sector) orelse continue;
             min = @min(min, s.lightlevel);
         }
         sector.lightlevel = min;
     };
 }
 
-pub export fn EV_LightTurnOn(line: *c.line_t, brightness: c_int) void {
+pub fn EV_LightTurnOn(line: *c.line_t, brightness: c_int) void {
     var bright = brightness;
     for (p_setup.sectors_slice) |*sector| if (sector.tag == line.tag) {
         // bright = 0 means to search for highest light level surrounding sector
@@ -151,7 +160,7 @@ pub export fn EV_LightTurnOn(line: *c.line_t, brightness: c_int) void {
         // sector searches its neighbors and the rest reuse its result.
         if (bright == 0) {
             for (sector.lines[0..@intCast(sector.linecount)]) |l| {
-                const s: *c.sector_t = c.getNextSector(l, sector) orelse continue;
+                const s = p_spec.getNextSector(l, sector) orelse continue;
                 bright = @max(bright, s.lightlevel);
             }
         }
@@ -182,13 +191,13 @@ pub export fn T_Glow(g: *c.glow_t) void {
     }
 }
 
-pub export fn P_SpawnGlowingLight(sector: *c.sector_t) void {
+pub fn P_SpawnGlowingLight(sector: *c.sector_t) void {
     const g = z_zone.create(c.glow_t, .LevSpec, null);
 
     p_tick.P_AddThinker(@ptrCast(&g.thinker));
 
     g.sector = sector;
-    g.minlight = c.P_FindMinSurroundingLight(sector, sector.lightlevel);
+    g.minlight = p_spec.P_FindMinSurroundingLight(sector, sector.lightlevel);
     g.maxlight = sector.lightlevel;
     g.thinker.function.acp1 = @ptrCast(&T_Glow);
     g.direction = @backingInt(GlowDirection.Down);

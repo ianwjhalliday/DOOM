@@ -938,7 +938,7 @@ pub fn P_SpawnMapThing(mthing: *MapThing) void {
     const i = for (c.mobjinfo, 0..) |info, ii| {
         if (mthing.type == info.doomednum) break ii;
     } else {
-        I_Error("P_SpawnMapThing: Unknown type {} at ({}, {})",
+        I_Error("P_SpawnMapThing: Unknown type %d at (%d, %d)",
             mthing.type,
             mthing.x, mthing.y);
     };

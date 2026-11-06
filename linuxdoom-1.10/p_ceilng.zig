@@ -5,6 +5,7 @@ const m_fixed = @import("m_fixed.zig");
 const FRACUNIT = m_fixed.FRACUNIT;
 const p_floor = @import("p_floor.zig");
 const p_setup = @import("p_setup.zig");
+const p_spec = @import("p_spec.zig");
 const p_tick = @import("p_tick.zig");
 const s_sound = @import("s_sound.zig");
 const z_zone = @import("z_zone.zig");
@@ -97,7 +98,7 @@ pub export fn T_MoveCeiling(ceil: *c.ceiling_t) void {
     }
 }
 
-pub export fn EV_DoCeiling(line: *c.line_t, ceiltype: CeilingType) c_int {
+pub fn EV_DoCeiling(line: *c.line_t, ceiltype: CeilingType) bool {
     // Reactivate in-stasis ceilings for certain types.
     switch (ceiltype) {
         .fastCrushAndRaise, .silentCrushAndRaise, .crushAndRaise => P_ActivateInStasisCeiling(line),
@@ -105,9 +106,9 @@ pub export fn EV_DoCeiling(line: *c.line_t, ceiltype: CeilingType) c_int {
     }
 
     var secnum: c_int = -1;
-    var rtn: c_int = 0;
+    var rtn = false;
     while (true) {
-        secnum = c.P_FindSectorFromLineTag(line, secnum);
+        secnum = p_spec.P_FindSectorFromLineTag(line, secnum);
         if (secnum < 0) break;
 
         const sec = &p_setup.sectors_slice[@intCast(secnum)];
@@ -115,7 +116,7 @@ pub export fn EV_DoCeiling(line: *c.line_t, ceiltype: CeilingType) c_int {
         // Already moving? If so, keep going...
         if (sec.specialdata != null) continue;
 
-        rtn = 1;
+        rtn = true;
         const ceil = z_zone.create(c.ceiling_t, .LevSpec, null);
         p_tick.P_AddThinker(@ptrCast(&ceil.thinker));
         sec.specialdata = ceil;
@@ -145,7 +146,7 @@ pub export fn EV_DoCeiling(line: *c.line_t, ceiltype: CeilingType) c_int {
                 ceil.speed = CEILSPEED;
             },
             .raiseToHighest => {
-                ceil.topheight = c.P_FindHighestCeilingSurrounding(sec);
+                ceil.topheight = p_spec.P_FindHighestCeilingSurrounding(sec);
                 ceil.direction = @backingInt(CeilingDirection.Up);
                 ceil.speed = CEILSPEED;
             },
@@ -157,8 +158,8 @@ pub export fn EV_DoCeiling(line: *c.line_t, ceiltype: CeilingType) c_int {
     return rtn;
 }
 
-pub export fn EV_CeilingCrushStop(line: *c.line_t) c_int {
-    var rtn: c_int = 0;
+pub fn EV_CeilingCrushStop(line: *c.line_t) bool {
+    var rtn = false;
     for (activeceilings) |ac_slot| if (ac_slot) |ac| {
         if (ac.tag == line.tag and
             ac.direction != @backingInt(CeilingDirection.InStasis))
@@ -166,7 +167,7 @@ pub export fn EV_CeilingCrushStop(line: *c.line_t) c_int {
             ac.olddirection = ac.direction;
             ac.thinker.function.acv = null;
             ac.direction = @backingInt(CeilingDirection.InStasis);
-            rtn = 1;
+            rtn = true;
         }
     };
 

@@ -32,6 +32,7 @@ const USHORT = m_swap.USHORT;
 const p_mobj = @import("p_mobj.zig");
 const MObj = p_mobj.MObj;
 const P_SpawnMapThing = p_mobj.P_SpawnMapThing;
+const p_spec = @import("p_spec.zig");
 const p_switch = @import("p_switch.zig");
 const p_tick = @import("p_tick.zig");
 const P_InitThinkers = p_tick.P_InitThinkers;
@@ -71,7 +72,7 @@ var nodes_slice: []c.node_t = undefined;
 
 export var numlines: c_int = undefined;
 pub export var lines: [*]c.line_t = undefined;
-var lines_slice: []c.line_t = undefined;
+pub var lines_slice: []c.line_t = undefined;
 
 export var numsides: c_int = undefined;
 pub export var sides: [*]c.side_t = undefined;
@@ -554,7 +555,7 @@ pub fn P_SetupLevel(episode: c_int, map: c_int) void {
     p_mobj.iquetail = 0;
 
     // set up world state
-    c.P_SpawnSpecials();
+    p_spec.P_SpawnSpecials();
 
     // preload graphics
     if (g_game.precache) {
@@ -574,6 +575,6 @@ pub fn P_SetupLevel(episode: c_int, map: c_int) void {
 //
 pub fn P_Init() void {
     p_switch.P_InitSwitchList();
-    c.P_InitPicAnims();
+    p_spec.P_InitPicAnims();
     c.R_InitSprites(&c.sprnames);
 }

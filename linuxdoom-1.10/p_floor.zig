@@ -8,11 +8,14 @@ const fixed_t = m_fixed.fixed_t;
 const FRACUNIT = m_fixed.FRACUNIT;
 const p_map = @import("p_map.zig");
 const p_setup = @import("p_setup.zig");
+const p_spec = @import("p_spec.zig");
 const p_tick = @import("p_tick.zig");
 const s_sound = @import("s_sound.zig");
 const z_zone = @import("z_zone.zig");
 
-const FloorType = enum(c_uint) {
+pub const FLOORSPEED = FRACUNIT;
+
+pub const FloorType = enum(c_uint) {
     // lower floor to highest surrounding floor
     lowerFloor,
 
@@ -56,12 +59,6 @@ comptime {
         if (@backingInt(@field(FloorType, name)) != @field(c, name))
             @compileError("FloorType." ++ name ++ " doesn't match C floor_e");
     }
-
-    // Ditto for stair_e
-    for (@typeInfo(StairType).@"enum".field_names) |name| {
-        if (@backingInt(@field(StairType, name)) != @field(c, name))
-            @compileError("StairType." ++ name ++ " doesn't match C stair_e");
-    }
 }
 
 pub const MoveResult = enum(c_int) {
@@ -80,18 +77,7 @@ pub const MoveDirection = enum(c_int) {
     Up = 1,
 };
 
-comptime {
-    // While the equivalent enums still exist in the C code ensure ours match exactly.
-    std.debug.assert(@backingInt(MoveResult.Ok) == c.ok);
-    std.debug.assert(@backingInt(MoveResult.Crushed) == c.crushed);
-    std.debug.assert(@backingInt(MoveResult.PastDest) == c.pastdest);
-    std.debug.assert(@backingInt(MovePlane.Floor) == 0);
-    std.debug.assert(@backingInt(MovePlane.Ceiling) == 1);
-    std.debug.assert(@backingInt(MoveDirection.Down) == -1);
-    std.debug.assert(@backingInt(MoveDirection.Up) == 1);
-}
-
-pub export fn T_MovePlane(
+pub fn T_MovePlane(
     sector: *c.sector_t,
     speed: fixed_t,
     dest: fixed_t,
@@ -171,21 +157,21 @@ fn minBottomTextureHeight(secnum: c_int, sec: *c.sector_t) fixed_t {
     var minsize: fixed_t = std.math.maxInt(fixed_t);
     var i: c_int = 0;
     while (i < sec.linecount) : (i += 1) {
-        if (c.twoSided(secnum, i) == 0) continue;
+        if (!p_spec.twoSided(secnum, i)) continue;
         for ([_]c_int{ 0, 1 }) |side| {
-            const tex = c.getSide(secnum, i, side).*.bottomtexture;
+            const tex = p_spec.getSide(secnum, i, side).bottomtexture;
             if (tex >= 0) minsize = @min(minsize, c.textureheight[@intCast(tex)]);
         }
     }
     return minsize;
 }
 
-pub export fn EV_DoFloor(line: *c.line_t, floortype: FloorType) c_int {
+pub fn EV_DoFloor(line: *c.line_t, floortype: FloorType) bool {
     var secnum: c_int = -1;
-    var rtn: c_int = 0;
+    var rtn = false;
 
     while (true) {
-        secnum = c.P_FindSectorFromLineTag(line, secnum);
+        secnum = p_spec.P_FindSectorFromLineTag(line, secnum);
         if (secnum < 0) break;
 
         const sec = &p_setup.sectors_slice[@intCast(secnum)];
@@ -194,7 +180,7 @@ pub export fn EV_DoFloor(line: *c.line_t, floortype: FloorType) c_int {
         if (sec.specialdata != null) continue;
 
         // new floor thinker
-        rtn = 1;
+        rtn = true;
         const floor = z_zone.create(c.floormove_t, .LevSpec, null);
         p_tick.P_AddThinker(@ptrCast(&floor.thinker));
         sec.specialdata = floor;
@@ -209,28 +195,28 @@ pub export fn EV_DoFloor(line: *c.line_t, floortype: FloorType) c_int {
         });
 
         floor.speed = switch (floortype) {
-            .turboLower, .raiseFloorTurbo => c.FLOORSPEED * 4,
-            else => c.FLOORSPEED,
+            .turboLower, .raiseFloorTurbo => FLOORSPEED * 4,
+            else => FLOORSPEED,
         };
 
         floor.floordestheight = switch (floortype) {
-            .lowerFloor => c.P_FindHighestFloorSurrounding(sec),
-            .lowerFloorToLowest, .lowerAndChange => c.P_FindLowestFloorSurrounding(sec),
+            .lowerFloor => p_spec.P_FindHighestFloorSurrounding(sec),
+            .lowerFloorToLowest, .lowerAndChange => p_spec.P_FindLowestFloorSurrounding(sec),
             .turboLower => dest: {
-                const dest = c.P_FindHighestFloorSurrounding(sec);
+                const dest = p_spec.P_FindHighestFloorSurrounding(sec);
                 break :dest if (dest != sec.floorheight)
                     dest + 8 * FRACUNIT
                 else
                     dest;
             },
             .raiseFloor, .raiseFloorCrush => dest: {
-                const dest = @min(c.P_FindLowestCeilingSurrounding(sec), sec.ceilingheight);
+                const dest = @min(p_spec.P_FindLowestCeilingSurrounding(sec), sec.ceilingheight);
                 break :dest if (floortype == .raiseFloorCrush)
                     dest - 8 * FRACUNIT
                 else
                     dest;
             },
-            .raiseFloorTurbo, .raiseFloorToNearest => c.P_FindNextHighestFloor(sec, sec.floorheight),
+            .raiseFloorTurbo, .raiseFloorToNearest => p_spec.P_FindNextHighestFloor(sec, sec.floorheight),
             .raiseFloor24, .raiseFloor24AndChange => sec.floorheight + 24 * FRACUNIT,
             .raiseFloor512 => sec.floorheight + 512 * FRACUNIT,
             .raiseToTexture => sec.floorheight +% minBottomTextureHeight(secnum, sec),
@@ -250,10 +236,10 @@ pub export fn EV_DoFloor(line: *c.line_t, floortype: FloorType) c_int {
                 var s: *c.sector_t = sec;
                 var i: c_int = 0;
                 while (i < s.linecount) : (i += 1) {
-                    if (c.twoSided(secnum, i) == 0) continue;
+                    if (!p_spec.twoSided(secnum, i)) continue;
 
-                    const other: c_int = if (c.getSide(secnum, i, 0).*.sector - p_setup.sectors == secnum) 1 else 0;
-                    s = c.getSector(secnum, i, other);
+                    const other: c_int = if (p_spec.getSide(secnum, i, 0).sector - p_setup.sectors == secnum) 1 else 0;
+                    s = p_spec.getSector(secnum, i, other);
                     if (s.floorheight == floor.floordestheight) {
                         floor.texture = s.floorpic;
                         floor.newspecial = s.special;
@@ -268,16 +254,16 @@ pub export fn EV_DoFloor(line: *c.line_t, floortype: FloorType) c_int {
     return rtn;
 }
 
-pub export fn EV_BuildStairs(line: *c.line_t, stairtype: StairType) c_int {
+pub fn EV_BuildStairs(line: *c.line_t, stairtype: StairType) bool {
     const speed: fixed_t, const stairsize: fixed_t = switch (stairtype) {
-        .build8 => .{ c.FLOORSPEED / 4, 8 * FRACUNIT },
-        .turbo16 => .{ c.FLOORSPEED * 4, 16 * FRACUNIT },
+        .build8 => .{ FLOORSPEED / 4, 8 * FRACUNIT },
+        .turbo16 => .{ FLOORSPEED * 4, 16 * FRACUNIT },
     };
 
     var secnum: c_int = -1;
-    var rtn: c_int = 0;
+    var rtn = false;
     while (true) {
-        secnum = c.P_FindSectorFromLineTag(line, secnum);
+        secnum = p_spec.P_FindSectorFromLineTag(line, secnum);
         if (secnum < 0) break;
 
         var sec = &p_setup.sectors_slice[@intCast(secnum)];
@@ -285,7 +271,7 @@ pub export fn EV_BuildStairs(line: *c.line_t, stairtype: StairType) c_int {
         // Already moving? If so, keep going...
         if (sec.specialdata != null) continue;
 
-        rtn = 1;
+        rtn = true;
         var height = sec.floorheight + stairsize;
         addStairStep(sec, speed, height);
 
