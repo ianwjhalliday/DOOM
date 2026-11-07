@@ -56,6 +56,8 @@ const m_random = @import("m_random.zig");
 const M_ClearRandom = m_random.M_ClearRandom;
 const P_Random = m_random.P_Random;
 
+const p_enemy = @import("p_enemy.zig");
+
 const p_mobj = @import("p_mobj.zig");
 const MF_SHADOW = p_mobj.MF_SHADOW;
 const MObj = p_mobj.MObj;
@@ -64,6 +66,8 @@ const P_SpawnMobj = p_mobj.P_SpawnMobj;
 const P_SpawnPlayer = p_mobj.P_SpawnPlayer;
 
 const p_map = @import("p_map.zig");
+
+const p_saveg = @import("p_saveg.zig");
 
 const p_setup = @import("p_setup.zig");
 const P_SetupLevel = p_setup.P_SetupLevel;
@@ -84,8 +88,6 @@ const S_ResumeSound = s_sound.S_ResumeSound;
 const st_stuff = @import("st_stuff.zig");
 const ST_Ticker = st_stuff.ST_Ticker;
 const ST_Responder = st_stuff.ST_Responder;
-
-const v_video = @import("v_video.zig");
 
 const w_wad = @import("w_wad.zig");
 const W_CacheLumpName = w_wad.W_CacheLumpNameZig;
@@ -111,7 +113,6 @@ const WeaponType = doomdef.WeaponType;
 
 const doomstat = @import("doomstat.zig");
 
-const SAVEGAMESIZE = 0x2c000;
 const SAVESTRINGSIZE = 24;
 
 pub var gameaction: GameAction = undefined;
@@ -1085,10 +1086,59 @@ pub fn G_LoadGame(name: [:0]const u8) void {
     gameaction = .LoadGame;
 }
 
+const SAVEGAME_MARKER = 0x1d;
+
 const VERSIONSIZE = 16;
+const savegame_version: [VERSIONSIZE]u8 = blk: {
+    const s = fmt.comptimePrint("version {d}", .{c.VERSION});
+    var v: [VERSIONSIZE]u8 = @splat(0);
+    @memcpy(v[0..s.len], s);
+    break :blk v;
+};
 
+fn writeSaveGame(writer: *std.Io.Writer) !void {
+    try writer.writeAll(&savedescription);
+    try writer.writeAll(&savegame_version);
 
-extern fn A_BrainAwake(mo: *c.mobj_t) void;
+    try writer.writeByte(@intCast(@backingInt(gameskill)));
+    try writer.writeByte(@intCast(gameepisode));
+    try writer.writeByte(@intCast(gamemap));
+    for (playeringame) |p| try writer.writeByte(@intCast(p));
+    try writer.writeInt(u24, @truncate(@as(u32, @intCast(p_tick.leveltime))), .big);
+
+    try p_saveg.P_ArchivePlayers(writer);
+    try p_saveg.P_ArchiveWorld(writer);
+    try p_saveg.P_ArchiveThinkers(writer);
+    try p_saveg.P_ArchiveSpecials(writer);
+    try writer.writeByte(SAVEGAME_MARKER); // consistency marker
+}
+
+fn readSaveGame(reader: *std.Io.Reader) !void {
+    try reader.discardAll(SAVESTRINGSIZE);
+    const version = try reader.takeArray(VERSIONSIZE);
+
+    if (!mem.eql(u8, version, &savegame_version)) return error.WrongVersion;
+
+    const raw_skill = try reader.takeByte();
+    gameskill = std.enums.fromInt(Skill, raw_skill) orelse return error.BadSaveGame;
+    gameepisode = try reader.takeByte();
+    gamemap = try reader.takeByte();
+    for (&playeringame) |*p| p.* = try reader.takeByte();
+
+    // load a base level
+    G_InitNew(gameskill, gameepisode, gamemap);
+
+    p_tick.leveltime = try reader.takeInt(u24, .big);
+
+    try p_saveg.P_UnArchivePlayers(reader);
+    try p_saveg.P_UnArchiveWorld(reader);
+    try p_saveg.P_UnArchiveThinkers(reader);
+    try p_saveg.P_UnArchiveSpecials(reader);
+
+    const marker = try reader.takeByte();
+    if (marker != SAVEGAME_MARKER) return error.BadSaveGame;
+}
+
 fn G_DoLoadGame() void {
     gameaction = .Nothing;
 
@@ -1097,45 +1147,12 @@ fn G_DoLoadGame() void {
 
     var reader: std.Io.Reader = .fixed(buffer);
 
-    // skip the description field
-    reader.discardAll(SAVESTRINGSIZE) catch unreachable;
-
-    var vcheck: [VERSIONSIZE]u8 = @splat(0);
-    _ = fmt.bufPrintSentinel(&vcheck, "version {d}", .{c.VERSION}, 0) catch unreachable;
-    const version = reader.takeArray(VERSIONSIZE) catch unreachable;
-    if (!mem.eql(u8, version, &vcheck)) {
-        return;
-    }
-
-    gameskill = @fromBackingInt(reader.takeByte() catch unreachable);
-    gameepisode = reader.takeByte() catch unreachable;
-    gamemap = reader.takeByte() catch unreachable;
-    for (0..MAXPLAYERS) |j| {
-        playeringame[j] = reader.takeByte() catch unreachable;
-    }
-
-    // load a base level
-    G_InitNew(gameskill, gameepisode, gamemap);
-
-    // get the times
-    const a = @as(c_int, reader.takeByte() catch unreachable);
-    const b = @as(c_int, reader.takeByte() catch unreachable);
-    const _c = @as(c_int, reader.takeByte() catch unreachable);
-    p_tick.leveltime = (a<<16) + (b<<8) + _c;
-
-    // dearchive all the modifications
-    // TODO: Eliminate the `save_p` global and pass `reader`
-    // to the unarchive functions instead.
-    const pos: usize = reader.seek;
-    c.save_p = @constCast(&buffer[pos]);
-    c.P_UnArchivePlayers();
-    c.P_UnArchiveWorld();
-    c.P_UnArchiveThinkers();
-    c.P_UnArchiveSpecials();
-
-    if (c.save_p.* != 0x1d) {
-        I_Error("Bad savegame");
-    }
+    readSaveGame(&reader) catch |err| switch (err) {
+        // BUG: A save from another version is skipped without telling the
+        // player. A message like GGSAVED would fit; an I_Error would not.
+        error.WrongVersion => return,
+        else => I_Error("Bad savegame"),
+    };
 
     if (setsizeneeded != c.false) {
         R_ExecuteSetViewSize();
@@ -1146,17 +1163,10 @@ fn G_DoLoadGame() void {
 
     // Hack fix for crash on loading save games in map 30
     if (gamemap == 30 and doomstat.gamemode == .Commercial) {
-        var thinker = p_tick.thinkercap.next orelse &p_tick.thinkercap;
-        while (thinker != &p_tick.thinkercap) : (thinker = thinker.next.?) {
-            // not a mobj
-            if (thinker.function.acp1 != p_mobj.mobj_thinker) {
-                continue;
-            }
-
-            const m = @as(*c.mobj_t, @ptrCast(thinker));
-
+        var it = p_tick.mobj_thinkers();
+        while (it.next()) |m| {
             if (m.type == c.MT_BOSSBRAIN) {
-                A_BrainAwake(m);
+                p_enemy.A_BrainAwake(m);
             }
         }
     }
@@ -1176,58 +1186,18 @@ pub fn G_SaveGame(slot: c_int, description: [*:0]const u8) void {
 
 fn G_DoSaveGame() void {
     var namebuf: [100]u8 = undefined;
-    const name =
-        if (M_CheckParm("-cdrom") != 0)
-            fmt.bufPrint(&namebuf, "c:\\doomdata\\{s}{d}.dsg", .{c.SAVEGAMENAME, savegameslot}) catch unreachable
-        else
-            fmt.bufPrint(&namebuf, "{s}{d}.dsg", .{c.SAVEGAMENAME, savegameslot}) catch unreachable
-        ;
+    const dir = if (M_CheckParm("-cdrom") != 0) "c:\\doomdata\\" else "";
+    const name = fmt.bufPrint(&namebuf, "{s}{s}{d}.dsg", .{ dir, c.SAVEGAMENAME, savegameslot }) catch unreachable;
 
-    var buffer = v_video.screens[1][0x4000..0x4000+SAVEGAMESIZE];
-    var writer: std.Io.Writer = .fixed(buffer);
+    var aw: std.Io.Writer.Allocating = .init(std.heap.c_allocator);
+    defer aw.deinit();
 
-    writer.writeAll(&savedescription) catch unreachable;
+    writeSaveGame(&aw.writer) catch I_Error("Out of memory writing savegame");
+    _ = M_WriteFile(name, aw.written());
 
-    var version: [VERSIONSIZE]u8 = @splat(0);
-    _ = fmt.bufPrintSentinel(&version, "version {d}", .{c.VERSION}, 0) catch unreachable;
-    writer.writeAll(&version) catch unreachable;
-
-    writer.writeByte(@intCast(@backingInt(gameskill))) catch unreachable;
-    writer.writeByte(@intCast(gameepisode)) catch unreachable;
-    writer.writeByte(@intCast(gamemap)) catch unreachable;
-    for (0..MAXPLAYERS) |i| {
-        writer.writeByte(@intCast(playeringame[i])) catch unreachable;
-    }
-    const lt: u32 = @intCast(p_tick.leveltime);
-    writer.writeByte(@truncate(lt>>16)) catch unreachable;
-    writer.writeByte(@truncate(lt>>8)) catch unreachable;
-    writer.writeByte(@truncate(lt)) catch unreachable;
-
-    // TODO: Use `writer` instead of `save_p` in archive functions
-    const pos: usize = writer.end;
-    c.save_p = &buffer[pos];
-    c.P_ArchivePlayers();
-    c.P_ArchiveWorld();
-    c.P_ArchiveThinkers();
-    c.P_ArchiveSpecials();
-
-    c.save_p.* = 0x1d;          // consistancy marker
-    c.save_p += 1;
-
-    // TODO: buffer overrun is detected during writer api calls;
-    // utilize those errors to detect and report this I_Error().
-    const length = c.save_p - buffer.ptr;
-    if (length > SAVEGAMESIZE) {
-        I_Error("Savegame buffer overrun");
-    }
-    _ = M_WriteFile(name, buffer[0..length]);
     gameaction = .Nothing;
-    _ = fmt.bufPrintSentinel(&savedescription, "", .{}, 0) catch unreachable;
-
+    savedescription = @splat(0);
     players[consoleplayer].message = c.GGSAVED;
-
-    // draw the pattern into the back screen
-    c.R_FillBackScreen ();
 }
 
 
