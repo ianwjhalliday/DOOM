@@ -457,17 +457,24 @@ fn P_GroupLines() void {
         linebuffer += j;
 
         // set the degenmobj_t to the middle of the bounding box
-        sector.*.soundorg.x = @divTrunc(bbox.right + bbox.left, 2);
-        sector.*.soundorg.y = @divTrunc(bbox.top + bbox.bottom, 2);
+        // BUG: BBox.add's else-if can leave top or right at .empty's minInt,
+        // so the sum overflows (MAP14, MAP18, MAP22, MAP30) and the sound
+        // origin lands far off the map. Wrapping matches vanilla.
+        sector.*.soundorg.x = @divTrunc(bbox.right +% bbox.left, 2);
+        sector.*.soundorg.y = @divTrunc(bbox.top +% bbox.bottom, 2);
 
         // adjust bounding box to map blocks
-        const blocktop = (bbox.top - bmaporgy + c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+        // top and right can still be minInt here (see above), which overflows
+        // when the blockmap origin is positive. No IWAD map does that, but a
+        // PWAD could. Vanilla wraps to a large value that @min clamps to the
+        // map edge. bottom and left are always set by the first point.
+        const blocktop = (bbox.top -% bmaporgy +% c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
         sector.*.blockbox[c.BOXTOP] = @min(blocktop, bmapheight - 1);
 
         const blockbottom = (bbox.bottom - bmaporgy - c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
         sector.*.blockbox[c.BOXBOTTOM] = @max(blockbottom, 0);
 
-        const blockright = (bbox.right - bmaporgx + c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+        const blockright = (bbox.right -% bmaporgx +% c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
         sector.*.blockbox[c.BOXRIGHT] = @min(blockright, bmapwidth - 1);
 
         const blockleft = (bbox.left - bmaporgx - c.MAXRADIUS) >> c.MAPBLOCKSHIFT;

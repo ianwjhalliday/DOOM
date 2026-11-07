@@ -943,6 +943,11 @@ fn PIT_RadiusAttack(thing: *MObj) bool {
 
 /// Source is the creature that caused the explosion at spot.
 pub fn P_RadiusAttack(spot: *MObj, source: ?*MObj, damage: c_int) void {
+    // BUG: MAXRADIUS is already fixed point, so the shift pushes it out of
+    // the int entirely and dist is just damage << FRACBITS. The blockmap
+    // search loses its MAXRADIUS margin, so a large thing whose center sits
+    // in a block just outside the blast radius is never checked, even when
+    // its edge is in range. Zig's << drops the high bits like vanilla's did.
     const dist = (damage + c.MAXRADIUS) << FRACBITS;
     const yh = (spot.y + dist - p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
     const yl = (spot.y - dist - p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;

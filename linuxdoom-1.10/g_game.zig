@@ -402,7 +402,10 @@ pub fn G_BuildTiccmd(cmd: *TicCmd) void {
     if (strafe) {
         side +|= mousex*2;
     } else {
-        cmd.angleturn -|= @intCast(mousex*0x8);
+        // A fast flick can push mousex*8 past i16. Vanilla wrapped, which could
+        // turn the player the wrong way; saturate instead. This only shapes the
+        // ticcmd, so recorded demos still play back the same.
+        cmd.angleturn -|= std.math.lossyCast(i16, mousex * 0x8);
     }
 
     mousex = 0;

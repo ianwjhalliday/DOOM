@@ -585,7 +585,8 @@ pub fn P_SpawnSpecials() void {
     if (i != 0 and g_game.deathmatch != c.false) {
         const minutes = std.fmt.parseInt(c_int, std.mem.span(m_argv.myargv[@intCast(i + 1)]), 10) catch 0;
         levelTimer = true;
-        levelTimeCount = minutes * 60 * 35;
+        // Wraps above 1022 minutes, as vanilla does.
+        levelTimeCount = minutes *% 60 *% 35;
     }
 
     // Init special sectors
