@@ -977,11 +977,8 @@ pub fn D_DoomMain() noreturn {
 
     p = @intCast(M_CheckParm("-loadgame"));
     if (p != 0 and p < myargc - 1) {
-        const file =
-            if (M_CheckParm("-cdrom") != 0)
-                fmt.bufPrintSentinel(&filebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}, 0) catch unreachable
-            else
-                fmt.bufPrintSentinel(&filebuf, c.SAVEGAMENAME ++ "{}.dsg", .{myargv[p + 1][0]}, 0) catch unreachable;
+        const dir = if (M_CheckParm("-cdrom") != 0) "c:\\doomdata\\" else "";
+        const file = fmt.bufPrintSentinel(&filebuf, "{s}{s}{c}.dsg", .{ dir, c.SAVEGAMENAME, myargv[p + 1][0] }, 0) catch unreachable;
         G_LoadGame(file);
     }
 
