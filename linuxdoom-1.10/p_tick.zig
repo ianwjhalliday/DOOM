@@ -1,6 +1,7 @@
 const c = @import("c");
 
 const p_mobj = @import("p_mobj.zig");
+const MObj = p_mobj.MObj;
 const p_spec = @import("p_spec.zig");
 const p_user = @import("p_user.zig");
 
@@ -43,6 +44,40 @@ pub export var thinkercap = Thinker{
     .prev = null,
     .function = ActionFn{.acv = null},
 };
+
+/// Iterates live and pending-removal thinkers. `next` is read before the
+/// current thinker is returned, so the caller may free it. A thinker added
+/// while on the last one is not visited, which differs from vanilla's
+/// loops. P_RunThinkers depends on that difference, so it stays hand-written.
+pub const ThinkerIterator = struct {
+    cur: *Thinker,
+
+    pub fn next(it: *ThinkerIterator) ?*Thinker {
+        const th = it.cur;
+        if (th == &thinkercap) return null;
+        it.cur = th.next.?;
+        return th;
+    }
+};
+
+pub fn thinkers() ThinkerIterator {
+    return .{ .cur = thinkercap.next orelse &thinkercap };
+}
+
+pub const MObjThinkerIterator = struct {
+    inner: ThinkerIterator,
+
+    pub fn next(it: *MObjThinkerIterator) ?*MObj {
+        while (it.inner.next()) |th| {
+            if (th.function.acp1 == p_mobj.mobj_thinker) return @ptrCast(th);
+        }
+        return null;
+    }
+};
+
+pub fn mobj_thinkers() MObjThinkerIterator {
+    return .{ .inner = thinkers() };
+}
 
 
 //
@@ -88,15 +123,15 @@ fn P_RunThinkers() void {
     while (currentthinker != &thinkercap) {
         if (isRemoved(currentthinker)) {
             // time to remove it
+            const next = currentthinker.next.?;
             currentthinker.next.?.prev = currentthinker.prev;
             currentthinker.prev.?.next = currentthinker.next;
             z_zone.destroy(currentthinker);
+            currentthinker = next;
         } else {
-            if (currentthinker.function.acp1 != null) {
-                currentthinker.function.acp1.?(currentthinker);
-            }
+            if (currentthinker.function.acp1) |think| think(currentthinker);
+            currentthinker = currentthinker.next.?;
         }
-        currentthinker = currentthinker.next.?;
     }
 }
 

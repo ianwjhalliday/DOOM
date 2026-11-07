@@ -388,12 +388,8 @@ fn P_LookForPlayers(actor: *MObj, allaround: bool) bool {
 
 /// True if a mobj other than actor, of the same type, is still alive.
 fn P_OthersAlive(actor: *MObj) bool {
-    var th = p_tick.thinkercap.next;
-    while (th != &p_tick.thinkercap) : (th = th.?.next) {
-        if (th.?.function.acp1 != p_mobj.mobj_thinker) {
-            continue;
-        }
-        const mo2: *MObj = @ptrCast(th);
+    var it = p_tick.mobj_thinkers();
+    while (it.next()) |mo2| {
         if (mo2 != actor and mo2.type == actor.type and mo2.health > 0) {
             return true;
         }
@@ -1032,13 +1028,9 @@ pub export fn A_SkullAttack(actor: *MObj) void {
 fn A_PainShootSkull(actor: *MObj, angle: c.angle_t) void {
     // count total number of skull currently on the level
     var count: u32 = 0;
-    var currentthinker = p_tick.thinkercap.next;
-    while (currentthinker != &p_tick.thinkercap) : (currentthinker = currentthinker.?.next) {
-        if (currentthinker.?.function.acp1 == p_mobj.mobj_thinker and
-            @as(*MObj, @ptrCast(currentthinker)).type == c.MT_SKULL)
-        {
-            count += 1;
-        }
+    var it = p_tick.mobj_thinkers();
+    while (it.next()) |mo| {
+        if (mo.type == c.MT_SKULL) count += 1;
     }
 
     // if there are already 20 skulls on the level, don't spit another one.
@@ -1215,14 +1207,8 @@ pub export fn A_BrainAwake(_: *MObj) void {
     numbraintargets = 0;
     braintargeton = 0;
 
-    var th = p_tick.thinkercap.next;
-    while (th != &p_tick.thinkercap) : (th = th.?.next) {
-        if (th.?.function.acp1 != p_mobj.mobj_thinker) {
-            continue;
-        }
-
-        const mo = @as(*MObj, @ptrCast(th));
-
+    var it = p_tick.mobj_thinkers();
+    while (it.next()) |mo| {
         if (mo.type == c.MT_BOSSTARGET) {
             braintargets[numbraintargets] = mo;
             numbraintargets += 1;

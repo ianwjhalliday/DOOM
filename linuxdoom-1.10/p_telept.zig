@@ -30,15 +30,8 @@ pub fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) bool {
     for (0..@intCast(c.numsectors)) |i| {
         if (p_setup.sectors[i].tag != tag) continue;
 
-        var thinker = p_tick.thinkercap.next orelse &p_tick.thinkercap;
-        while (thinker != &p_tick.thinkercap) : (thinker = thinker.next.?) {
-            // not a mobj
-            if (thinker.function.acp1 != p_mobj.mobj_thinker) {
-                continue;
-            }
-
-            const m = @as(*c.mobj_t, @ptrCast(thinker));
-
+        var it = p_tick.mobj_thinkers();
+        while (it.next()) |m| {
             // not a teleportman
             if (m.type != c.MT_TELEPORTMAN) continue;
 
