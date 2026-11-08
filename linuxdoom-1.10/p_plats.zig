@@ -22,7 +22,7 @@ const PLATWAIT = 3;
 const PLATSPEED = FRACUNIT;
 const MAXPLATS = 30;
 
-const PlatType = enum(c_uint) {
+pub const PlatType = enum(c_uint) {
     perpetualRaise,
     downWaitUpStay,
     raiseAndChange,
@@ -30,45 +30,49 @@ const PlatType = enum(c_uint) {
     blazeDWUS,
 };
 
-const PlatStatus = enum(c_uint) {
+pub const PlatStatus = enum(c_uint) {
     Up,
     Down,
     Waiting,
     InStasis,
 };
 
+/// extern so `thinker` stays at offset 0, since P_RunThinkers passes the
+/// thinker pointer to T_PlatRaise as a *Plat. p_saveg also saves this
+/// struct as raw bytes, so reordering or retyping fields breaks savegames.
+pub const Plat = extern struct {
+    thinker: p_tick.Thinker,
+    sector: *c.sector_t,
+    speed: fixed_t,
+    low: fixed_t,
+    high: fixed_t,
+    wait: c_int,
+    count: c_int,
+    status: PlatStatus,
+    oldstatus: PlatStatus,
+    crush: c.boolean, // c.boolean is a 4-byte c_int, and a 1-byte bool would shift every later field in the saved layout.
+    tag: c_int,
+    type: PlatType,
+};
+
 comptime {
-    // While plattype_e still exists in the C code ensure that our enum matches the ordering.
-    for (@typeInfo(PlatType).@"enum".field_names) |name| {
-        if (@backingInt(@field(PlatType, name)) != @field(c, name))
-            @compileError("PlatType." ++ name ++ " doesn't match C plattype_e");
-    }
-
-    // Ditto for plat_e
-    std.debug.assert(@backingInt(PlatStatus.Up) == c.up);
-    std.debug.assert(@backingInt(PlatStatus.Down) == c.down);
-    std.debug.assert(@backingInt(PlatStatus.Waiting) == c.waiting);
-    std.debug.assert(@backingInt(PlatStatus.InStasis) == c.in_stasis);
+    std.debug.assert(@sizeOf(Plat) == 72); // saved as raw bytes by p_saveg
 }
 
-fn setPlatStatus(plat: *c.plat_t, count: c_int, status: PlatStatus, sfx: Sfx) void {
+fn setPlatStatus(plat: *Plat, count: c_int, status: PlatStatus, sfx: Sfx) void {
     plat.count = count;
-    plat.status = @backingInt(status);
-    s_sound.S_StartSound_Zig(@ptrCast(&plat.sector.*.soundorg), sfx);
+    plat.status = status;
+    s_sound.S_StartSound_Zig(@ptrCast(&plat.sector.soundorg), sfx);
 }
 
-pub export fn T_PlatRaise(plat: *c.plat_t) void {
-    const sector: *c.sector_t = plat.sector;
-    const platstatus: PlatStatus = @fromBackingInt(plat.status);
-    const plattype: PlatType = @fromBackingInt(plat.type);
-
-    switch (platstatus) {
+pub fn T_PlatRaise(plat: *Plat) callconv(.c) void {
+    switch (plat.status) {
         .Up => {
-            const res = T_MovePlane(sector, plat.speed, plat.high, plat.crush, .Floor, .Up);
+            const res = T_MovePlane(plat.sector, plat.speed, plat.high, plat.crush, .Floor, .Up);
 
-            if (plattype == .raiseAndChange or plattype == .raiseToNearestAndChange) {
+            if (plat.type == .raiseAndChange or plat.type == .raiseToNearestAndChange) {
                 if (@mod(p_tick.leveltime, 8) == 0) {
-                    s_sound.S_StartSound_Zig(@ptrCast(&sector.soundorg), .stnmov);
+                    s_sound.S_StartSound_Zig(@ptrCast(&plat.sector.soundorg), .stnmov);
                 }
             }
 
@@ -78,7 +82,7 @@ pub export fn T_PlatRaise(plat: *c.plat_t) void {
                 .PastDest => {
                     setPlatStatus(plat, plat.wait, .Waiting, .pstop);
 
-                    switch (plattype) {
+                    switch (plat.type) {
                         .blazeDWUS,
                         .downWaitUpStay,
                         .raiseAndChange,
@@ -91,7 +95,7 @@ pub export fn T_PlatRaise(plat: *c.plat_t) void {
             }
         },
         .Down => {
-            const res = T_MovePlane(sector, plat.speed, plat.low, c.false, .Floor, .Down);
+            const res = T_MovePlane(plat.sector, plat.speed, plat.low, c.false, .Floor, .Down);
             if (res == .PastDest) {
                 setPlatStatus(plat, plat.wait, .Waiting, .pstop);
             }
@@ -102,7 +106,7 @@ pub export fn T_PlatRaise(plat: *c.plat_t) void {
                 setPlatStatus(
                     plat,
                     plat.count, // no change
-                    if (sector.floorheight == plat.low) .Up else .Down,
+                    if (plat.sector.floorheight == plat.low) .Up else .Down,
                     .pstart,
                 );
             }
@@ -120,13 +124,13 @@ const PlatInit = struct {
     sfx: Sfx,
 };
 
-fn initPlat(plat: *c.plat_t, init: PlatInit) void {
+fn initPlat(plat: *Plat, init: PlatInit) void {
     plat.speed = init.speed;
     plat.low = init.low;
     plat.high = init.high;
     plat.wait = init.wait;
-    plat.status = @backingInt(init.status);
-    s_sound.S_StartSound_Zig(@ptrCast(&plat.sector.*.soundorg), init.sfx);
+    plat.status = init.status;
+    s_sound.S_StartSound_Zig(@ptrCast(&plat.sector.soundorg), init.sfx);
 }
 
 pub fn EV_DoPlat(line: *c.line_t, plattype: PlatType, amount: c_int) bool {
@@ -144,13 +148,13 @@ pub fn EV_DoPlat(line: *c.line_t, plattype: PlatType, amount: c_int) bool {
         if (sec.specialdata != null) continue;
 
         rtn = true;
-        const plat = z_zone.create(c.plat_t, .LevSpec, null);
-        p_tick.P_AddThinker(@ptrCast(&plat.thinker));
+        const plat = z_zone.create(Plat, .LevSpec, null);
+        p_tick.P_AddThinker(&plat.thinker);
 
         sec.specialdata = plat;
-        plat.type = @backingInt(plattype);
+        plat.type = plattype;
         plat.sector = sec;
-        plat.thinker.function.acp1 = @ptrCast(&T_PlatRaise);
+        plat.thinker.function.acp1 = p_tick.thinkFn(Plat, &T_PlatRaise);
         plat.crush = c.false;
         plat.tag = line.tag;
 
@@ -203,30 +207,26 @@ pub fn EV_DoPlat(line: *c.line_t, plattype: PlatType, amount: c_int) bool {
 
 pub fn EV_StopPlat(line: *c.line_t) void {
     for (activeplats) |ap_slot| if (ap_slot) |ap| {
-        if (ap.tag == line.tag and
-            @as(PlatStatus, @fromBackingInt(ap.status)) != .InStasis)
-        {
+        if (ap.tag == line.tag and ap.status != .InStasis) {
             ap.oldstatus = ap.status;
-            ap.status = @backingInt(PlatStatus.InStasis);
+            ap.status = .InStasis;
             ap.thinker.function.acv = null;
         }
     };
 }
 
-pub var activeplats: [MAXPLATS]?*c.plat_t = @splat(null);
+pub var activeplats: [MAXPLATS]?*Plat = @splat(null);
 
 fn P_ActivateInStasis(tag: c_int) void {
     for (activeplats) |ap_slot| if (ap_slot) |ap| {
-        if (ap.tag == tag and
-            @as(PlatStatus, @fromBackingInt(ap.status)) == .InStasis)
-        {
+        if (ap.tag == tag and ap.status == .InStasis) {
             ap.status = ap.oldstatus;
-            ap.thinker.function.acp1 = @ptrCast(&T_PlatRaise);
+            ap.thinker.function.acp1 = p_tick.thinkFn(Plat, &T_PlatRaise);
         }
     };
 }
 
-pub export fn P_AddActivePlat(plat: *c.plat_t) void {
+pub fn P_AddActivePlat(plat: *Plat) void {
     for (&activeplats) |*ap| {
         if (ap.* == null) {
             ap.* = plat;
@@ -236,11 +236,11 @@ pub export fn P_AddActivePlat(plat: *c.plat_t) void {
     I_Error("P_AddActivePlat: no more plats!");
 }
 
-fn P_RemoveActivePlat(plat: *c.plat_t) void {
+fn P_RemoveActivePlat(plat: *Plat) void {
     for (&activeplats) |*ap| {
         if (plat == ap.*) {
-            plat.sector.*.specialdata = null;
-            p_tick.P_RemoveThinker(@ptrCast(&plat.thinker));
+            plat.sector.specialdata = null;
+            p_tick.P_RemoveThinker(&plat.thinker);
             ap.* = null;
             return;
         }

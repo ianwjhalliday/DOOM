@@ -23,14 +23,14 @@ const z_zone = @import("z_zone.zig");
 const VDOORSPEED = FRACUNIT * 2;
 const VDOORWAIT = 150;
 
-const DoorDirection = enum(c_int) {
+pub const DoorDirection = enum(c_int) {
     Down = -1,
     Waiting = 0,
     Up = 1,
     InitialWait = 2,
 };
 
-const DoorType = enum(c_uint) {
+pub const DoorType = enum(c_uint) {
     normal,
     close30ThenOpen,
     close,
@@ -41,17 +41,22 @@ const DoorType = enum(c_uint) {
     blazeClose,
 };
 
-comptime {
-    // While vldoor_e still exists in the C code ensure that our enum matches the ordering.
-    for (@typeInfo(DoorType).@"enum".field_names) |name| {
-        if (@backingInt(@field(DoorType, name)) != @field(c, name))
-            @compileError("DoorType." ++ name ++ " doesn't match C vldoor_e");
-    }
+/// extern so `thinker` stays at offset 0, since P_RunThinkers passes the
+/// thinker pointer to T_VerticalDoor as a *Door. p_saveg also saves this
+/// struct as raw bytes, so reordering or retyping fields breaks savegames.
+pub const Door = extern struct {
+    thinker: p_tick.Thinker,
+    type: DoorType,
+    sector: *c.sector_t,
+    topheight: fixed_t,
+    speed: fixed_t,
+    direction: DoorDirection,
+    topwait: c_int,
+    topcountdown: c_int,
+};
 
-    std.debug.assert(@backingInt(DoorDirection.Down) == -1);
-    std.debug.assert(@backingInt(DoorDirection.Waiting) == 0);
-    std.debug.assert(@backingInt(DoorDirection.Up) == 1);
-    std.debug.assert(@backingInt(DoorDirection.InitialWait) == 2);
+comptime {
+    std.debug.assert(@sizeOf(Door) == 64); // saved as raw bytes by p_saveg
 }
 
 const Lock = struct {
@@ -60,30 +65,26 @@ const Lock = struct {
     message: [*:0]const u8,
 };
 
-fn setDoorDirection(door: *c.vldoor_t, dir: DoorDirection, sfx: Sfx) void {
-    door.direction = @backingInt(dir);
-    s_sound.S_StartSound_Zig(@ptrCast(&door.sector.*.soundorg), sfx);
+fn setDoorDirection(door: *Door, dir: DoorDirection, sfx: Sfx) void {
+    door.direction = dir;
+    s_sound.S_StartSound_Zig(@ptrCast(&door.sector.soundorg), sfx);
 }
 
-fn removeDoor(door: *c.vldoor_t) void {
-    door.sector.*.specialdata = null;
-    p_tick.P_RemoveThinker(@ptrCast(&door.thinker)); // unlink and free
+fn removeDoor(door: *Door) void {
+    door.sector.specialdata = null;
+    p_tick.P_RemoveThinker(&door.thinker); // unlink and free
 }
 
-fn waitAtTop(door: *c.vldoor_t, tics: c_int) void {
-    door.direction = @backingInt(DoorDirection.Waiting);
+fn waitAtTop(door: *Door, tics: c_int) void {
+    door.direction = .Waiting;
     door.topcountdown = tics;
 }
 
-pub export fn T_VerticalDoor(door: *c.vldoor_t) void {
-    const sector: *c.sector_t = door.sector;
-    const doordir: DoorDirection = @fromBackingInt(door.direction);
-    const doortype: DoorType = @fromBackingInt(door.type);
-
-    switch (doordir) {
+pub fn T_VerticalDoor(door: *Door) callconv(.c) void {
+    switch (door.direction) {
         .Waiting => {
             door.topcountdown -= 1;
-            if (door.topcountdown == 0) switch (doortype) {
+            if (door.topcountdown == 0) switch (door.type) {
                 .blazeRaise => setDoorDirection(door, .Down, .bdcls),
                 .normal => setDoorDirection(door, .Down, .dorcls),
                 .close30ThenOpen => setDoorDirection(door, .Up, .doropn),
@@ -92,30 +93,30 @@ pub export fn T_VerticalDoor(door: *c.vldoor_t) void {
         },
         .InitialWait => {
             door.topcountdown -= 1;
-            if (door.topcountdown == 0 and doortype == .raiseIn5Mins) {
-                door.type = @backingInt(DoorType.normal);
+            if (door.topcountdown == 0 and door.type == .raiseIn5Mins) {
+                door.type = .normal;
                 setDoorDirection(door, .Up, .doropn);
             }
         },
         .Down => {
-            const res = T_MovePlane(sector, door.speed, sector.floorheight, c.false, .Ceiling, .Down);
-            if (res == .PastDest) switch (doortype) {
+            const res = T_MovePlane(door.sector, door.speed, door.sector.floorheight, c.false, .Ceiling, .Down);
+            if (res == .PastDest) switch (door.type) {
                 .blazeRaise, .blazeClose => {
                     removeDoor(door);
                     // BUG: Vanilla plays bdcls again on landing, after the one at close start.
-                    s_sound.S_StartSound_Zig(@ptrCast(&sector.soundorg), .bdcls);
+                    s_sound.S_StartSound_Zig(@ptrCast(&door.sector.soundorg), .bdcls);
                 },
                 .normal, .close => removeDoor(door),
                 .close30ThenOpen => waitAtTop(door, 35 * 30),
                 .open, .raiseIn5Mins, .blazeOpen => {},
-            } else if (res == .Crushed) switch (doortype) {
+            } else if (res == .Crushed) switch (door.type) {
                 .blazeClose, .close => {}, // Do not go back up
                 else => setDoorDirection(door, .Up, .doropn),
             };
         },
         .Up => {
-            const res = T_MovePlane(sector, door.speed, door.topheight, c.false, .Ceiling, .Up);
-            if (res == .PastDest) switch (doortype) {
+            const res = T_MovePlane(door.sector, door.speed, door.topheight, c.false, .Ceiling, .Up);
+            if (res == .PastDest) switch (door.type) {
                 .blazeRaise, .normal => waitAtTop(door, door.topwait),
                 .close30ThenOpen, .blazeOpen, .open => removeDoor(door),
                 .close, .raiseIn5Mins, .blazeClose => {},
@@ -164,13 +165,13 @@ pub fn EV_DoDoor(line: *c.line_t, doortype: DoorType) bool {
 
         // new door thinker
         rtn = true;
-        const door = z_zone.create(c.vldoor_t, .LevSpec, null);
-        p_tick.P_AddThinker(@ptrCast(&door.thinker));
+        const door = z_zone.create(Door, .LevSpec, null);
+        p_tick.P_AddThinker(&door.thinker);
         sec.specialdata = door;
 
-        door.thinker.function.acp1 = @ptrCast(&T_VerticalDoor);
+        door.thinker.function.acp1 = p_tick.thinkFn(Door, &T_VerticalDoor);
         door.sector = sec;
-        door.type = @backingInt(doortype);
+        door.type = doortype;
         door.topwait = VDOORWAIT;
 
         door.topheight, const direction: DoorDirection, door.speed, const sfx: Sfx = switch (doortype) {
@@ -182,7 +183,7 @@ pub fn EV_DoDoor(line: *c.line_t, doortype: DoorType) bool {
             .raiseIn5Mins => unreachable,
         };
 
-        door.direction = @backingInt(direction);
+        door.direction = direction;
         // An opening door that is already fully open stays silent.
         if (direction != .Up or door.topheight != sec.ceilingheight) {
             s_sound.S_StartSound_Zig(@ptrCast(&sec.soundorg), sfx);
@@ -225,15 +226,17 @@ pub fn EV_VerticalDoor(line: *c.line_t, thing: *MObj) void {
     if (sec.specialdata) |data| switch (doortype) {
         // Only for "raise" doors, not "open"s
         .normal, .blazeRaise => {
-            // BUG: specialdata may be a plat, floor or ceiling thinker, and vanilla
-            // writes direction into it regardless. Compare raw so a non-door value
-            // can't panic @fromBackingInt.
-            const door: *c.vldoor_t = @ptrCast(@alignCast(data));
-            if (door.direction == @backingInt(DoorDirection.Down)) {
-                door.direction = @backingInt(DoorDirection.Up); // go back up
+            // BUG: specialdata may be a ceiling, plat or floor, and vanilla treats it
+            // as a door anyway. Door.direction's offset holds a ceiling's speed, a
+            // plat's count or a floor's texture, so it is accessed as a raw c_int
+            // instead of a DoorDirection that those values would make invalid.
+            const door: *Door = @ptrCast(@alignCast(data));
+            const direction: *c_int = @ptrCast(&door.direction);
+            if (direction.* == @backingInt(DoorDirection.Down)) {
+                direction.* = @backingInt(DoorDirection.Up); // go back up
             } else {
                 if (thing.player == null) return; // JDC: bad guys never close doors
-                door.direction = @backingInt(DoorDirection.Down); // start going down immediately
+                direction.* = @backingInt(DoorDirection.Down); // start going down immediately
             }
             return;
         },
@@ -243,13 +246,13 @@ pub fn EV_VerticalDoor(line: *c.line_t, thing: *MObj) void {
 
     s_sound.S_StartSound_Zig(@ptrCast(&sec.soundorg), if (blaze) .bdopn else .doropn);
 
-    const door = z_zone.create(c.vldoor_t, .LevSpec, null);
-    p_tick.P_AddThinker(@ptrCast(&door.thinker));
+    const door = z_zone.create(Door, .LevSpec, null);
+    p_tick.P_AddThinker(&door.thinker);
     sec.specialdata = door;
-    door.thinker.function.acp1 = @ptrCast(&T_VerticalDoor);
+    door.thinker.function.acp1 = p_tick.thinkFn(Door, &T_VerticalDoor);
     door.sector = sec;
-    door.type = @backingInt(doortype);
-    door.direction = @backingInt(DoorDirection.Up);
+    door.type = doortype;
+    door.direction = .Up;
     door.speed = if (blaze) VDOORSPEED * 4 else VDOORSPEED;
     door.topwait = VDOORWAIT;
     door.topheight = doorOpenHeight(sec);
@@ -259,17 +262,17 @@ pub fn EV_VerticalDoor(line: *c.line_t, thing: *MObj) void {
 }
 
 pub fn P_SpawnDoorCloseIn30(sec: *c.sector_t) void {
-    const door = z_zone.create(c.vldoor_t, .LevSpec, null);
+    const door = z_zone.create(Door, .LevSpec, null);
 
-    p_tick.P_AddThinker(@ptrCast(&door.thinker));
+    p_tick.P_AddThinker(&door.thinker);
 
     sec.specialdata = door;
     sec.special = 0;
 
-    door.thinker.function.acp1 = @ptrCast(&T_VerticalDoor);
+    door.thinker.function.acp1 = p_tick.thinkFn(Door, &T_VerticalDoor);
     door.sector = sec;
-    door.direction = @backingInt(DoorDirection.Waiting);
-    door.type = @backingInt(DoorType.normal);
+    door.direction = .Waiting;
+    door.type = .normal;
     door.speed = VDOORSPEED;
     // BUG: vanilla leaves topheight and topwait unset, and a blocked door
     // reopens to them. Zone garbage can't match vanilla's anyway, so reopen
@@ -280,17 +283,17 @@ pub fn P_SpawnDoorCloseIn30(sec: *c.sector_t) void {
 }
 
 pub fn P_SpawnDoorRaiseIn5Mins(sec: *c.sector_t) void {
-    const door = z_zone.create(c.vldoor_t, .LevSpec, null);
+    const door = z_zone.create(Door, .LevSpec, null);
 
-    p_tick.P_AddThinker(@ptrCast(&door.thinker));
+    p_tick.P_AddThinker(&door.thinker);
 
     sec.specialdata = door;
     sec.special = 0;
 
-    door.thinker.function.acp1 = @ptrCast(&T_VerticalDoor);
+    door.thinker.function.acp1 = p_tick.thinkFn(Door, &T_VerticalDoor);
     door.sector = sec;
-    door.direction = @backingInt(DoorDirection.InitialWait);
-    door.type = @backingInt(DoorType.raiseIn5Mins);
+    door.direction = .InitialWait;
+    door.type = .raiseIn5Mins;
     door.speed = VDOORSPEED;
     door.topheight = doorOpenHeight(sec);
     door.topwait = VDOORWAIT;

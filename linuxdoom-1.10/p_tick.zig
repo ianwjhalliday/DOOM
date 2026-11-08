@@ -24,6 +24,13 @@ pub const actionf_v = *const fn (...) callconv(.c) void;
 pub const actionf_p1 = *const fn (*anyopaque) callconv(.c) void;
 pub const actionf_p2 = *const fn (*anyopaque, *anyopaque) callconv(.c) void;
 
+/// The think function pointer P_RunThinkers will call with the thinker
+/// pointer. Taking `f` as a C-convention `*T` function makes a wrong
+/// signature or calling convention a compile error, which @ptrCast hides.
+pub fn thinkFn(comptime T: type, f: *const fn (*T) callconv(.c) void) actionf_p1 {
+    return @ptrCast(f);
+}
+
 pub const ActionFn = extern union {
     acp1: ?actionf_p1,
     acv: ?actionf_v,

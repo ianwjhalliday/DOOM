@@ -48,18 +48,29 @@ pub const FloorType = enum(c_uint) {
     raiseFloor512,
 };
 
-const StairType = enum(c_uint) {
-    build8,     // slowly build by 8
-    turbo16,    // quickly build by 16
+/// extern so `thinker` stays at offset 0, since P_RunThinkers passes the
+/// thinker pointer to T_MoveFloor as a *Floor. p_saveg also saves this
+/// struct as raw bytes, so reordering or retyping fields breaks savegames.
+pub const Floor = extern struct {
+    thinker: p_tick.Thinker,
+    type: FloorType,
+    crush: c.boolean, // c.boolean is a 4-byte c_int, and a 1-byte bool would shift every later field in the saved layout.
+    sector: *c.sector_t,
+    direction: MoveDirection,
+    newspecial: c_int,
+    texture: c_short,
+    floordestheight: fixed_t,
+    speed: fixed_t,
 };
 
 comptime {
-    // While floor_e still exists in the C code ensure that our enum matches the ordering.
-    for (@typeInfo(FloorType).@"enum".field_names) |name| {
-        if (@backingInt(@field(FloorType, name)) != @field(c, name))
-            @compileError("FloorType." ++ name ++ " doesn't match C floor_e");
-    }
+    std.debug.assert(@sizeOf(Floor) == 64); // saved as raw bytes by p_saveg
 }
+
+pub const StairType = enum(c_uint) {
+    build8,     // slowly build by 8
+    turbo16,    // quickly build by 16
+};
 
 pub const MoveResult = enum(c_int) {
     Ok,
@@ -128,29 +139,27 @@ pub fn T_MovePlane(
     return .Crushed;
 }
 
-pub export fn T_MoveFloor(floor: *c.floormove_t) void {
-    const sector: *c.sector_t = floor.sector;
-    const dir: MoveDirection = @fromBackingInt(floor.direction);
-
-    const res = T_MovePlane(sector, floor.speed, floor.floordestheight, floor.crush, .Floor, dir);
+pub fn T_MoveFloor(floor: *Floor) callconv(.c) void {
+    const res = T_MovePlane(floor.sector, floor.speed, floor.floordestheight, floor.crush, .Floor, floor.direction);
 
     if (@mod(p_tick.leveltime, 8) == 0) {
-        s_sound.S_StartSound_Zig(@ptrCast(&sector.soundorg), .stnmov);
+        s_sound.S_StartSound_Zig(@ptrCast(&floor.sector.soundorg), .stnmov);
     }
 
     if (res != .PastDest) return;
 
-    sector.specialdata = null;
+    floor.sector.specialdata = null;
 
-    const typ: FloorType = @fromBackingInt(floor.type);
-    if ((dir == .Up and typ == .donutRaise) or (dir == .Down and typ == .lowerAndChange)) {
-        sector.special = @intCast(floor.newspecial);
-        sector.floorpic = floor.texture;
+    if ((floor.direction == .Up and floor.type == .donutRaise) or
+        (floor.direction == .Down and floor.type == .lowerAndChange))
+    {
+        floor.sector.special = @intCast(floor.newspecial);
+        floor.sector.floorpic = floor.texture;
     }
 
-    p_tick.P_RemoveThinker(@ptrCast(&floor.thinker));
+    p_tick.P_RemoveThinker(&floor.thinker);
 
-    s_sound.S_StartSound_Zig(@ptrCast(&sector.soundorg), .pstop);
+    s_sound.S_StartSound_Zig(@ptrCast(&floor.sector.soundorg), .pstop);
 }
 
 fn minBottomTextureHeight(secnum: c_int, sec: *c.sector_t) fixed_t {
@@ -181,18 +190,18 @@ pub fn EV_DoFloor(line: *c.line_t, floortype: FloorType) bool {
 
         // new floor thinker
         rtn = true;
-        const floor = z_zone.create(c.floormove_t, .LevSpec, null);
-        p_tick.P_AddThinker(@ptrCast(&floor.thinker));
+        const floor = z_zone.create(Floor, .LevSpec, null);
+        p_tick.P_AddThinker(&floor.thinker);
         sec.specialdata = floor;
-        floor.thinker.function.acp1 = @ptrCast(&T_MoveFloor);
-        floor.type = @backingInt(floortype);
+        floor.thinker.function.acp1 = p_tick.thinkFn(Floor, &T_MoveFloor);
+        floor.type = floortype;
         floor.sector = sec;
         floor.crush = if (floortype == .raiseFloorCrush) c.true else c.false;
 
-        floor.direction = @backingInt(switch (floortype) {
-            .lowerFloor, .lowerFloorToLowest, .turboLower, .lowerAndChange => MoveDirection.Down,
-            else => MoveDirection.Up,
-        });
+        floor.direction = switch (floortype) {
+            .lowerFloor, .lowerFloorToLowest, .turboLower, .lowerAndChange => .Down,
+            else => .Up,
+        };
 
         floor.speed = switch (floortype) {
             .turboLower, .raiseFloorTurbo => FLOORSPEED * 4,
@@ -306,15 +315,15 @@ pub fn EV_BuildStairs(line: *c.line_t, stairtype: StairType) bool {
 }
 
 fn addStairStep(sec: *c.sector_t, speed: fixed_t, destheight: fixed_t) void {
-    const floor = z_zone.create(c.floormove_t, .LevSpec, null);
-    p_tick.P_AddThinker(@ptrCast(&floor.thinker));
+    const floor = z_zone.create(Floor, .LevSpec, null);
+    p_tick.P_AddThinker(&floor.thinker);
     sec.specialdata = floor;
-    floor.thinker.function.acp1 = @ptrCast(&T_MoveFloor);
+    floor.thinker.function.acp1 = p_tick.thinkFn(Floor, &T_MoveFloor);
     // Vanilla leaves type and crush uninitialized for stairs. Zone garbage
     // can't match vanilla's anyway, so give them the intended values.
-    floor.type = @backingInt(FloorType.lowerFloor);
+    floor.type = .lowerFloor;
     floor.crush = c.false;
-    floor.direction = @backingInt(MoveDirection.Up);
+    floor.direction = .Up;
     floor.sector = sec;
     floor.speed = speed;
     floor.floordestheight = destheight;

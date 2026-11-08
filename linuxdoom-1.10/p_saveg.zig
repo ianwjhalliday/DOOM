@@ -218,7 +218,7 @@ pub fn P_UnArchiveThinkers(reader: *std.Io.Reader) !void {
 
 const SpecialKind = struct {
     T: type,
-    think: c.actionf_p1,
+    think: p_tick.actionf_p1,
     /// Sets sector.specialdata on load (floors and ceilings that move).
     owns_sector: bool,
 };
@@ -227,13 +227,13 @@ const SpecialKind = struct {
 /// BUG: Fire flickers are missing, so they are not saved and a loaded
 /// sector stays at the light level it had when saved.
 const specials = [_]SpecialKind{
-    .{ .T = c.ceiling_t, .think = @ptrCast(&p_ceilng.T_MoveCeiling), .owns_sector = true },
-    .{ .T = c.vldoor_t, .think = @ptrCast(&p_doors.T_VerticalDoor), .owns_sector = true },
-    .{ .T = c.floormove_t, .think = @ptrCast(&p_floor.T_MoveFloor), .owns_sector = true },
-    .{ .T = c.plat_t, .think = @ptrCast(&p_plats.T_PlatRaise), .owns_sector = true },
-    .{ .T = c.lightflash_t, .think = @ptrCast(&p_lights.T_LightFlash), .owns_sector = false },
-    .{ .T = c.strobe_t, .think = @ptrCast(&p_lights.T_StrobeFlash), .owns_sector = false },
-    .{ .T = c.glow_t, .think = @ptrCast(&p_lights.T_Glow), .owns_sector = false },
+    .{ .T = p_ceilng.Ceiling, .think = p_tick.thinkFn(p_ceilng.Ceiling, &p_ceilng.T_MoveCeiling), .owns_sector = true },
+    .{ .T = p_doors.Door, .think = p_tick.thinkFn(p_doors.Door, &p_doors.T_VerticalDoor), .owns_sector = true },
+    .{ .T = p_floor.Floor, .think = p_tick.thinkFn(p_floor.Floor, &p_floor.T_MoveFloor), .owns_sector = true },
+    .{ .T = p_plats.Plat, .think = p_tick.thinkFn(p_plats.Plat, &p_plats.T_PlatRaise), .owns_sector = true },
+    .{ .T = p_lights.LightFlash, .think = p_tick.thinkFn(p_lights.LightFlash, &p_lights.T_LightFlash), .owns_sector = false },
+    .{ .T = p_lights.Strobe, .think = p_tick.thinkFn(p_lights.Strobe, &p_lights.T_StrobeFlash), .owns_sector = false },
+    .{ .T = p_lights.Glow, .think = p_tick.thinkFn(p_lights.Glow, &p_lights.T_Glow), .owns_sector = false },
 };
 const tc_ceiling = 0;
 const tc_endspecials = specials.len;
@@ -257,8 +257,8 @@ fn unarchiveSpecial(reader: *std.Io.Reader, comptime T: type) !*T {
 
 /// True if a thinker with a null function is a ceiling in stasis.
 fn isActiveCeiling(th: *p_tick.Thinker) bool {
-    const ceiling: *c.ceiling_t = @ptrCast(th);
-    return std.mem.indexOfScalar(?*c.ceiling_t, &p_ceilng.activeceilings, ceiling) != null;
+    const ceiling: *p_ceilng.Ceiling = @ptrCast(th);
+    return std.mem.indexOfScalar(?*p_ceilng.Ceiling, &p_ceilng.activeceilings, ceiling) != null;
 }
 
 pub fn P_ArchiveSpecials(writer: *std.Io.Writer) !void {
@@ -292,10 +292,10 @@ pub fn P_UnArchiveSpecials(reader: *std.Io.Reader) !void {
                 // saved function pointer is a stale non-null address, so this
                 // matches vanilla's per-kind handling.
                 if (s.thinker.function.acp1 != null) s.thinker.function.acp1 = kind.think;
-                if (kind.owns_sector) s.sector.*.specialdata = s;
-                if (kind.T == c.ceiling_t) p_ceilng.P_AddActiveCeiling(s);
-                if (kind.T == c.plat_t) p_plats.P_AddActivePlat(s);
-                p_tick.P_AddThinker(@ptrCast(&s.thinker));
+                if (kind.owns_sector) s.sector.specialdata = s;
+                if (kind.T == p_ceilng.Ceiling) p_ceilng.P_AddActiveCeiling(s);
+                if (kind.T == p_plats.Plat) p_plats.P_AddActivePlat(s);
+                p_tick.P_AddThinker(&s.thinker);
             },
             else => return error.BadSaveGame,
         }

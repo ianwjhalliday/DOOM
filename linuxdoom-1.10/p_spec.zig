@@ -539,13 +539,13 @@ pub fn EV_DoDonut(line: *c.line_t) bool {
             const s3: *c.sector_t = s2_line.*.backsector;
 
             // Spawn rising slime
-            const s2_floor = z_zone.create(c.floormove_t, .LevSpec, null);
-            p_tick.P_AddThinker(@ptrCast(&s2_floor.thinker));
+            const s2_floor = z_zone.create(p_floor.Floor, .LevSpec, null);
+            p_tick.P_AddThinker(&s2_floor.thinker);
             s2.specialdata = s2_floor;
-            s2_floor.thinker.function.acp1 = @ptrCast(&p_floor.T_MoveFloor);
-            s2_floor.type = @backingInt(p_floor.FloorType.donutRaise);
+            s2_floor.thinker.function.acp1 = p_tick.thinkFn(p_floor.Floor, &p_floor.T_MoveFloor);
+            s2_floor.type = .donutRaise;
             s2_floor.crush = c.false;
-            s2_floor.direction = @backingInt(p_floor.MoveDirection.Up);
+            s2_floor.direction = .Up;
             s2_floor.sector = s2;
             s2_floor.speed = p_floor.FLOORSPEED / 2;
             s2_floor.texture = s3.floorpic;
@@ -553,13 +553,13 @@ pub fn EV_DoDonut(line: *c.line_t) bool {
             s2_floor.floordestheight = s3.floorheight;
 
             // Spawn lowering donut-hole
-            const s1_floor = z_zone.create(c.floormove_t, .LevSpec, null);
-            p_tick.P_AddThinker(@ptrCast(&s1_floor.thinker));
+            const s1_floor = z_zone.create(p_floor.Floor, .LevSpec, null);
+            p_tick.P_AddThinker(&s1_floor.thinker);
             s1.specialdata = s1_floor;
-            s1_floor.thinker.function.acp1 = @ptrCast(&p_floor.T_MoveFloor);
-            s1_floor.type = @backingInt(p_floor.FloorType.lowerFloor);
+            s1_floor.thinker.function.acp1 = p_tick.thinkFn(p_floor.Floor, &p_floor.T_MoveFloor);
+            s1_floor.type = .lowerFloor;
             s1_floor.crush = c.false;
-            s1_floor.direction = @backingInt(p_floor.MoveDirection.Down);
+            s1_floor.direction = .Down;
             s1_floor.sector = s1;
             s1_floor.speed = p_floor.FLOORSPEED / 2;
             s1_floor.floordestheight = s3.floorheight;

@@ -16,7 +16,6 @@
 #include "p_local.h"
 #include "p_mobj.h"
 #include "p_pspr.h"
-#include "p_spec.h"
 #include "r_data.h"
 #include "r_defs.h"
 #include "r_draw.h"

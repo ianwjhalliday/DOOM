@@ -630,7 +630,7 @@ fn P_NightmareRespawn(mobj: *MObj) void {
 
 
 /// simplify currentthinker pointer comparisons against P_MobjThinker
-pub const mobj_thinker: p_tick.actionf_p1 = @ptrCast(&P_MobjThinker);
+pub const mobj_thinker = p_tick.thinkFn(MObj, &P_MobjThinker);
 
 //
 // P_MobjThinker

@@ -409,7 +409,7 @@ pub export fn A_KeenDie(mo: *MObj) void {
 
     var junk: c.line_t = undefined;
     junk.tag = 666;
-    _ = p_doors.EV_DoDoor(&junk, @fromBackingInt(c.open));
+    _ = p_doors.EV_DoDoor(&junk, .open);
 }
 
 /// Stay in state until a player is sighted.
@@ -1161,7 +1161,7 @@ pub export fn A_BossDeath(actor: *MObj) void {
     } else switch (g_game.gameepisode) {
         1 => _ = p_floor.EV_DoFloor(&junk, .lowerFloorToLowest),
         4 => if (g_game.gamemap == 6) {
-            _ = p_doors.EV_DoDoor(&junk, @fromBackingInt(c.blazeOpen));
+            _ = p_doors.EV_DoDoor(&junk, .blazeOpen);
         } else {
             // gamemap already determined above to be 8, if not 6
             _ = p_floor.EV_DoFloor(&junk, .lowerFloorToLowest);
