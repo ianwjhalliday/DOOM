@@ -281,9 +281,8 @@ pub export fn A_Saw(player: *Player, _: *c.pspdef_t) void {
     const delta = newangle -% player.mo.?.angle;
 
     if (delta > c.ANG180) {
-        // BUG: in C, -ANG90/20 is unsigned (about 13.5°), so after
-        // delta > ANG180 this is never true. Kept for demo sync.
-        if (delta < -c.ANG90 / 20) {
+        // C's -ANG90/20 converts to unsigned, about 4.5° left of facing.
+        if (delta < 0 -% @as(c.angle_t, c.ANG90 / 20)) {
             player.mo.?.angle = newangle +% c.ANG90 / 21;
         } else {
             player.mo.?.angle -%= c.ANG90 / 20;
