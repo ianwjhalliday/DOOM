@@ -128,10 +128,10 @@ pub fn P_TeleportMove(thing: *MObj, x: fixed_t, y: fixed_t) bool {
     numspechit = 0;
 
     // stomp on any things contacted
-    const xl = (tmbbox.left - p_setup.bmaporgx - c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
-    const xh = (tmbbox.right - p_setup.bmaporgx + c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
-    const yl = (tmbbox.bottom - p_setup.bmaporgy - c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
-    const yh = (tmbbox.top - p_setup.bmaporgy + c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+    const xl = (tmbbox.left -% p_setup.bmaporgx -% c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+    const xh = (tmbbox.right -% p_setup.bmaporgx +% c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+    const yl = (tmbbox.bottom -% p_setup.bmaporgy -% c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+    const yh = (tmbbox.top -% p_setup.bmaporgy +% c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
 
     var bx = xl;
     while (bx <= xh) : (bx += 1) {
@@ -344,11 +344,16 @@ pub fn P_CheckPosition(thing: *MObj, x: fixed_t, y: fixed_t) bool {
     // extended by MAXRADIUS because MObjs are grouped into mapblocks based on
     // their origin point, and can overlap into adjacent blocks by up to
     // MAXRADIUS units.
+    //
+    // A thing far outside the map, such as a lost soul a pain elemental
+    // spawned past a wall, overflows these subtractions. Vanilla wraps to a
+    // block range that is out of bounds or empty, so nothing is checked. The
+    // other blockmap index calculations wrap for the same reason.
     {
-        const xl = (tmbbox.left - p_setup.bmaporgx - c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
-        const xh = (tmbbox.right - p_setup.bmaporgx + c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
-        const yl = (tmbbox.bottom - p_setup.bmaporgy - c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
-        const yh = (tmbbox.top - p_setup.bmaporgy + c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+        const xl = (tmbbox.left -% p_setup.bmaporgx -% c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+        const xh = (tmbbox.right -% p_setup.bmaporgx +% c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+        const yl = (tmbbox.bottom -% p_setup.bmaporgy -% c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
+        const yh = (tmbbox.top -% p_setup.bmaporgy +% c.MAXRADIUS) >> c.MAPBLOCKSHIFT;
 
         var bx = xl;
         while (bx <= xh) : (bx += 1) {
@@ -363,10 +368,10 @@ pub fn P_CheckPosition(thing: *MObj, x: fixed_t, y: fixed_t) bool {
 
     // check lines
     {
-        const xl = (tmbbox.left - p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
-        const xh = (tmbbox.right - p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
-        const yl = (tmbbox.bottom - p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
-        const yh = (tmbbox.top - p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
+        const xl = (tmbbox.left -% p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
+        const xh = (tmbbox.right -% p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
+        const yl = (tmbbox.bottom -% p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
+        const yh = (tmbbox.top -% p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
 
         var bx = xl;
         while (bx <= xh) : (bx += 1) {
@@ -953,10 +958,10 @@ pub fn P_RadiusAttack(spot: *MObj, source: ?*MObj, damage: c_int) void {
     // in a block just outside the blast radius is never checked, even when
     // its edge is in range. Zig's << drops the high bits like vanilla's did.
     const dist = (damage + c.MAXRADIUS) << FRACBITS;
-    const yh = (spot.y + dist - p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
-    const yl = (spot.y - dist - p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
-    const xh = (spot.x + dist - p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
-    const xl = (spot.x - dist - p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
+    const yh = (spot.y +% dist -% p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
+    const yl = (spot.y -% dist -% p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
+    const xh = (spot.x +% dist -% p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
+    const xl = (spot.x -% dist -% p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
 
     bombspot = spot;
     bombsource = source;

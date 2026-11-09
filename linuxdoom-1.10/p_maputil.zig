@@ -197,8 +197,8 @@ pub fn P_UnsetThingPosition(thing: *MObj) void {
         if (thing.bprev != null) {
             thing.bprev.?.bnext = thing.bnext;
         } else {
-            const blockx = (thing.x - p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
-            const blocky = (thing.y - p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
+            const blockx = (thing.x -% p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
+            const blocky = (thing.y -% p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
 
             if (blockx >= 0 and blockx < p_setup.bmapwidth and blocky >= 0 and blocky < p_setup.bmapheight) {
                 p_setup.blocklinks[@intCast(blocky * p_setup.bmapwidth + blockx)] = thing.bnext;
@@ -230,8 +230,8 @@ pub export fn P_SetThingPosition(thing: *MObj) void {
     // link into blockmap
     if (thing.flags & MF_NOBLOCKMAP == 0) {
         // inert things don't need to be in blockmap
-        const blockx = (thing.x - p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
-        const blocky = (thing.y - p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
+        const blockx = (thing.x -% p_setup.bmaporgx) >> c.MAPBLOCKSHIFT;
+        const blocky = (thing.y -% p_setup.bmaporgy) >> c.MAPBLOCKSHIFT;
 
         if (blockx >= 0 and blockx < p_setup.bmapwidth and blocky >= 0 and blocky < p_setup.bmapheight) {
             const link = &p_setup.blocklinks[@intCast(blocky * p_setup.bmapwidth + blockx)];
@@ -430,7 +430,7 @@ fn P_TraverseIntercepts(func: Traverser, maxfrac: fixed_t) bool {
 }
 
 fn onBlockBoundary(v: fixed_t, origin: fixed_t) bool {
-    return @mod(v - origin, c.MAPBLOCKSIZE) == 0;
+    return @mod(v -% origin, c.MAPBLOCKSIZE) == 0;
 }
 
 /// Position within the current block as a fraction of a block (0..FRACUNIT)
@@ -473,13 +473,13 @@ pub fn P_PathTraverse(_x1: fixed_t, _y1: fixed_t, _x2: fixed_t, _y2: fixed_t, fl
         .dy = y2 - y1,
     };
 
-    x1 -= p_setup.bmaporgx;
-    y1 -= p_setup.bmaporgy;
+    x1 -%= p_setup.bmaporgx;
+    y1 -%= p_setup.bmaporgy;
     const xt1 = x1 >> c.MAPBLOCKSHIFT;
     const yt1 = y1 >> c.MAPBLOCKSHIFT;
 
-    x2 -= p_setup.bmaporgx;
-    y2 -= p_setup.bmaporgy;
+    x2 -%= p_setup.bmaporgx;
+    y2 -%= p_setup.bmaporgy;
     const xt2 = x2 >> c.MAPBLOCKSHIFT;
     const yt2 = y2 >> c.MAPBLOCKSHIFT;
 

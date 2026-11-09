@@ -852,10 +852,10 @@ pub export fn A_VileChase(actor: *MObj) void {
         viletryx = actor.x + actor.info.speed * xspeed[@intCast(@backingInt(actor.movedir))];
         viletryy = actor.y + actor.info.speed * yspeed[@intCast(@backingInt(actor.movedir))];
 
-        const xl = (viletryx - p_setup.bmaporgx - c.MAXRADIUS * 2) >> c.MAPBLOCKSHIFT;
-        const xh = (viletryx - p_setup.bmaporgx + c.MAXRADIUS * 2) >> c.MAPBLOCKSHIFT;
-        const yl = (viletryy - p_setup.bmaporgy - c.MAXRADIUS * 2) >> c.MAPBLOCKSHIFT;
-        const yh = (viletryy - p_setup.bmaporgy + c.MAXRADIUS * 2) >> c.MAPBLOCKSHIFT;
+        const xl = (viletryx -% p_setup.bmaporgx -% c.MAXRADIUS * 2) >> c.MAPBLOCKSHIFT;
+        const xh = (viletryx -% p_setup.bmaporgx +% c.MAXRADIUS * 2) >> c.MAPBLOCKSHIFT;
+        const yl = (viletryy -% p_setup.bmaporgy -% c.MAXRADIUS * 2) >> c.MAPBLOCKSHIFT;
+        const yh = (viletryy -% p_setup.bmaporgy +% c.MAXRADIUS * 2) >> c.MAPBLOCKSHIFT;
 
         vileobj = actor;
         var bx = xl;
