@@ -10,6 +10,13 @@ const i_system = @import("i_system.zig");
 const I_Error = i_system.I_Error;
 const ML_SOUNDBLOCK = doomdata.ML_SOUNDBLOCK;
 const ML_TWOSIDED = doomdata.ML_TWOSIDED;
+const m_angle = @import("m_angle.zig");
+const ANG45 = m_angle.ANG45;
+const ANG90 = m_angle.ANG90;
+const ANG180 = m_angle.ANG180;
+const ANG270 = m_angle.ANG270;
+const ANGLETOFINESHIFT = m_angle.ANGLETOFINESHIFT;
+const angle_t = m_angle.angle_t;
 const m_fixed = @import("m_fixed.zig");
 const FRACUNIT = m_fixed.FRACUNIT;
 const fixed_t = m_fixed.fixed_t;
@@ -372,7 +379,7 @@ fn P_LookForPlayers(actor: *MObj, allaround: bool) bool {
         if (!allaround) {
             const an = c.R_PointToAngle2(actor.x, actor.y, player.mo.?.x, player.mo.?.y) -% actor.angle;
 
-            if (an > c.ANG90 and an < c.ANG270) {
+            if (an > ANG90 and an < ANG270) {
                 const dist = p_maputil.P_AproxDistance(player.mo.?.x - actor.x, player.mo.?.y - actor.y);
                 // if real close, react anyway
                 if (dist > c.MELEERANGE) {
@@ -468,13 +475,13 @@ pub export fn A_Chase(actor: *MObj) void {
     // turn towards movement direction if not there yet
     if (actor.movedir != .NoDir) {
         actor.angle &= 7 << 29; // truncate angle down to next multiple of 45
-        const dirangle = @as(c.angle_t, @intCast(@backingInt(actor.movedir))) << 29;
+        const dirangle = @as(angle_t, @intCast(@backingInt(actor.movedir))) << 29;
         const delta: i32 = @bitCast(actor.angle -% dirangle);
 
         if (delta > 0) {
-            actor.angle -%= c.ANG45;
+            actor.angle -%= ANG45;
         } else if (delta < 0) {
-            actor.angle +%= c.ANG45;
+            actor.angle +%= ANG45;
         }
     }
 
@@ -581,7 +588,7 @@ pub export fn A_SPosAttack(actor: *MObj) void {
 
     for (0..3) |_| {
         const spread = (P_Random() - P_Random()) << 20;
-        const angle = bangle +% @as(c.angle_t, @bitCast(spread));
+        const angle = bangle +% @as(angle_t, @bitCast(spread));
         const damage = (@mod(P_Random(), 5) + 1) * 3;
         p_map.P_LineAttack(actor, angle, c.MISSILERANGE, slope, damage);
     }
@@ -598,7 +605,7 @@ pub export fn A_CPosAttack(actor: *MObj) void {
     const slope = p_map.P_AimLineAttack(actor, bangle, c.MISSILERANGE);
 
     const spread = (P_Random() - P_Random()) << 20;
-    const angle = bangle +% @as(c.angle_t, @bitCast(spread));
+    const angle = bangle +% @as(angle_t, @bitCast(spread));
     const damage = (@mod(P_Random(), 5) + 1) * 3;
     p_map.P_LineAttack(actor, angle, c.MISSILERANGE, slope, damage);
 }
@@ -755,9 +762,9 @@ pub export fn A_Tracer(actor: *MObj) void {
         actor.angle +%= TRACEANGLE;
     }
 
-    const fine = actor.angle >> c.ANGLETOFINESHIFT;
-    actor.momx = FixedMul(actor.info.speed, c.finecosine[fine]);
-    actor.momy = FixedMul(actor.info.speed, c.finesine[fine]);
+    const fine = actor.angle >> ANGLETOFINESHIFT;
+    actor.momx = FixedMul(actor.info.speed, m_angle.finecosine[fine]);
+    actor.momy = FixedMul(actor.info.speed, m_angle.finesine[fine]);
 
     // change slope
     var dist = p_maputil.P_AproxDistance(dest.x - actor.x, dest.y - actor.y);
@@ -909,11 +916,11 @@ pub export fn A_Fire(actor: *MObj) void {
         return;
     }
 
-    const fine = dest.angle >> c.ANGLETOFINESHIFT;
+    const fine = dest.angle >> ANGLETOFINESHIFT;
 
     p_maputil.P_UnsetThingPosition(actor);
-    actor.x = dest.x + FixedMul(24 * FRACUNIT, c.finecosine[fine]);
-    actor.y = dest.y + FixedMul(24 * FRACUNIT, c.finesine[fine]);
+    actor.x = dest.x + FixedMul(24 * FRACUNIT, m_angle.finecosine[fine]);
+    actor.y = dest.y + FixedMul(24 * FRACUNIT, m_angle.finesine[fine]);
     actor.z = dest.z;
     p_maputil.P_SetThingPosition(actor);
 }
@@ -947,13 +954,13 @@ pub export fn A_VileAttack(actor: *MObj) void {
     p_inter.P_DamageMobj(target, actor, actor, 20);
     target.momz = @divTrunc(1000 * FRACUNIT, target.info.mass);
 
-    const fine = actor.angle >> c.ANGLETOFINESHIFT;
+    const fine = actor.angle >> ANGLETOFINESHIFT;
 
     const fire = actor.tracer orelse return;
 
     // move the fire between the vile and the player
-    fire.x = target.x - FixedMul(24 * FRACUNIT, c.finecosine[fine]);
-    fire.y = target.y - FixedMul(24 * FRACUNIT, c.finesine[fine]);
+    fire.x = target.x - FixedMul(24 * FRACUNIT, m_angle.finecosine[fine]);
+    fire.y = target.y - FixedMul(24 * FRACUNIT, m_angle.finesine[fine]);
     p_map.P_RadiusAttack(fire, actor, 70);
 }
 
@@ -973,9 +980,9 @@ fn A_FatShot(actor: *MObj, target: *MObj, spread: i32) void {
     }
 
     mo.angle +%= @bitCast(spread);
-    const fine = mo.angle >> c.ANGLETOFINESHIFT;
-    mo.momx = FixedMul(mo.info.speed, c.finecosine[fine]);
-    mo.momy = FixedMul(mo.info.speed, c.finesine[fine]);
+    const fine = mo.angle >> ANGLETOFINESHIFT;
+    mo.momx = FixedMul(mo.info.speed, m_angle.finecosine[fine]);
+    mo.momy = FixedMul(mo.info.speed, m_angle.finesine[fine]);
 }
 
 fn A_FatAttack(actor: *MObj, turn: i32, spread1: i32, spread2: i32) void {
@@ -992,7 +999,7 @@ fn A_FatAttack(actor: *MObj, turn: i32, spread1: i32, spread2: i32) void {
     A_FatShot(actor, target, spread2);
 }
 
-const FATSPREAD = c.ANG90 / 8;
+const FATSPREAD: i32 = ANG90 / 8;
 
 pub export fn A_FatAttack1(actor: *MObj) void {
     A_FatAttack(actor, FATSPREAD, 0, FATSPREAD);
@@ -1017,15 +1024,15 @@ pub export fn A_SkullAttack(actor: *MObj) void {
     s_sound.S_StartSound_Zig(actor, asSfx(actor.info.attacksound));
     A_FaceTarget(actor);
 
-    const fine = actor.angle >> c.ANGLETOFINESHIFT;
-    actor.momx = FixedMul(SKULLSPEED, c.finecosine[fine]);
-    actor.momy = FixedMul(SKULLSPEED, c.finesine[fine]);
+    const fine = actor.angle >> ANGLETOFINESHIFT;
+    actor.momx = FixedMul(SKULLSPEED, m_angle.finecosine[fine]);
+    actor.momy = FixedMul(SKULLSPEED, m_angle.finesine[fine]);
     const dist = @max(1, @divTrunc(p_maputil.P_AproxDistance(target.x - actor.x, target.y - actor.y), SKULLSPEED));
     actor.momz = @divTrunc(target.z + (target.height >> 1) - actor.z, dist);
 }
 
 /// Spawn a lost soul and launch it at the target
-fn A_PainShootSkull(actor: *MObj, angle: c.angle_t) void {
+fn A_PainShootSkull(actor: *MObj, angle: angle_t) void {
     // count total number of skull currently on the level
     var count: u32 = 0;
     var it = p_tick.mobj_thinkers();
@@ -1039,11 +1046,11 @@ fn A_PainShootSkull(actor: *MObj, angle: c.angle_t) void {
     }
 
     // okay, there's playe for another one
-    const fine = angle >> c.ANGLETOFINESHIFT;
+    const fine = angle >> ANGLETOFINESHIFT;
 
     const prestep = 4 * FRACUNIT + @divTrunc(3 * (actor.info.radius + c.mobjinfo[c.MT_SKULL].radius), 2);
-    const x = actor.x + FixedMul(prestep, c.finecosine[fine]);
-    const y = actor.y + FixedMul(prestep, c.finesine[fine]);
+    const x = actor.x + FixedMul(prestep, m_angle.finecosine[fine]);
+    const y = actor.y + FixedMul(prestep, m_angle.finesine[fine]);
     const z = actor.z + 8 * FRACUNIT;
 
     const mo = p_mobj.P_SpawnMobj(x, y, z, c.MT_SKULL);
@@ -1071,9 +1078,9 @@ pub export fn A_PainAttack(actor: *MObj) void {
 
 pub export fn A_PainDie(actor: *MObj) void {
     A_Fall(actor);
-    A_PainShootSkull(actor, actor.angle +% c.ANG90);
-    A_PainShootSkull(actor, actor.angle +% c.ANG180);
-    A_PainShootSkull(actor, actor.angle +% c.ANG270);
+    A_PainShootSkull(actor, actor.angle +% ANG90);
+    A_PainShootSkull(actor, actor.angle +% ANG180);
+    A_PainShootSkull(actor, actor.angle +% ANG270);
 }
 
 pub export fn A_Scream(actor: *MObj) void {

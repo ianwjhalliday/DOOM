@@ -13,6 +13,10 @@ const CF_NOMOMENTUM = d_player.CF_NOMOMENTUM;
 const Player = d_player.Player;
 const g_game = @import("g_game.zig");
 const G_PlayerReborn = g_game.G_PlayerReborn;
+const m_angle = @import("m_angle.zig");
+const angle_t = m_angle.angle_t;
+const ANG45 = m_angle.ANG45;
+const ANGLETOFINESHIFT = m_angle.ANGLETOFINESHIFT;
 const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
 const FixedMul = m_fixed.FixedMul;
@@ -227,7 +231,7 @@ pub const MObj = extern struct {
     sprev: ?*MObj,
 
     //More drawing info: to determine current sprite.
-    angle: c.angle_t,       // orientation
+    angle: angle_t,         // orientation
     sprite: c.spritenum_t,  // used to find patch_t and flip value
     frame: c_int,           // might be ORed with FF_FULLBRIGHT
 
@@ -616,7 +620,7 @@ fn P_NightmareRespawn(mobj: *MObj) void {
     // inherit attributes from deceased one
     mo = P_SpawnMobj(x, y, z, mobj.type);
     mo.spawnpoint = mobj.spawnpoint;
-    mo.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) *% c.ANG45;
+    mo.angle = @as(angle_t, @bitCast(@as(i32, @divTrunc(mthing.angle, 45)))) *% ANG45;
 
     if (mthing.options & MTF_AMBUSH != 0) {
         mo.flags |= MF_AMBUSH;
@@ -822,7 +826,7 @@ pub fn P_RespawnSpecials() void {
 
     mo = P_SpawnMobj(x, y, z, @intCast(i));
     mo.spawnpoint = mthing.*;
-    mo.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) *% c.ANG45;
+    mo.angle = @as(angle_t, @bitCast(@as(i32, @divTrunc(mthing.angle, 45)))) *% ANG45;
 
     // pull it from the que
     iquetail = (iquetail + 1) % ITEMQUESIZE;
@@ -859,7 +863,7 @@ pub fn P_SpawnPlayer(mthing: *MapThing) void {
         mobj.flags |= @as(c_int, mthing.type - 1) << c.MF_TRANSSHIFT;
     }
 
-    mobj.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) *% c.ANG45;
+    mobj.angle = @as(angle_t, @bitCast(@as(i32, @divTrunc(mthing.angle, 45)))) *% ANG45;
     mobj.player = p;
     mobj.health = p.health;
 
@@ -978,7 +982,7 @@ pub fn P_SpawnMapThing(mthing: *MapThing) void {
         g_game.totalitems += 1;
     }
 
-    mobj.angle = @divTrunc(@as(c.angle_t, @intCast(mthing.angle)), 45) *% c.ANG45;
+    mobj.angle = @as(angle_t, @bitCast(@as(i32, @divTrunc(mthing.angle, 45)))) *% ANG45;
 
     if (mthing.options & c.MTF_AMBUSH != 0) {
         mobj.flags |= MF_AMBUSH;
@@ -1078,9 +1082,9 @@ pub fn P_SpawnMissile(source: *MObj, dest: *MObj, motype: c.mobjtype_t) *MObj {
     }
 
     th.angle = an;
-    an >>= c.ANGLETOFINESHIFT;
-    th.momx = FixedMul(th.info.speed, c.finecosine[an]);
-    th.momy = FixedMul(th.info.speed, c.finesine[an]);
+    an >>= ANGLETOFINESHIFT;
+    th.momx = FixedMul(th.info.speed, m_angle.finecosine[an]);
+    th.momy = FixedMul(th.info.speed, m_angle.finesine[an]);
 
     var dist = p_maputil.P_AproxDistance(dest.x - source.x, dest.y - source.y);
     dist = @divTrunc(dist, th.info.speed);
@@ -1133,8 +1137,8 @@ pub fn P_SpawnPlayerMissile(source: *MObj, motype: c.mobjtype_t) void {
 
     th.target = source;
     th.angle = an;
-    th.momx = FixedMul(th.info.speed, c.finecosine[an >> c.ANGLETOFINESHIFT]);
-    th.momy = FixedMul(th.info.speed, c.finesine[an >> c.ANGLETOFINESHIFT]);
+    th.momx = FixedMul(th.info.speed, m_angle.finecosine[an >> ANGLETOFINESHIFT]);
+    th.momy = FixedMul(th.info.speed, m_angle.finesine[an >> ANGLETOFINESHIFT]);
     th.momz = FixedMul(th.info.speed, slope);
 
     P_CheckMissileSpawn(th);

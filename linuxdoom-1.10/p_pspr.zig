@@ -6,6 +6,12 @@ const d_player = @import("d_player.zig");
 const Player = d_player.Player;
 const PSprNum = d_player.PSprNum;
 const doomstat = @import("doomstat.zig");
+const m_angle = @import("m_angle.zig");
+const angle_t = m_angle.angle_t;
+const ANG90 = m_angle.ANG90;
+const ANG180 = m_angle.ANG180;
+const FINEANGLES = m_angle.FINEANGLES;
+const FINEMASK = m_angle.FINEMASK;
 const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
 const FRACBITS = m_fixed.FRACBITS;
@@ -174,10 +180,10 @@ pub export fn A_WeaponReady(player: *Player, psp: *c.pspdef_t) void {
     }
 
     // bob the weapon based on movement speed
-    const anglex = (128 *% p_tick.leveltime) & c.FINEMASK;
-    const angley = anglex & (c.FINEANGLES / 2 - 1);
-    psp.sx = FRACUNIT + FixedMul(player.bob, c.finecosine[@intCast(anglex)]);
-    psp.sy = WEAPONTOP + FixedMul(player.bob, c.finesine[@intCast(angley)]);
+    const anglex = (128 *% p_tick.leveltime) & FINEMASK;
+    const angley = anglex & (FINEANGLES / 2 - 1);
+    psp.sx = FRACUNIT + FixedMul(player.bob, m_angle.finecosine[@intCast(anglex)]);
+    psp.sy = WEAPONTOP + FixedMul(player.bob, m_angle.finesine[@intCast(angley)]);
 }
 
 /// The player can re-fire the weapon without lowering it entirely.
@@ -249,7 +255,7 @@ pub export fn A_Punch(player: *Player, _: *c.pspdef_t) void {
     const damage = 2 * (@mod(P_Random(), 10) + 1) * multiplier;
 
     const spread = (P_Random() - P_Random()) << 18;
-    const angle = player.mo.?.angle +% @as(c.angle_t, @bitCast(spread));
+    const angle = player.mo.?.angle +% @as(angle_t, @bitCast(spread));
     const slope = p_map.P_AimLineAttack(player.mo.?, angle, c.MELEERANGE);
     p_map.P_LineAttack(player.mo.?, angle, c.MELEERANGE, slope, damage);
 
@@ -264,7 +270,7 @@ pub export fn A_Saw(player: *Player, _: *c.pspdef_t) void {
     const damage = 2 * (@mod(P_Random(), 10) + 1);
 
     const spread = (P_Random() - P_Random()) << 18;
-    const angle = player.mo.?.angle +% @as(c.angle_t, @bitCast(spread));
+    const angle = player.mo.?.angle +% @as(angle_t, @bitCast(spread));
     // use meleerange + 1 so the puff doesn't skip the flash
     const slope = p_map.P_AimLineAttack(player.mo.?, angle, c.MELEERANGE + 1);
     p_map.P_LineAttack(player.mo.?, angle, c.MELEERANGE + 1, slope, damage);
@@ -280,18 +286,18 @@ pub export fn A_Saw(player: *Player, _: *c.pspdef_t) void {
     const newangle = c.R_PointToAngle2(player.mo.?.x, player.mo.?.y, linetarget.x, linetarget.y);
     const delta = newangle -% player.mo.?.angle;
 
-    if (delta > c.ANG180) {
+    if (delta > ANG180) {
         // C's -ANG90/20 converts to unsigned, about 4.5° left of facing.
-        if (delta < 0 -% @as(c.angle_t, c.ANG90 / 20)) {
-            player.mo.?.angle = newangle +% c.ANG90 / 21;
+        if (delta < 0 -% ANG90 / 20) {
+            player.mo.?.angle = newangle +% ANG90 / 21;
         } else {
-            player.mo.?.angle -%= c.ANG90 / 20;
+            player.mo.?.angle -%= ANG90 / 20;
         }
     } else {
-        if (delta > c.ANG90 / 20) {
-            player.mo.?.angle = newangle -% c.ANG90 / 21;
+        if (delta > ANG90 / 20) {
+            player.mo.?.angle = newangle -% ANG90 / 21;
         } else {
-            player.mo.?.angle +%= c.ANG90 / 20;
+            player.mo.?.angle +%= ANG90 / 20;
         }
     }
 
@@ -387,7 +393,7 @@ pub export fn A_FireShotgun2(player: *Player, _: *c.pspdef_t) void {
     for (0..20) |_| {
         const damage = 5 * (@mod(P_Random(), 3) + 1);
         const spread = (P_Random() - P_Random()) << 19;
-        const angle = player.mo.?.angle +% @as(c.angle_t, @bitCast(spread));
+        const angle = player.mo.?.angle +% @as(angle_t, @bitCast(spread));
 
         const bslope = bulletslope + ((P_Random() - P_Random()) << 5);
         p_map.P_LineAttack(player.mo.?, angle, c.MISSILERANGE, bslope, damage);
@@ -427,7 +433,7 @@ pub export fn A_Light2(player: *Player, _: *c.pspdef_t) void {
 
 pub export fn A_BFGSpray(mo: *MObj) void {
     for (0..40) |i| {
-        const an = mo.angle -% c.ANG90 / 2 +% @as(c.angle_t, c.ANG90 / 40) * @as(c.angle_t, @intCast(i));
+        const an = mo.angle -% ANG90 / 2 +% @as(angle_t, ANG90 / 40) * @as(angle_t, @intCast(i));
 
         // mo.target is the originator (player) of the missle
         // BUG: loading a save clears mobj targets, so a BFG ball fired

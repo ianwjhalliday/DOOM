@@ -7,7 +7,6 @@ pub fn build(b: *std.Build) void {
     const c_files = [_][]const u8{
         "dstrings.c",
         "i_sound.c",
-        "tables.c",
         "r_bsp.c",
         "r_data.c",
         "r_draw.c",

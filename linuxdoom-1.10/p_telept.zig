@@ -1,5 +1,7 @@
 const c = @import("c");
 
+const m_angle = @import("m_angle.zig");
+const ANGLETOFINESHIFT = m_angle.ANGLETOFINESHIFT;
 const S_StartSound = @import("s_sound.zig").S_StartSound_Zig;
 const p_map = @import("p_map.zig");
 const p_mobj = @import("p_mobj.zig");
@@ -57,8 +59,8 @@ pub fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) bool {
             // spawn teleport fog at source and destination
             const fog1 = P_SpawnMobj(oldx, oldy, oldz, c.MT_TFOG);
             S_StartSound(fog1, .telept);
-            const an = m.angle >> c.ANGLETOFINESHIFT;
-            const fog2 = P_SpawnMobj(m.x + 20 * c.finecosine[an], m.y + 20 * c.finesine[an], thing.z, c.MT_TFOG);
+            const an = m.angle >> ANGLETOFINESHIFT;
+            const fog2 = P_SpawnMobj(m.x + 20 * m_angle.finecosine[an], m.y + 20 * m_angle.finesine[an], thing.z, c.MT_TFOG);
 
             // emit sound, where?
             S_StartSound(fog2, .telept);

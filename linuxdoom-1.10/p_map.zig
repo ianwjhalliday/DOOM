@@ -12,6 +12,10 @@ const I_Error = i_system.I_Error;
 const g_game = @import("g_game.zig");
 const m_bbox = @import("m_bbox.zig");
 const BBox = m_bbox.BBox;
+const m_angle = @import("m_angle.zig");
+const ANG180 = m_angle.ANG180;
+const ANGLETOFINESHIFT = m_angle.ANGLETOFINESHIFT;
+const angle_t = m_angle.angle_t;
 const m_fixed = @import("m_fixed.zig");
 const FRACBITS = m_fixed.FRACBITS;
 const FRACUNIT = m_fixed.FRACUNIT;
@@ -500,24 +504,24 @@ fn P_HitSlideLine(ld: *const c.line_t) void {
     var lineangle = c.R_PointToAngle2(0, 0, ld.dx, ld.dy);
 
     if (side == 1) {
-        lineangle +%= c.ANG180;
+        lineangle +%= ANG180;
     }
 
     const moveangle = c.R_PointToAngle2(0, 0, tmxmove, tmymove);
     var deltaangle = moveangle -% lineangle;
 
-    if (deltaangle > c.ANG180) {
-        deltaangle +%= c.ANG180;
+    if (deltaangle > ANG180) {
+        deltaangle +%= ANG180;
     }
 
-    lineangle >>= c.ANGLETOFINESHIFT;
-    deltaangle >>= c.ANGLETOFINESHIFT;
+    lineangle >>= ANGLETOFINESHIFT;
+    deltaangle >>= ANGLETOFINESHIFT;
 
     const movelen = p_maputil.P_AproxDistance(tmxmove, tmymove);
-    const newlen = FixedMul(movelen, c.finecosine[deltaangle]);
+    const newlen = FixedMul(movelen, m_angle.finecosine[deltaangle]);
 
-    tmxmove = FixedMul(newlen, c.finecosine[lineangle]);
-    tmymove = FixedMul(newlen, c.finesine[lineangle]);
+    tmxmove = FixedMul(newlen, m_angle.finecosine[lineangle]);
+    tmymove = FixedMul(newlen, m_angle.finesine[lineangle]);
 }
 
 fn PTR_SlideTraverse(in: *c.intercept_t) bool {
@@ -832,12 +836,12 @@ fn PTR_ShootTraverse(in: *c.intercept_t) bool {
     return false;
 }
 
-pub fn P_AimLineAttack(th: *MObj, _angle: c.angle_t, distance: fixed_t) fixed_t {
-    const angle = _angle >> c.ANGLETOFINESHIFT;
+pub fn P_AimLineAttack(th: *MObj, _angle: angle_t, distance: fixed_t) fixed_t {
+    const angle = _angle >> ANGLETOFINESHIFT;
     shootthing = th;
 
-    const x2 = th.x + (distance >> FRACBITS) * c.finecosine[angle];
-    const y2 = th.y + (distance >> FRACBITS) * c.finesine[angle];
+    const x2 = th.x + (distance >> FRACBITS) * m_angle.finecosine[angle];
+    const y2 = th.y + (distance >> FRACBITS) * m_angle.finesine[angle];
     shootz = th.z + (th.height >> 1) + 8 * FRACUNIT;
 
     // can't shoot outside view angles
@@ -857,13 +861,13 @@ pub fn P_AimLineAttack(th: *MObj, _angle: c.angle_t, distance: fixed_t) fixed_t 
 }
 
 /// If damage == 0, it is just a test trace that will leave linetarget set.
-pub fn P_LineAttack(th: *MObj, _angle: c.angle_t, distance: fixed_t, slope: fixed_t, damage: c_int) void {
-    const angle = _angle >> c.ANGLETOFINESHIFT;
+pub fn P_LineAttack(th: *MObj, _angle: angle_t, distance: fixed_t, slope: fixed_t, damage: c_int) void {
+    const angle = _angle >> ANGLETOFINESHIFT;
     shootthing = th;
     la_damage = damage;
 
-    const x2 = th.x + (distance >> FRACBITS) * c.finecosine[angle];
-    const y2 = th.y + (distance >> FRACBITS) * c.finesine[angle];
+    const x2 = th.x + (distance >> FRACBITS) * m_angle.finecosine[angle];
+    const y2 = th.y + (distance >> FRACBITS) * m_angle.finesine[angle];
     shootz = th.z + (th.height >> 1) + 8 * FRACUNIT;
 
     attackrange = distance;
@@ -900,12 +904,12 @@ fn PTR_UseTraverse(in: *c.intercept_t) bool {
 pub fn P_UseLines(player: *Player) void {
     usething = player.mo.?;
 
-    const angle = player.mo.?.angle >> c.ANGLETOFINESHIFT;
+    const angle = player.mo.?.angle >> ANGLETOFINESHIFT;
 
     const x1 = player.mo.?.x;
     const y1 = player.mo.?.y;
-    const x2 = x1 + (c.USERANGE >> FRACBITS) * c.finecosine[angle];
-    const y2 = y1 + (c.USERANGE >> FRACBITS) * c.finesine[angle];
+    const x2 = x1 + (c.USERANGE >> FRACBITS) * m_angle.finecosine[angle];
+    const y2 = y1 + (c.USERANGE >> FRACBITS) * m_angle.finesine[angle];
 
     _ = p_maputil.P_PathTraverse(x1, y1, x2, y2, c.PT_ADDLINES, PTR_UseTraverse);
 }

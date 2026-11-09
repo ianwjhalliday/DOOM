@@ -1,71 +1,41 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
-//
-// $Id:$
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log:$
-//
-// DESCRIPTION:
-//	Lookup tables.
-//	Do not try to look them up :-).
-//	In the order of appearance: 
-//
-//	int finetangent[4096]	- Tangens LUT.
-//	 Should work with BAM fairly well (12 of 16bit,
-//      effectively, by shifting).
-//
-//	int finesine[10240]		- Sine lookup.
-//	 Guess what, serves as cosine, too.
-//	 Remarkable thing is, how to use BAMs with this? 
-//
-//	int tantoangle[2049]	- ArcTan LUT,
-//	  maps tan(angle) to angle fast. Gotta search.
-//	
-//    
-//-----------------------------------------------------------------------------
+// Replaces tables.c
 
+const m_fixed = @import("m_fixed.zig");
+const fixed_t = m_fixed.fixed_t;
+const FRACBITS = m_fixed.FRACBITS;
 
-// static const char
-// rcsid[] = "$Id: tables.c,v 1.4 1997/02/03 16:47:57 b1 Exp $";
+pub const angle_t = u32;
 
+pub const FINEANGLES = 8192;
+pub const FINEMASK = FINEANGLES - 1;
 
+// 0x100000000 to 0x2000
+pub const ANGLETOFINESHIFT = 19;
 
-#include "tables.h"
+// Binary Angle Measument, BAM.
+pub const ANG45: angle_t = 0x20000000;
+pub const ANG90: angle_t = 0x40000000;
+pub const ANG180: angle_t = 0x80000000;
+pub const ANG270: angle_t = 0xc0000000;
 
+pub const SLOPERANGE = 2048;
+pub const SLOPEBITS = 11;
+pub const DBITS = FRACBITS - SLOPEBITS;
 
+// TODO: Once r_main is converted to zig we can update SlopeDiv to take fixed_t:
+//   /// Takes fixed_t because R_PointToAngle passes coordinates, but divides as
+//   /// unsigned like vanilla, which implicitly converted them to unsigned.
+//   pub fn SlopeDiv(num_s: fixed_t, den_s: fixed_t) u32 {
+//       const num: u32 = @bitCast(num_s);
+//       const den: u32 = @bitCast(den_s);
 
-
-int
-SlopeDiv
-( unsigned	num,
-  unsigned	den)
-{
-    unsigned 	ans;
-    
-    if (den < 512)
-	return SLOPERANGE;
-
-    ans = (num<<3)/(den>>8);
-
-    return ans <= SLOPERANGE ? ans : SLOPERANGE;
+pub export fn SlopeDiv(num: c_uint, den: c_uint) c_int {
+    if (den < 512) return SLOPERANGE;
+    const ans = (num << 3) / (den >> 8);
+    return if (ans <= SLOPERANGE) @intCast(ans) else SLOPERANGE;
 }
 
-
-
-
-int finetangent[4096] =
-{
+pub export const finetangent: [FINEANGLES / 2]fixed_t = .{
     -170910304,-56965752,-34178904,-24413316,-18988036,-15535599,-13145455,-11392683,
     -10052327,-8994149,-8137527,-7429880,-6835455,-6329090,-5892567,-5512368,
     -5178251,-4882318,-4618375,-4381502,-4167737,-3973855,-3797206,-3635590,
@@ -577,12 +547,10 @@ int finetangent[4096] =
     2712030,2800983,2895966,2997613,3106651,3223918,3350381,3487165,
     3635590,3797206,3973855,4167737,4381502,4618375,4882318,5178251,
     5512368,5892567,6329090,6835455,7429880,8137527,8994149,10052327,
-    11392683,13145455,15535599,18988036,24413316,34178904,56965752,170910304
+    11392683,13145455,15535599,18988036,24413316,34178904,56965752,170910304,
 };
 
-
-int finesine[10240] =
-{
+pub export const finesine: [5 * FINEANGLES / 4]fixed_t = .{
     25,75,125,175,226,276,326,376,
     427,477,527,578,628,678,728,779,
     829,879,929,980,1030,1080,1130,1181,
@@ -1862,13 +1830,23 @@ int finesine[10240] =
     65516,65518,65519,65520,65521,65522,65523,65524,
     65525,65526,65527,65527,65528,65529,65530,65530,
     65531,65531,65532,65532,65533,65533,65534,65534,
-    65534,65535,65535,65535,65535,65535,65535,65535
+    65534,65535,65535,65535,65535,65535,65535,65535,
 };
 
+/// Cosine is sine shifted a quarter turn.
+pub const finecosine = finesine[FINEANGLES / 4 ..];
 
+/// The C renderer declares finecosine as a fixed_t*, so export a pointer
+/// under that name. Zig callers use the bounds-checked finecosine above.
+/// This can be removed when the render code that uses it is converted to
+/// zig.
+const finecosine_c: [*]const fixed_t = finecosine;
+comptime {
+    @export(&finecosine_c, .{ .name = "finecosine" });
+}
 
-angle_t tantoangle[2049] =
-{
+// The +1 size is to handle the case when x==y without additional checking.
+pub export const tantoangle: [SLOPERANGE + 1]angle_t = .{
     0,333772,667544,1001315,1335086,1668857,2002626,2336395,
     2670163,3003929,3337694,3671457,4005219,4338979,4672736,5006492,
     5340245,5673995,6007743,6341488,6675230,7008968,7342704,7676435,
@@ -2125,6 +2103,5 @@ angle_t tantoangle[2049] =
     532842080,533010912,533179616,533348288,533516832,533685312,533853728,534022048,
     534190272,534358432,534526496,534694496,534862400,535030240,535197984,535365632,
     535533216,535700704,535868128,536035456,536202720,536369888,536536992,536704000,
-    536870912
+    536870912,
 };
-

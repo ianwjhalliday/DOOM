@@ -11,6 +11,14 @@ const CF_NOCLIP = d_player.CF_NOCLIP;
 const CF_NOMOMENTUM = d_player.CF_NOMOMENTUM;
 const Player = d_player.Player;
 
+const m_angle = @import("m_angle.zig");
+const angle_t = m_angle.angle_t;
+const ANG90 = m_angle.ANG90;
+const ANG180 = m_angle.ANG180;
+const ANGLETOFINESHIFT = m_angle.ANGLETOFINESHIFT;
+const FINEANGLES = m_angle.FINEANGLES;
+const FINEMASK = m_angle.FINEMASK;
+
 const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
 const FixedMul = m_fixed.FixedMul;
@@ -39,11 +47,11 @@ var onground = false;
 // P_Thrust
 // Moves the given origin along a given angle.
 //
-fn P_Thrust(player: *Player, angle: c.angle_t, move: fixed_t) void {
-    const fineangle = angle >> c.ANGLETOFINESHIFT;
+fn P_Thrust(player: *Player, angle: angle_t, move: fixed_t) void {
+    const fineangle = angle >> ANGLETOFINESHIFT;
 
-    player.mo.?.momx += FixedMul(move, c.finecosine[fineangle]);
-    player.mo.?.momy += FixedMul(move, c.finesine[fineangle]);
+    player.mo.?.momx += FixedMul(move, m_angle.finecosine[fineangle]);
+    player.mo.?.momy += FixedMul(move, m_angle.finesine[fineangle]);
 }
 
 
@@ -70,8 +78,8 @@ fn P_CalcHeight(player: *Player) void {
         return;
     }
 
-    const angle = (c.FINEANGLES / 20 *% p_tick.leveltime) & c.FINEMASK;
-    const bob = FixedMul(@divTrunc(player.bob, 2), c.finesine[@intCast(angle)]);
+    const angle = (FINEANGLES / 20 *% p_tick.leveltime) & FINEMASK;
+    const bob = FixedMul(@divTrunc(player.bob, 2), m_angle.finesine[@intCast(angle)]);
 
 
     // move viewheight
@@ -118,7 +126,7 @@ fn P_MovePlayer(player: *Player) void {
     }
 
     if (cmd.sidemove != 0 and onground) {
-        P_Thrust(player, player.mo.?.angle -% c.ANG90, @as(c_int, @as(i8, @bitCast(cmd.sidemove))) * 2048);
+        P_Thrust(player, player.mo.?.angle -% ANG90, @as(c_int, @as(i8, @bitCast(cmd.sidemove))) * 2048);
     }
 
     if ((cmd.forwardmove != 0 or cmd.sidemove != 0) and player.mo.?.state == &p_mobj.c.states[c.S_PLAY]) {
@@ -132,7 +140,7 @@ fn P_MovePlayer(player: *Player) void {
 // Fall on your face when dying.
 // Decrease POV height to floor height.
 //
-const ANG5: c.angle_t = c.ANG90/18;
+const ANG5 = ANG90/18;
 
 fn P_DeathThink(player: *Player) void {
     p_pspr.P_MovePsprites(player);
@@ -162,7 +170,7 @@ fn P_DeathThink(player: *Player) void {
             if (player.damagecount != 0) {
                 player.damagecount -= 1;
             }
-        } else if (delta < c.ANG180) {
+        } else if (delta < ANG180) {
             player.mo.?.angle +%= ANG5;
         } else {
             player.mo.?.angle -%= ANG5;

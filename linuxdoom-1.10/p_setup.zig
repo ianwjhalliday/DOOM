@@ -16,6 +16,8 @@ const doomdef = @import("doomdef.zig");
 const MAXPLAYERS = doomdef.MAXPLAYERS;
 const Skill = doomdef.Skill;
 const doomstat = @import("doomstat.zig");
+const m_angle = @import("m_angle.zig");
+const angle_t = m_angle.angle_t;
 const m_bbox = @import("m_bbox.zig");
 const BBox = m_bbox.BBox;
 const m_fixed = @import("m_fixed.zig");
@@ -159,7 +161,7 @@ fn P_LoadSegs(lump: c_int) void {
         li.*.v1 = &vertexes[@intCast(SHORT(ml[i].v1))];
         li.*.v2 = &vertexes[@intCast(SHORT(ml[i].v2))];
 
-        li.*.angle = @as(c.angle_t, @as(c_ushort, @bitCast(SHORT(ml[i].angle)))) << 16;
+        li.*.angle = @as(angle_t, @as(c_ushort, @bitCast(SHORT(ml[i].angle)))) << 16;
         li.*.offset = @as(fixed_t, SHORT(ml[i].offset)) << 16;
 
         const linedef = SHORT(ml[i].linedef);

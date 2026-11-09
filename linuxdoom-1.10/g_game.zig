@@ -41,8 +41,15 @@ const HU_Ticker = hu_stuff.HU_Ticker;
 const HU_Responder = hu_stuff.HU_Responder;
 const HU_dequeueChatChar = hu_stuff.HU_dequeueChatChar;
 
+const m_angle = @import("m_angle.zig");
+const ANG45 = m_angle.ANG45;
+const ANGLETOFINESHIFT = m_angle.ANGLETOFINESHIFT;
+
 const m_argv = @import("m_argv.zig");
 const M_CheckParm = m_argv.M_CheckParm;
+
+const m_fixed = @import("m_fixed.zig");
+const fixed_t = m_fixed.fixed_t;
 
 const m_menu = @import("m_menu.zig");
 const M_StartControlPanel = m_menu.M_StartControlPanel;
@@ -770,6 +777,15 @@ pub fn G_PlayerReborn(player: c_uint) void {
     p.maxammo = c.maxammo;
 }
 
+/// finesine indexed the way vanilla's DOS build did. A negative index read
+/// backwards into finetangent, which came just before finesine in memory.
+fn vanillaFineSine(i: i32) fixed_t {
+    return if (i >= 0)
+        m_angle.finesine[@intCast(i)]
+    else
+        m_angle.finetangent[@intCast(m_angle.FINEANGLES / 2 + i)];
+}
+
 //
 // G_CheckSpot
 // Returns false if the player cannot be respawned
@@ -805,11 +821,14 @@ fn G_CheckSpot(playernum: usize, mthing: *MapThing) bool {
 
     // spawn a teleport fog
     const ss = c.R_PointInSubsector(x,y);
-    const an: usize = @intCast((c.ANG45 *% @divTrunc(mthing.angle, 45)) >> c.ANGLETOFINESHIFT);
+    // BUG: vanilla multiplies in signed int, so a start facing 180° or more
+    // gives a negative fine angle. The fog offset is then read from
+    // finetangent and the fog spawns in the wrong place.
+    const an = (@as(i32, ANG45) *% @as(i32, @divTrunc(mthing.angle, 45))) >> ANGLETOFINESHIFT;
 
     const mo = P_SpawnMobj(
-        x+20*c.finecosine[an],
-        y+20*c.finesine[an],
+        x+20*vanillaFineSine(an + m_angle.FINEANGLES / 4), // finecosine[an]
+        y+20*vanillaFineSine(an),
         ss[0].sector[0].floorheight,
         c.MT_TFOG,
     );

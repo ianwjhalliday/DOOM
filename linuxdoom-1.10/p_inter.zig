@@ -16,6 +16,9 @@ const g_game = @import("g_game.zig");
 const i_system = @import("i_system.zig");
 const I_Error = i_system.I_Error;
 const I_Tactile = i_system.I_Tactile;
+const m_angle = @import("m_angle.zig");
+const ANG180 = m_angle.ANG180;
+const ANGLETOFINESHIFT = m_angle.ANGLETOFINESHIFT;
 const m_fixed = @import("m_fixed.zig");
 const FixedMul = m_fixed.FixedMul;
 const FRACUNIT = m_fixed.FRACUNIT;
@@ -783,13 +786,13 @@ pub export fn P_DamageMobj(target: *MObj, inflictor: ?*MObj, source: ?*MObj, _da
             and damage > target.health
             and target.z - inflictor.?.z > 64 * FRACUNIT
             and P_Random() & 1 != 0) {
-            ang +%= c.ANG180;
+            ang +%= ANG180;
             thrust *= 4;
         }
 
-        ang >>= c.ANGLETOFINESHIFT;
-        target.momx += FixedMul(thrust, c.finecosine[ang]);
-        target.momy += FixedMul(thrust, c.finesine[ang]);
+        ang >>= ANGLETOFINESHIFT;
+        target.momx += FixedMul(thrust, m_angle.finecosine[ang]);
+        target.momy += FixedMul(thrust, m_angle.finesine[ang]);
     }
 
     // player specific

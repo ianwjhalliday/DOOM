@@ -9,6 +9,9 @@ const g_game = @import("g_game.zig");
 
 const I_Error = @import("i_system.zig").I_Error;
 
+const m_angle = @import("m_angle.zig");
+const ANGLETOFINESHIFT = m_angle.ANGLETOFINESHIFT;
+
 const m_fixed = @import("m_fixed.zig");
 const FixedAbs = m_fixed.FixedAbs;
 const FixedMul = m_fixed.FixedMul;
@@ -492,10 +495,10 @@ fn S_AdjustSoundParams(listener: *mobj_t, source: *mobj_t, vol: *c_int, sep: *c_
         angle = angle + (0xffffffff - listener.angle);
     }
 
-    angle >>= c.ANGLETOFINESHIFT;
+    angle >>= ANGLETOFINESHIFT;
 
     // stereo separation
-    sep.* = 128 - (FixedMul(S_STEREO_SWING, c.finesine[angle]) >> FRACBITS);
+    sep.* = 128 - (FixedMul(S_STEREO_SWING, m_angle.finesine[angle]) >> FRACBITS);
 
     // volume calculation
     if (approx_dist < S_CLOSE_DIST) {

@@ -9,6 +9,9 @@ const Event = d_main.Event;
 const d_player = @import("d_player.zig");
 const Player = d_player.Player;
 const g_game = @import("g_game.zig");
+const m_angle = @import("m_angle.zig");
+const angle_t = m_angle.angle_t;
+const ANGLETOFINESHIFT = m_angle.ANGLETOFINESHIFT;
 const m_cheat = @import("m_cheat.zig");
 const CheatSeq = m_cheat.CheatSeq;
 const cht_CheckCheat = m_cheat.cht_CheckCheat;
@@ -1111,14 +1114,14 @@ fn AM_drawWalls() void {
 // Rotation in 2D.
 // Used to rotate player arrow line character.
 //
-fn AM_rotate(x: *fixed_t, y: *fixed_t, a: c.angle_t) void {
+fn AM_rotate(x: *fixed_t, y: *fixed_t, a: angle_t) void {
     const tmpx =
-        FixedMul(x.*, c.finecosine[a >> c.ANGLETOFINESHIFT])
-        - FixedMul(y.*, c.finesine[a >> c.ANGLETOFINESHIFT]);
+        FixedMul(x.*, m_angle.finecosine[a >> ANGLETOFINESHIFT])
+        - FixedMul(y.*, m_angle.finesine[a >> ANGLETOFINESHIFT]);
 
     y.* =
-        FixedMul(x.*, c.finesine[a >> c.ANGLETOFINESHIFT])
-        + FixedMul(y.*, c.finecosine[a >> c.ANGLETOFINESHIFT]);
+        FixedMul(x.*, m_angle.finesine[a >> ANGLETOFINESHIFT])
+        + FixedMul(y.*, m_angle.finecosine[a >> ANGLETOFINESHIFT]);
 
     x.* = tmpx;
 }
@@ -1126,7 +1129,7 @@ fn AM_rotate(x: *fixed_t, y: *fixed_t, a: c.angle_t) void {
 fn AM_drawLineCharacter(
     lineguylines: []const mline_t,
     scale: fixed_t,
-    angle: c.angle_t,
+    angle: angle_t,
     color: u8,
     x: fixed_t,
     y: fixed_t,

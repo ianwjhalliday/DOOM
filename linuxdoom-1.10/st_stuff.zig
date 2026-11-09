@@ -12,6 +12,11 @@ const Event = d_main.Event;
 const d_player = @import("d_player.zig");
 const Player = d_player.Player;
 
+const m_angle = @import("m_angle.zig");
+const angle_t = m_angle.angle_t;
+const ANG45 = m_angle.ANG45;
+const ANG180 = m_angle.ANG180;
+
 const m_cheat = @import("m_cheat.zig");
 const CheatSeq = m_cheat.CheatSeq;
 const cht_CheckCheat = m_cheat.cht_CheckCheat;
@@ -686,24 +691,24 @@ fn ST_updateFaceWidget() void {
                     plyr.attacker.?.x,
                     plyr.attacker.?.y
                 );
-                var diffang: c.angle_t = undefined;
+                var diffang: angle_t = undefined;
                 var lookright = false;
 
                 if (badguyangle > plyr.mo.?.angle) {
                     // whether right or left
                     diffang = badguyangle - plyr.mo.?.angle;
-                    lookright = diffang > c.ANG180;
+                    lookright = diffang > ANG180;
                 } else {
                     // whether left or right
                     diffang = plyr.mo.?.angle - badguyangle;
-                    lookright = diffang <= c.ANG180;
+                    lookright = diffang <= ANG180;
                 } // confusing, aint it?
 
 
                 st_facecount = ST_TURNCOUNT;
                 st_faceindex = ST_calcPainOffset();
 
-                if (diffang < c.ANG45) {
+                if (diffang < ANG45) {
                     // head-on
                     st_faceindex += ST_RAMPAGEOFFSET;
                 } else if (lookright) {
