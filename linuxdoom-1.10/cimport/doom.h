@@ -26,3 +26,10 @@
 #include "sounds.h"
 #include "tables.h"
 #include "v_video.h"
+
+// libc and BSD sockets headers used by i_system.zig and i_net.zig.
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <stdio.h>
+#include <sys/time.h>
+#include <unistd.h>

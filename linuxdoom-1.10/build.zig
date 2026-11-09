@@ -30,18 +30,6 @@ pub fn build(b: *std.Build) void {
     c_doom.addIncludePath(b.path("."));
     c_doom.defineCMacro("LINUX", null);
 
-    const c_system = b.addTranslateC(.{
-        .root_source_file = b.path("cimport/system.h"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const c_net = b.addTranslateC(.{
-        .root_source_file = b.path("cimport/net.h"),
-        .target = target,
-        .optimize = optimize,
-    });
-
     // pkg-config supplies GLFW's include path here and its link flags below.
     const c_glfw = b.addTranslateC(.{
         .root_source_file = b.path("cimport/glfw.h"),
@@ -62,8 +50,6 @@ pub fn build(b: *std.Build) void {
         .sanitize_c = .off,
         .imports = &.{
             .{ .name = "c", .module = c_doom.createModule() },
-            .{ .name = "c_system", .module = c_system.createModule() },
-            .{ .name = "c_net", .module = c_net.createModule() },
             .{ .name = "c_glfw", .module = c_glfw.createModule() },
         },
     });

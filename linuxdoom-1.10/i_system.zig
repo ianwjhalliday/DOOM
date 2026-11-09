@@ -1,4 +1,4 @@
-const c = @import("c_system");
+const c = @import("c");
 
 extern fn I_InitSound() void;
 extern fn I_ShutdownSound() void;
