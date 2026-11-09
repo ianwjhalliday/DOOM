@@ -7,6 +7,12 @@ const MapThing = doomdata.MapThing;
 const doomdef = @import("doomdef.zig");
 const MAXPLAYERS = doomdef.MAXPLAYERS;
 const MTF_AMBUSH = doomdef.MTF_AMBUSH;
+const d_info = @import("d_info.zig");
+const MObjType = d_info.MObjType;
+const MObjInfo = d_info.MObjInfo;
+const SpriteNum = d_info.SpriteNum;
+const State = d_info.State;
+const StateNum = d_info.StateNum;
 const d_main = @import("d_main.zig");
 const d_player = @import("d_player.zig");
 const CF_NOMOMENTUM = d_player.CF_NOMOMENTUM;
@@ -43,7 +49,6 @@ const s_sound = @import("s_sound.zig");
 const S_StartSound = s_sound.S_StartSound_Zig;
 const S_StopSound = s_sound.S_StopSound;
 const sounds = @import("sounds.zig");
-const asSfx = sounds.asSfx;
 const st_stuff = @import("st_stuff.zig");
 const ST_Start = st_stuff.ST_Start;
 const z_zone = @import("z_zone.zig");
@@ -232,7 +237,7 @@ pub const MObj = extern struct {
 
     //More drawing info: to determine current sprite.
     angle: angle_t,         // orientation
-    sprite: c.spritenum_t,  // used to find patch_t and flip value
+    sprite: SpriteNum,  // used to find patch_t and flip value
     frame: c_int,           // might be ORed with FF_FULLBRIGHT
 
     // Interaction info, by BLOCKMAP.
@@ -258,11 +263,11 @@ pub const MObj = extern struct {
     // If == validcount, already checked.
     validcount: c_int,
 
-    type: c.mobjtype_t,
-    info: *c.mobjinfo_t,    // &mobjinfo[mobj.type]
+    type: MObjType,
+    info: *MObjInfo,    // &mobjinfo[mobj.type]
 
     tics: c_int,    // state tic counter
-    state: ?*c.state_t,
+    state: ?*State,
     flags: c_int,
     health: c_int,
 
@@ -302,16 +307,16 @@ pub const MObj = extern struct {
 // P_SetMobjState
 // Returns true if the mobj is still present.
 //
-pub fn P_SetMobjState(mobj: *MObj, _state: c.statenum_t) bool {
+pub fn P_SetMobjState(mobj: *MObj, _state: StateNum) bool {
     var state = _state;
     while (true) {
-        if (state == c.S_NULL) {
+        if (state == .NULL) {
             mobj.state = null;
             P_RemoveMobj(mobj);
             return false;
         }
 
-        const st = &c.states[state];
+        const st = state.state();
         mobj.state = st;
         mobj.tics = @intCast(st.tics);
         mobj.sprite = st.sprite;
@@ -342,7 +347,7 @@ fn P_ExplodeMissile(mo: *MObj) void {
     mo.momy = 0;
     mo.momz = 0;
 
-    _ = P_SetMobjState(mo, @intCast(c.mobjinfo[mo.type].deathstate));
+    _ = P_SetMobjState(mo, mo.type.info().deathstate);
 
     mo.tics -= P_Random() & 3;
 
@@ -352,8 +357,8 @@ fn P_ExplodeMissile(mo: *MObj) void {
 
     mo.flags &= ~MF_MISSILE;
 
-    if (mo.info.deathsound != 0) {
-        S_StartSound(mo, asSfx(mo.info.deathsound));
+    if (mo.info.deathsound != .None) {
+        S_StartSound(mo, mo.info.deathsound);
     }
 }
 
@@ -373,7 +378,7 @@ fn P_XYMovement(mo: *MObj) void {
             mo.momy = 0;
             mo.momz = 0;
 
-            _ = P_SetMobjState(mo, @intCast(mo.info.spawnstate));
+            _ = P_SetMobjState(mo, mo.info.spawnstate);
         }
         return;
     }
@@ -468,8 +473,8 @@ fn P_XYMovement(mo: *MObj) void {
 
     if (mo.momx > -STOPSPEED and mo.momx < STOPSPEED and mo.momy > -STOPSPEED and mo.momy < STOPSPEED and (player == null or (player.?.cmd.forwardmove == 0 and player.?.cmd.sidemove == 0))) {
         // if in a walking frame, stop moving
-        if (player != null and (player.?.mo.?.state.? - &c.states[0]) -% c.S_PLAY_RUN1 < 4) {
-            _ = P_SetMobjState(player.?.mo.?, c.S_PLAY);
+        if (player != null and @backingInt(player.?.mo.?.state.?.num()) -% @backingInt(StateNum.PLAY_RUN1) < 4) {
+            _ = P_SetMobjState(player.?.mo.?, .PLAY);
         }
 
         mo.momx = 0;
@@ -597,14 +602,14 @@ fn P_NightmareRespawn(mobj: *MObj) void {
 
     // spawn a teleport fog at old spot
     // because of removal of the body?
-    var mo = P_SpawnMobj(mobj.x, mobj.y, mobj.subsector.sector[0].floorheight, c.MT_TFOG);
+    var mo = P_SpawnMobj(mobj.x, mobj.y, mobj.subsector.sector[0].floorheight, .TFOG);
     // initiate teleport sound
     S_StartSound(mo, .telept);
 
     // spawn a teleport fog at the new spot
     const ss = c.R_PointInSubsector(x, y);
 
-    mo = P_SpawnMobj(x, y, ss[0].sector[0].floorheight, c.MT_TFOG);
+    mo = P_SpawnMobj(x, y, ss[0].sector[0].floorheight, .TFOG);
 
     S_StartSound(mo, .telept);
 
@@ -696,10 +701,10 @@ pub export fn P_MobjThinker(mobj: *MObj) void {
 //
 // P_SpawnMobj
 //
-pub fn P_SpawnMobj(x: fixed_t, y: fixed_t, z: fixed_t, motype: c.mobjtype_t) *MObj {
+pub fn P_SpawnMobj(x: fixed_t, y: fixed_t, z: fixed_t, motype: MObjType) *MObj {
     const mobj = z_zone.create(MObj, .Level, null);
     mobj.* = std.mem.zeroes(MObj);
-    const info = &c.mobjinfo[motype];
+    const info = motype.info();
 
     mobj.type = motype;
     mobj.info = info;
@@ -717,7 +722,7 @@ pub fn P_SpawnMobj(x: fixed_t, y: fixed_t, z: fixed_t, motype: c.mobjtype_t) *MO
     mobj.lastlook = @mod(P_Random(), MAXPLAYERS);
     // do not set the state with P_SetMobjState,
     // because action routines can not be called yet
-    const st = &c.states[@intCast(info.spawnstate)];
+    const st = info.spawnstate.state();
 
     mobj.state = st;
     mobj.tics = @intCast(st.tics);
@@ -761,8 +766,8 @@ pub var iquetail: usize = 0;
 pub export fn P_RemoveMobj(mobj: *MObj) void {
     if (mobj.flags & MF_SPECIAL != 0
         and mobj.flags & MF_DROPPED == 0
-        and mobj.type != c.MT_INV
-        and mobj.type != c.MT_INS) {
+        and mobj.type != .INV
+        and mobj.type != .INS) {
         itemrespawnque[iquehead] = mobj.spawnpoint;
         itemrespawntime[iquehead] = p_tick.leveltime;
         iquehead = (iquehead + 1) % ITEMQUESIZE;
@@ -810,21 +815,19 @@ pub fn P_RespawnSpecials() void {
 
     // spawn a teleport fog at the new spot
     const ss = c.R_PointInSubsector(x, y);
-    var mo = P_SpawnMobj(x, y, ss[0].sector[0].floorheight, c.MT_IFOG);
+    var mo = P_SpawnMobj(x, y, ss[0].sector[0].floorheight, .IFOG);
     S_StartSound(mo, .itmbk);
 
     // find which type to spawn
-    const i = for (c.mobjinfo, 0..) |info, ii| {
-        if (mthing.type == info.doomednum) break ii;
-    } else unreachable;
+    const mt = MObjType.fromDoomEdNum(mthing.type) orelse unreachable;
 
     // spawn it
-    const z = if (c.mobjinfo[i].flags & MF_SPAWNCEILING != 0)
+    const z = if (mt.info().flags & MF_SPAWNCEILING != 0)
         c.ONCEILINGZ
     else
         c.ONFLOORZ;
 
-    mo = P_SpawnMobj(x, y, z, @intCast(i));
+    mo = P_SpawnMobj(x, y, z, mt);
     mo.spawnpoint = mthing.*;
     mo.angle = @as(angle_t, @bitCast(@as(i32, @divTrunc(mthing.angle, 45)))) *% ANG45;
 
@@ -856,7 +859,7 @@ pub fn P_SpawnPlayer(mthing: *MapThing) void {
     const x = @as(fixed_t, mthing.x) << FRACBITS;
     const y = @as(fixed_t, mthing.y) << FRACBITS;
     const z = c.ONFLOORZ;
-    const mobj = P_SpawnMobj(x, y, z, c.MT_PLAYER);
+    const mobj = P_SpawnMobj(x, y, z, .PLAYER);
 
     // set color translations for player sprites
     if (mthing.type > 1) {
@@ -939,22 +942,20 @@ pub fn P_SpawnMapThing(mthing: *MapThing) void {
     }
 
     // find which type to spawn
-    const i = for (c.mobjinfo, 0..) |info, ii| {
-        if (mthing.type == info.doomednum) break ii;
-    } else {
+    const mt = MObjType.fromDoomEdNum(mthing.type) orelse
         I_Error("P_SpawnMapThing: Unknown type %d at (%d, %d)",
             mthing.type,
             mthing.x, mthing.y);
-    };
+    const info = mt.info();
 
     // don't spawn keycards and players in deathmatch
-    if (g_game.deathmatch != 0 and c.mobjinfo[i].flags & MF_NOTDMATCH != 0) {
+    if (g_game.deathmatch != 0 and info.flags & MF_NOTDMATCH != 0) {
         return;
     }
 
     // don't spawn any monsters if -nomonsters
     if (d_main.nomonsters
-        and (i == c.MT_SKULL or c.mobjinfo[i].flags & MF_COUNTKILL != 0)) {
+        and (mt == .SKULL or info.flags & MF_COUNTKILL != 0)) {
         return;
     }
 
@@ -962,12 +963,12 @@ pub fn P_SpawnMapThing(mthing: *MapThing) void {
     const x = @as(fixed_t, mthing.x) << FRACBITS;
     const y = @as(fixed_t, mthing.y) << FRACBITS;
 
-    const z = if (c.mobjinfo[i].flags & MF_SPAWNCEILING != 0)
+    const z = if (info.flags & MF_SPAWNCEILING != 0)
         c.ONCEILINGZ
     else
         c.ONFLOORZ;
 
-    const mobj = P_SpawnMobj(x, y, z, @intCast(i));
+    const mobj = P_SpawnMobj(x, y, z, mt);
     mobj.spawnpoint = mthing.*;
 
     if (mobj.tics > 0) {
@@ -1002,7 +1003,7 @@ pub fn P_SpawnMapThing(mthing: *MapThing) void {
 pub fn P_SpawnPuff(x: fixed_t, y: fixed_t, z: fixed_t) void {
     const z_jittered = z + ((P_Random() - P_Random()) << 10);
 
-    const th = P_SpawnMobj(x, y, z_jittered, c.MT_PUFF);
+    const th = P_SpawnMobj(x, y, z_jittered, .PUFF);
     th.momz = FRACUNIT;
     th.tics -= P_Random() & 3;
 
@@ -1012,7 +1013,7 @@ pub fn P_SpawnPuff(x: fixed_t, y: fixed_t, z: fixed_t) void {
 
     // don't make punches spark on the wall
     if (p_map.attackrange == c.MELEERANGE) {
-        _ = P_SetMobjState(th, c.S_PUFF3);
+        _ = P_SetMobjState(th, .PUFF3);
     }
 }
 
@@ -1023,7 +1024,7 @@ pub fn P_SpawnPuff(x: fixed_t, y: fixed_t, z: fixed_t) void {
 pub fn P_SpawnBlood(x: fixed_t, y: fixed_t, z: fixed_t, damage: c_int) void {
     const z_jittered = z + ((P_Random() - P_Random()) << 10);
 
-    const th = P_SpawnMobj(x, y, z_jittered, c.MT_BLOOD);
+    const th = P_SpawnMobj(x, y, z_jittered, .BLOOD);
     th.momz = FRACUNIT * 2;
     th.tics -= P_Random() & 3;
 
@@ -1032,9 +1033,9 @@ pub fn P_SpawnBlood(x: fixed_t, y: fixed_t, z: fixed_t, damage: c_int) void {
     }
 
     if (damage >= 9 and damage <= 12) {
-        _ = P_SetMobjState(th, c.S_BLOOD2);
+        _ = P_SetMobjState(th, .BLOOD2);
     } else if (damage < 9) {
-        _ = P_SetMobjState(th, c.S_BLOOD3);
+        _ = P_SetMobjState(th, .BLOOD3);
     }
 }
 
@@ -1066,11 +1067,11 @@ fn P_CheckMissileSpawn(th: *MObj) void {
 //
 // P_SpawnMissile
 //
-pub fn P_SpawnMissile(source: *MObj, dest: *MObj, motype: c.mobjtype_t) *MObj {
+pub fn P_SpawnMissile(source: *MObj, dest: *MObj, motype: MObjType) *MObj {
     const th = P_SpawnMobj(source.x, source.y, source.z + 4*8*FRACUNIT, motype);
 
-    if (th.info.seesound != 0) {
-        S_StartSound(th, asSfx(th.info.seesound));
+    if (th.info.seesound != .None) {
+        S_StartSound(th, th.info.seesound);
     }
 
     th.target = source;     // where it came from
@@ -1105,7 +1106,7 @@ pub fn P_SpawnMissile(source: *MObj, dest: *MObj, motype: c.mobjtype_t) *MObj {
 // P_SpawnPlayerMissile
 // Tries to aim at a nearby monster
 //
-pub fn P_SpawnPlayerMissile(source: *MObj, motype: c.mobjtype_t) void {
+pub fn P_SpawnPlayerMissile(source: *MObj, motype: MObjType) void {
     // see which target is to be aimed at
     var an = source.angle;
     var slope = p_map.P_AimLineAttack(source, an, 16 * 64 * FRACUNIT);
@@ -1131,8 +1132,8 @@ pub fn P_SpawnPlayerMissile(source: *MObj, motype: c.mobjtype_t) void {
 
     const th = P_SpawnMobj(x, y, z, motype);
 
-    if (th.info.seesound != 0) {
-        S_StartSound(th, asSfx(th.info.seesound));
+    if (th.info.seesound != .None) {
+        S_StartSound(th, th.info.seesound);
     }
 
     th.target = source;

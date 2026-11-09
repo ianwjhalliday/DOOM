@@ -4,6 +4,10 @@ const std = @import("std");
 
 const doomdef = @import("doomdef.zig");
 const doomstat = @import("doomstat.zig");
+const d_info = @import("d_info.zig");
+const MObjType = d_info.MObjType;
+const State = d_info.State;
+const StateNum = d_info.StateNum;
 const d_main = @import("d_main.zig");
 const Event = d_main.Event;
 const g_game = @import("g_game.zig");
@@ -13,7 +17,6 @@ const LONG = m_swap.LONG;
 const SHORT = m_swap.SHORT;
 const sounds = @import("sounds.zig");
 const Sfx = sounds.Sfx;
-const asSfx = sounds.asSfx;
 const s_sound = @import("s_sound.zig");
 const S_ChangeMusicEnum = s_sound.S_ChangeMusicEnum;
 const S_StartMusic = s_sound.S_StartMusic;
@@ -236,32 +239,32 @@ fn F_TextWrite() void {
 //
 const CastInfo = struct {
     name: []const u8,
-    type: c.mobjtype_t,
+    type: MObjType,
 };
 
 const castorder = [_]CastInfo{
-    .{.name = c.CC_ZOMBIE, .type = c.MT_POSSESSED},
-    .{.name = c.CC_SHOTGUN, .type = c.MT_SHOTGUY},
-    .{.name = c.CC_HEAVY, .type = c.MT_CHAINGUY},
-    .{.name = c.CC_IMP, .type = c.MT_TROOP},
-    .{.name = c.CC_DEMON, .type = c.MT_SERGEANT},
-    .{.name = c.CC_LOST, .type = c.MT_SKULL},
-    .{.name = c.CC_CACO, .type = c.MT_HEAD},
-    .{.name = c.CC_HELL, .type = c.MT_KNIGHT},
-    .{.name = c.CC_BARON, .type = c.MT_BRUISER},
-    .{.name = c.CC_ARACH, .type = c.MT_BABY},
-    .{.name = c.CC_PAIN, .type = c.MT_PAIN},
-    .{.name = c.CC_REVEN, .type = c.MT_UNDEAD},
-    .{.name = c.CC_MANCU, .type = c.MT_FATSO},
-    .{.name = c.CC_ARCH, .type = c.MT_VILE},
-    .{.name = c.CC_SPIDER, .type = c.MT_SPIDER},
-    .{.name = c.CC_CYBER, .type = c.MT_CYBORG},
-    .{.name = c.CC_HERO, .type = c.MT_PLAYER},
+    .{.name = c.CC_ZOMBIE, .type = .POSSESSED},
+    .{.name = c.CC_SHOTGUN, .type = .SHOTGUY},
+    .{.name = c.CC_HEAVY, .type = .CHAINGUY},
+    .{.name = c.CC_IMP, .type = .TROOP},
+    .{.name = c.CC_DEMON, .type = .SERGEANT},
+    .{.name = c.CC_LOST, .type = .SKULL},
+    .{.name = c.CC_CACO, .type = .HEAD},
+    .{.name = c.CC_HELL, .type = .KNIGHT},
+    .{.name = c.CC_BARON, .type = .BRUISER},
+    .{.name = c.CC_ARACH, .type = .BABY},
+    .{.name = c.CC_PAIN, .type = .PAIN},
+    .{.name = c.CC_REVEN, .type = .UNDEAD},
+    .{.name = c.CC_MANCU, .type = .FATSO},
+    .{.name = c.CC_ARCH, .type = .VILE},
+    .{.name = c.CC_SPIDER, .type = .SPIDER},
+    .{.name = c.CC_CYBER, .type = .CYBORG},
+    .{.name = c.CC_HERO, .type = .PLAYER},
 };
 
 var castnum: usize = 0;
 var casttics: c_long = 0;
-var caststate: *c.state_t = undefined;
+var caststate: *State = undefined;
 var castdeath = false;
 var castframes: c_int = 0;
 var castonmelee = false;
@@ -273,7 +276,7 @@ var castattacking = false;
 fn F_StartCast() void {
     d_main.wipegamestate = .ForceWipe;
     castnum = 0;
-    caststate = &c.states[@intCast(c.mobjinfo[castorder[castnum].type].seestate)];
+    caststate = castorder[castnum].type.info().seestate.state();
     casttics = caststate.tics;
     castdeath = false;
     finalestage = 2;	
@@ -293,9 +296,9 @@ fn F_CastTicker() void {
         return;     // not time to change state yet
     }
 
-    var moinfo = c.mobjinfo[castorder[castnum].type];
+    var moinfo = castorder[castnum].type.info();
 
-    if (caststate.tics == -1 or caststate.nextstate == c.S_NULL) {
+    if (caststate.tics == -1 or caststate.nextstate == .NULL) {
         // switch from deathstate to next monster
         castnum += 1;
         castdeath = false;
@@ -304,23 +307,23 @@ fn F_CastTicker() void {
             castnum = 0;
         }
 
-        moinfo = c.mobjinfo[castorder[castnum].type];
+        moinfo = castorder[castnum].type.info();
 
-        if (moinfo.seesound != 0) {
-            S_StartSound(null, asSfx(moinfo.seesound));
+        if (moinfo.seesound != .None) {
+            S_StartSound(null, moinfo.seesound);
         }
 
-        caststate = &c.states[@intCast(moinfo.seestate)];
+        caststate = moinfo.seestate.state();
         castframes = 0;
     } else {
         // just advance to next state in animation
-        if (caststate == &c.states[c.S_PLAY_ATK1]) {
+        if (caststate == StateNum.PLAY_ATK1.state()) {
             // TODO: Cannot goto in Zig. Is there a better way to handle this code
             // than duplicating the code that follows the label?
             // goto stopattack;    // Oh, gross hack!
             castattacking = false;
             castframes = 0;
-            caststate = &c.states[@intCast(moinfo.seestate)];
+            caststate = moinfo.seestate.state();
 
             casttics = caststate.tics;
             if (casttics == -1) {
@@ -330,41 +333,41 @@ fn F_CastTicker() void {
         }
 
         const st = caststate.nextstate;
-        caststate = &c.states[@intCast(st)];
+        caststate = st.state();
         castframes += 1;
 
         // sound hacks...
-        const sfx = switch (st) {
-            c.S_PLAY_ATK1 => Sfx.dshtgn,
-            c.S_POSS_ATK2 => Sfx.pistol,
-            c.S_SPOS_ATK2 => Sfx.shotgn,
-            c.S_VILE_ATK2 => Sfx.vilatk,
-            c.S_SKEL_FIST2 => Sfx.skeswg,
-            c.S_SKEL_FIST4 => Sfx.skepch,
-            c.S_SKEL_MISS2 => Sfx.skeatk,
-            c.S_FATT_ATK8,
-            c.S_FATT_ATK5,
-            c.S_FATT_ATK2 => Sfx.firsht,
-            c.S_CPOS_ATK2,
-            c.S_CPOS_ATK3,
-            c.S_CPOS_ATK4 => Sfx.shotgn,
-            c.S_TROO_ATK3 => Sfx.claw,
-            c.S_SARG_ATK2 => Sfx.sgtatk,
-            c.S_BOSS_ATK2,
-            c.S_BOS2_ATK2,
-            c.S_HEAD_ATK2 => Sfx.firsht,
-            c.S_SKULL_ATK2 => Sfx.sklatk,
-            c.S_SPID_ATK2,
-            c.S_SPID_ATK3 => Sfx.shotgn,
-            c.S_BSPI_ATK2 => Sfx.plasma,
-            c.S_CYBER_ATK2,
-            c.S_CYBER_ATK4,
-            c.S_CYBER_ATK6 => Sfx.rlaunc,
-            c.S_PAIN_ATK3 => Sfx.sklatk,
-            else => Sfx.None,
+        const sfx: Sfx = switch (st) {
+            .PLAY_ATK1 => .dshtgn,
+            .POSS_ATK2 => .pistol,
+            .SPOS_ATK2 => .shotgn,
+            .VILE_ATK2 => .vilatk,
+            .SKEL_FIST2 => .skeswg,
+            .SKEL_FIST4 => .skepch,
+            .SKEL_MISS2 => .skeatk,
+            .FATT_ATK8,
+            .FATT_ATK5,
+            .FATT_ATK2 => .firsht,
+            .CPOS_ATK2,
+            .CPOS_ATK3,
+            .CPOS_ATK4 => .shotgn,
+            .TROO_ATK3 => .claw,
+            .SARG_ATK2 => .sgtatk,
+            .BOSS_ATK2,
+            .BOS2_ATK2,
+            .HEAD_ATK2 => .firsht,
+            .SKULL_ATK2 => .sklatk,
+            .SPID_ATK2,
+            .SPID_ATK3 => .shotgn,
+            .BSPI_ATK2 => .plasma,
+            .CYBER_ATK2,
+            .CYBER_ATK4,
+            .CYBER_ATK6 => .rlaunc,
+            .PAIN_ATK3 => .sklatk,
+            else => .None,
         };
 
-        if (sfx != Sfx.None) {
+        if (sfx != .None) {
             S_StartSound(null, sfx);
         }
     }
@@ -373,29 +376,27 @@ fn F_CastTicker() void {
         // go into attack frame
         castattacking = true;
 
-        if (castonmelee) {
-            caststate = &c.states[@intCast(moinfo.meleestate)];
-        } else {
-            caststate = &c.states[@intCast(moinfo.missilestate)];
-        }
+        caststate = if (castonmelee)
+            moinfo.meleestate.state()
+        else
+            moinfo.missilestate.state();
 
         castonmelee = !castonmelee;
 
-        if (caststate == &c.states[c.S_NULL]) {
-            if (castonmelee) {
-                caststate = &c.states[@intCast(moinfo.meleestate)];
-            } else {
-                caststate = &c.states[@intCast(moinfo.missilestate)];
-            }
+        if (caststate == StateNum.NULL.state()) {
+            caststate = if (castonmelee)
+                moinfo.meleestate.state()
+            else
+                moinfo.missilestate.state();
         }
     }
 
     if (castattacking) {
-        if (castframes == 24 or caststate == &c.states[@intCast(moinfo.seestate)]) {
+        if (castframes == 24 or caststate == moinfo.seestate.state()) {
             // stopattack:  TODO: fix this goto
             castattacking = false;
             castframes = 0;
-            caststate = &c.states[@intCast(moinfo.seestate)];
+            caststate = moinfo.seestate.state();
         }
     }
 
@@ -419,13 +420,14 @@ fn F_CastResponder(ev: *Event) bool {
     }
 
     // go into death frame
+    const info = castorder[castnum].type.info();
     castdeath = true;
-    caststate = &c.states[@intCast(c.mobjinfo[castorder[castnum].type].deathstate)];
+    caststate = info.deathstate.state();
     casttics = caststate.tics;
     castframes = 0;
     castattacking = false;
-    if (c.mobjinfo[castorder[castnum].type].deathsound != 0) {
-        S_StartSound(null, asSfx(c.mobjinfo[castorder[castnum].type].deathsound));
+    if (info.deathsound != .None) {
+        S_StartSound(null, info.deathsound);
     }
 
     return true;
@@ -476,7 +478,7 @@ fn F_CastDrawer() void {
     F_CastPrint(castorder[castnum].name);
 
     // draw the current frame in the middle of the screen
-    const sprdef = &c.sprites[caststate.sprite];
+    const sprdef = &c.sprites[@intCast(@backingInt(caststate.sprite))];
     const sprframe = &sprdef.spriteframes[@intCast(caststate.frame & c.FF_FRAMEMASK)];
     const lump = sprframe.lump[0];
     const flip = if (sprframe.flip[0] != 0) true else false;

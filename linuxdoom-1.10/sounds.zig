@@ -295,10 +295,6 @@ pub const Sfx = enum {
     NUMSFX
 };
 
-pub fn asSfx(n: c_int) Sfx {
-    return @fromBackingInt(@intCast(n));
-}
-
 pub fn sfxOffset(base: Sfx, n: c_int) Sfx {
     return @fromBackingInt(@intCast(@backingInt(base) + n));
 }

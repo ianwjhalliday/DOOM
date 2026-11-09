@@ -9,6 +9,8 @@ const PowerDuration = doomdef.PowerDuration;
 const PowerType = doomdef.PowerType;
 const WeaponType = doomdef.WeaponType;
 const doomstat = @import("doomstat.zig");
+const d_info = @import("d_info.zig");
+const MObjType = d_info.MObjType;
 const d_items = @import("d_items.zig");
 const d_player = @import("d_player.zig");
 const Player = d_player.Player;
@@ -312,14 +314,14 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
     // Identify by sprite.
     switch (special.sprite) {
         // armor
-        c.SPR_ARM1 => {
+        .ARM1 => {
             if (!P_GiveArmor(player, 1)) {
                 return;
             }
             player.message = c.GOTARMOR;
         },
 
-        c.SPR_ARM2 => {
+        .ARM2 => {
             if (!P_GiveArmor(player, 2)) {
                 return;
             }
@@ -327,7 +329,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         },
 
         // bonus items
-        c.SPR_BON1 => {
+        .BON1 => {
             player.health += 1;             // can go over 100%
             if (player.health > 200) {
                 player.health = 200;
@@ -336,7 +338,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             player.message = c.GOTHTHBONUS;
         },
 
-        c.SPR_BON2 => {
+        .BON2 => {
             player.armorpoints += 1;        // can go over 100%
             if (player.armorpoints > 200) {
                 player.armorpoints = 200;
@@ -347,7 +349,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             player.message = c.GOTARMBONUS;
         },
 
-        c.SPR_SOUL => {
+        .SOUL => {
             player.health += 100;
             if (player.health > 200) {
                 player.health = 200;
@@ -357,7 +359,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             sound = .getpow;
         },
 
-        c.SPR_MEGA => {
+        .MEGA => {
             if (doomstat.gamemode != .Commercial) {
                 return;
             }
@@ -370,7 +372,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
 
         // cards
         // leave cards for everyone
-        c.SPR_BKEY => {
+        .BKEY => {
             if (player.cards[@backingInt(Card.BlueCard)] == c.false) {
                 player.message = c.GOTBLUECARD;
             }
@@ -380,7 +382,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             }
         },
 
-        c.SPR_YKEY => {
+        .YKEY => {
             if (player.cards[@backingInt(Card.YellowCard)] == c.false) {
                 player.message = c.GOTYELWCARD;
             }
@@ -390,7 +392,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             }
         },
 
-        c.SPR_RKEY => {
+        .RKEY => {
             if (player.cards[@backingInt(Card.RedCard)] == c.false) {
                 player.message = c.GOTREDCARD;
             }
@@ -400,7 +402,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             }
         },
 
-        c.SPR_BSKU => {
+        .BSKU => {
             if (player.cards[@backingInt(Card.BlueSkull)] == c.false) {
                 player.message = c.GOTBLUESKUL;
             }
@@ -410,7 +412,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             }
         },
 
-        c.SPR_YSKU => {
+        .YSKU => {
             if (player.cards[@backingInt(Card.YellowSkull)] == c.false) {
                 player.message = c.GOTYELWSKUL;
             }
@@ -420,7 +422,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             }
         },
 
-        c.SPR_RSKU => {
+        .RSKU => {
             if (player.cards[@backingInt(Card.RedSkull)] == c.false) {
                 player.message = c.GOTREDSKULL;
             }
@@ -431,14 +433,14 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         },
 
         // medikits, heals
-        c.SPR_STIM => {
+        .STIM => {
             if (!P_GiveBody(player, 10)) {
                 return;
             }
             player.message = c.GOTSTIM;
         },
 
-        c.SPR_MEDI => {
+        .MEDI => {
             if (!P_GiveBody(player, 25)) {
                 return;
             }
@@ -451,7 +453,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         },
 
         // power ups
-        c.SPR_PINV => {
+        .PINV => {
             if (!P_GivePower(player, .Invulnerability)) {
                 return;
             }
@@ -459,7 +461,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             sound = .getpow;
         },
 
-        c.SPR_PSTR => {
+        .PSTR => {
             if (!P_GivePower(player, .Strength)) {
                 return;
             }
@@ -471,7 +473,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             }
         },
 
-        c.SPR_PINS => {
+        .PINS => {
             if (!P_GivePower(player, .Invisibility)) {
                 return;
             }
@@ -479,7 +481,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             sound = .getpow;
         },
 
-        c.SPR_SUIT => {
+        .SUIT => {
             if (!P_GivePower(player, .IronFeet)) {
                 return;
             }
@@ -487,7 +489,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             sound = .getpow;
         },
 
-        c.SPR_PMAP => {
+        .PMAP => {
             if (!P_GivePower(player, .AllMap)) {
                 return;
             }
@@ -495,7 +497,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             sound = .getpow;
         },
 
-        c.SPR_PVIS => {
+        .PVIS => {
             if (!P_GivePower(player, .Infrared)) {
                 return;
             }
@@ -504,7 +506,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         },
 
         // ammo
-        c.SPR_CLIP => {
+        .CLIP => {
             if (special.flags & MF_DROPPED != 0) {
                 if (!P_GiveAmmo(player, .Clip, 0)) {
                     return;
@@ -517,56 +519,56 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             player.message = c.GOTCLIP;
         },
 
-        c.SPR_AMMO => {
+        .AMMO => {
             if (!P_GiveAmmo(player, .Clip, 5)) {
                 return;
             }
             player.message = c.GOTCLIPBOX;
         },
 
-        c.SPR_ROCK => {
+        .ROCK => {
             if (!P_GiveAmmo(player, .Missile, 1)) {
                 return;
             }
             player.message = c.GOTROCKET;
         },
 
-        c.SPR_BROK => {
+        .BROK => {
             if (!P_GiveAmmo(player, .Missile, 5)) {
                 return;
             }
             player.message = c.GOTROCKBOX;
         },
 
-        c.SPR_CELL => {
+        .CELL => {
             if (!P_GiveAmmo(player, .Cell, 1)) {
                 return;
             }
             player.message = c.GOTCELL;
         },
 
-        c.SPR_CELP => {
+        .CELP => {
             if (!P_GiveAmmo(player, .Cell, 5)) {
                 return;
             }
             player.message = c.GOTCELLBOX;
         },
 
-        c.SPR_SHEL => {
+        .SHEL => {
             if (!P_GiveAmmo(player, .Shell, 1)) {
                 return;
             }
             player.message = c.GOTSHELLS;
         },
 
-        c.SPR_SBOX => {
+        .SBOX => {
             if (!P_GiveAmmo(player, .Shell, 5)) {
                 return;
             }
             player.message = c.GOTSHELLBOX;
         },
 
-        c.SPR_BPAK => {
+        .BPAK => {
             if (player.backpack == c.false) {
                 for (&player.maxammo) |*ma| {
                     ma.* *= 2;
@@ -580,7 +582,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         },
 
         // weapons
-        c.SPR_BFUG => {
+        .BFUG => {
             if (!P_GiveWeapon(player, .Bfg, false)) {
                 return;
             }
@@ -588,7 +590,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             sound = .wpnup;
         },
 
-        c.SPR_MGUN => {
+        .MGUN => {
             if (!P_GiveWeapon(player, .Chaingun, special.flags & MF_DROPPED != 0)) {
                 return;
             }
@@ -596,7 +598,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             sound = .wpnup;
         },
 
-        c.SPR_CSAW => {
+        .CSAW => {
             if (!P_GiveWeapon(player, .Chainsaw, false)) {
                 return;
             }
@@ -604,7 +606,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             sound = .wpnup;
         },
 
-        c.SPR_LAUN => {
+        .LAUN => {
             if (!P_GiveWeapon(player, .Missile, false)) {
                 return;
             }
@@ -612,7 +614,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             sound = .wpnup;
         },
 
-        c.SPR_PLAS => {
+        .PLAS => {
             if (!P_GiveWeapon(player, .Plasma, false)) {
                 return;
             }
@@ -620,7 +622,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             sound = .wpnup;
         },
 
-        c.SPR_SHOT => {
+        .SHOT => {
             if (!P_GiveWeapon(player, .Shotgun, special.flags & MF_DROPPED != 0)) {
                 return;
             }
@@ -628,7 +630,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             sound = .wpnup;
         },
 
-        c.SPR_SGN2 => {
+        .SGN2 => {
             if (!P_GiveWeapon(player, .SuperShotgun, special.flags & MF_DROPPED != 0)) {
                 return;
             }
@@ -658,7 +660,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
 fn P_KillMobj(source: ?*MObj, target: *MObj) void {
     target.flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
 
-    if (target.type != c.MT_SKULL) {
+    if (target.type != .SKULL) {
         target.flags &= ~MF_NOGRAVITY;
     }
 
@@ -701,10 +703,10 @@ fn P_KillMobj(source: ?*MObj, target: *MObj) void {
     }
 
     if (target.health < -target.info.spawnhealth
-        and target.info.xdeathstate != 0) {
-        _ = P_SetMobjState(target, @intCast(target.info.xdeathstate));
+        and target.info.xdeathstate != .NULL) {
+        _ = P_SetMobjState(target, target.info.xdeathstate);
     } else {
-        _ = P_SetMobjState(target, @intCast(target.info.deathstate));
+        _ = P_SetMobjState(target, target.info.deathstate);
     }
     target.tics -= P_Random() & 3;
 
@@ -716,17 +718,15 @@ fn P_KillMobj(source: ?*MObj, target: *MObj) void {
     // Drop stuff.
     // This determines the kind of object spawned
     // during the death frame of a thing.
-    const item = switch (target.type) {
-        c.MT_WOLFSS,
-        c.MT_POSSESSED => c.MT_CLIP,
-        c.MT_SHOTGUY => c.MT_SHOTGUN,
-        c.MT_CHAINGUY => c.MT_CHAINGUN,
-        else => {
-            return;
-        },
+    const item: MObjType = switch (target.type) {
+        .WOLFSS,
+        .POSSESSED => .CLIP,
+        .SHOTGUY => .SHOTGUN,
+        .CHAINGUY => .CHAINGUN,
+        else => return,
     };
 
-    const mo = P_SpawnMobj(target.x, target.y, c.ONFLOORZ, @intCast(item));
+    const mo = P_SpawnMobj(target.x, target.y, c.ONFLOORZ, item);
     mo.flags |= MF_DROPPED; // special versions of items
 }
 
@@ -858,22 +858,22 @@ pub export fn P_DamageMobj(target: *MObj, inflictor: ?*MObj, source: ?*MObj, _da
     if (P_Random() < target.info.painchance
         and target.flags & MF_SKULLFLY == 0) {
         target.flags |= MF_JUSTHIT; // fight back!
-        _ = P_SetMobjState(target, @intCast(target.info.painstate));
+        _ = P_SetMobjState(target, target.info.painstate);
     }
 
     target.reactiontime = 0;    // we're awake now...
 
-    if ((target.threshold == 0 or target.type == c.MT_VILE)
+    if ((target.threshold == 0 or target.type == .VILE)
         and source != null
         and source != target
-        and source.?.type != c.MT_VILE) {
+        and source.?.type != .VILE) {
         // if not intent on another player,
         // chase after this one
         target.target = source;
         target.threshold = c.BASETHRESHOLD;
-        if (target.state == &p_mobj.c.states[@intCast(target.info.spawnstate)]
-            and target.info.seestate != c.S_NULL) {
-            _ = P_SetMobjState(target, @intCast(target.info.seestate));
+        if (target.state == target.info.spawnstate.state()
+            and target.info.seestate != .NULL) {
+            _ = P_SetMobjState(target, target.info.seestate);
         }
     }
 }

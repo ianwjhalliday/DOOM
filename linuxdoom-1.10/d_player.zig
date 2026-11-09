@@ -16,6 +16,8 @@ const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
 const p_mobj = @import("p_mobj.zig");
 const MObj = p_mobj.MObj;
+const p_pspr = @import("p_pspr.zig");
+const PspDef = p_pspr.PspDef;
 
 
 
@@ -132,7 +134,7 @@ pub const Player = extern struct {
     colormap: c_int,
 
     // Overlay view sprites (gun, etc).
-    psprites: [PSprNum.count]c.pspdef_t,
+    psprites: [PSprNum.count]PspDef,
 
     // True if secret level has been done.
     didsecret: c.boolean,
@@ -153,12 +155,12 @@ pub const Player = extern struct {
         return &player.powers[@backingInt(p)];
     }
 
-    pub fn psprite(player: *Player, n: PSprNum) *c.pspdef_t {
+    pub fn psprite(player: *Player, n: PSprNum) *PspDef {
         return &player.psprites[@backingInt(n)];
     }
 
     pub fn readyAmmo(player: *Player) *c_int {
-        return player.ammoOf(d_items.weaponAmmo(player.readyweapon));
+        return player.ammoOf(d_items.weaponInfo(player.readyweapon).ammo);
     }
 };
 

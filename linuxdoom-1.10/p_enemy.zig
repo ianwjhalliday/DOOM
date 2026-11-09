@@ -1,6 +1,8 @@
 const c = @import("c");
 const std = @import("std");
 
+const d_info = @import("d_info.zig");
+const MObjType = d_info.MObjType;
 const d_player = @import("d_player.zig");
 const Player = d_player.Player;
 const doomdata = @import("doomdata.zig");
@@ -43,13 +45,13 @@ const MF_SOLID = p_mobj.MF_SOLID;
 const DirType = p_mobj.DirType;
 const MObj = p_mobj.MObj;
 const p_pspr = @import("p_pspr.zig");
+const PspDef = p_pspr.PspDef;
 const p_setup = @import("p_setup.zig");
 const p_sight = @import("p_sight.zig");
 const p_switch = @import("p_switch.zig");
 const p_tick = @import("p_tick.zig");
 const s_sound = @import("s_sound.zig");
 const sounds = @import("sounds.zig");
-const asSfx = sounds.asSfx;
 const sfxOffset = sounds.sfxOffset;
 const Sfx = sounds.Sfx;
 
@@ -162,26 +164,26 @@ fn P_CheckMissileRange(actor: *MObj) bool {
         actor.y - actor.target.?.y,
     ) - 64 * FRACUNIT;
 
-    if (actor.info.meleestate == 0) {
+    if (actor.info.meleestate == .NULL) {
         dist -= 128 * FRACUNIT; // no melee attack, so fire more
     }
 
     dist >>= 16;
 
-    if (actor.type == c.MT_VILE) {
+    if (actor.type == .VILE) {
         if (dist > 14 * 64) {
             return false; // too far away
         }
     }
 
-    if (actor.type == c.MT_UNDEAD) {
+    if (actor.type == .UNDEAD) {
         if (dist < 196) {
             return false; // close for fist attack
         }
         dist >>= 1;
     }
 
-    if (actor.type == c.MT_CYBORG or actor.type == c.MT_SPIDER or actor.type == c.MT_SKULL) {
+    if (actor.type == .CYBORG or actor.type == .SPIDER or actor.type == .SKULL) {
         dist >>= 1;
     }
 
@@ -189,7 +191,7 @@ fn P_CheckMissileRange(actor: *MObj) bool {
         dist = 200;
     }
 
-    if (actor.type == c.MT_CYBORG and dist > 160) {
+    if (actor.type == .CYBORG and dist > 160) {
         dist = 160;
     }
 
@@ -438,15 +440,14 @@ pub export fn A_Look(actor: *MObj) void {
     }
 
     // go into chase state
-    if (actor.info.seesound != 0) {
-        const seesound = asSfx(actor.info.seesound);
-        const sound = switch (seesound) {
+    if (actor.info.seesound != .None) {
+        const sound = switch (actor.info.seesound) {
             .posit1, .posit2, .posit3 => sfxOffset(Sfx.posit1, @mod(P_Random(), 3)),
             .bgsit1, .bgsit2 => sfxOffset(Sfx.bgsit1, @mod(P_Random(), 2)),
-            else => seesound,
+            else => actor.info.seesound,
         };
 
-        if (actor.type == c.MT_SPIDER or actor.type == c.MT_CYBORG) {
+        if (actor.type == .SPIDER or actor.type == .CYBORG) {
             // full volume
             s_sound.S_StartSound_Zig(null, sound);
         } else {
@@ -454,7 +455,7 @@ pub export fn A_Look(actor: *MObj) void {
         }
     }
 
-    _ = p_mobj.P_SetMobjState(actor, @intCast(actor.info.seestate));
+    _ = p_mobj.P_SetMobjState(actor, actor.info.seestate);
 }
 
 // Actor has a melee attack, so it tries to close as fast as possible
@@ -491,7 +492,7 @@ pub export fn A_Chase(actor: *MObj) void {
             return; // got a new target
         }
 
-        _ = p_mobj.P_SetMobjState(actor, @intCast(actor.info.spawnstate));
+        _ = p_mobj.P_SetMobjState(actor, actor.info.spawnstate);
         return;
     }
 
@@ -507,20 +508,20 @@ pub export fn A_Chase(actor: *MObj) void {
     }
 
     // check for melee attack
-    if (actor.info.meleestate != 0 and P_CheckMeleeRange(actor)) {
-        if (actor.info.attacksound != 0) {
-            s_sound.S_StartSound_Zig(actor, asSfx(actor.info.attacksound));
+    if (actor.info.meleestate != .NULL and P_CheckMeleeRange(actor)) {
+        if (actor.info.attacksound != .None) {
+            s_sound.S_StartSound_Zig(actor, actor.info.attacksound);
         }
 
-        _ = p_mobj.P_SetMobjState(actor, @intCast(actor.info.meleestate));
+        _ = p_mobj.P_SetMobjState(actor, actor.info.meleestate);
         return;
     }
 
     // check for missile attack
     // Below nightmare, a monster that is still moving holds its fire.
     const holdingfire = g_game.gameskill != .Nightmare and c.fastparm == c.false and actor.movecount != 0;
-    if (actor.info.missilestate != 0 and !holdingfire and P_CheckMissileRange(actor)) {
-        _ = p_mobj.P_SetMobjState(actor, @intCast(actor.info.missilestate));
+    if (actor.info.missilestate != .NULL and !holdingfire and P_CheckMissileRange(actor)) {
+        _ = p_mobj.P_SetMobjState(actor, actor.info.missilestate);
         actor.flags |= MF_JUSTATTACKED;
         return;
     }
@@ -542,8 +543,8 @@ pub export fn A_Chase(actor: *MObj) void {
     }
 
     // make active sound
-    if (actor.info.activesound != 0 and P_Random() < 3) {
-        s_sound.S_StartSound_Zig(actor, asSfx(actor.info.activesound));
+    if (actor.info.activesound != .None and P_Random() < 3) {
+        s_sound.S_StartSound_Zig(actor, actor.info.activesound);
     }
 }
 
@@ -621,7 +622,7 @@ pub export fn A_CPosRefire(actor: *MObj) void {
         actor.target.?.health <= 0 or
         !p_sight.P_CheckSight(actor, actor.target.?))
     {
-        _ = p_mobj.P_SetMobjState(actor, @intCast(actor.info.seestate));
+        _ = p_mobj.P_SetMobjState(actor, actor.info.seestate);
     }
 }
 
@@ -637,7 +638,7 @@ pub export fn A_SpidRefire(actor: *MObj) void {
         actor.target.?.health <= 0 or
         !p_sight.P_CheckSight(actor, actor.target.?))
     {
-        _ = p_mobj.P_SetMobjState(actor, @intCast(actor.info.seestate));
+        _ = p_mobj.P_SetMobjState(actor, actor.info.seestate);
     }
 }
 
@@ -647,7 +648,7 @@ pub export fn A_BspiAttack(actor: *MObj) void {
     A_FaceTarget(actor);
 
     // launch a missile
-    _ = p_mobj.P_SpawnMissile(actor, target, c.MT_ARACHPLAZ);
+    _ = p_mobj.P_SpawnMissile(actor, target, .ARACHPLAZ);
 }
 
 pub export fn A_TroopAttack(actor: *MObj) void {
@@ -662,7 +663,7 @@ pub export fn A_TroopAttack(actor: *MObj) void {
     }
 
     // launch a missile
-    _ = p_mobj.P_SpawnMissile(actor, target, c.MT_TROOPSHOT);
+    _ = p_mobj.P_SpawnMissile(actor, target, .TROOPSHOT);
 }
 
 pub export fn A_SargAttack(actor: *MObj) void {
@@ -686,14 +687,14 @@ pub export fn A_HeadAttack(actor: *MObj) void {
     }
 
     // launch a missile
-    _ = p_mobj.P_SpawnMissile(actor, target, c.MT_HEADSHOT);
+    _ = p_mobj.P_SpawnMissile(actor, target, .HEADSHOT);
 }
 
 pub export fn A_CyberAttack(actor: *MObj) void {
     const target = actor.target orelse return;
 
     A_FaceTarget(actor);
-    _ = p_mobj.P_SpawnMissile(actor, target, c.MT_ROCKET);
+    _ = p_mobj.P_SpawnMissile(actor, target, .ROCKET);
 }
 
 pub export fn A_BruisAttack(actor: *MObj) void {
@@ -705,7 +706,7 @@ pub export fn A_BruisAttack(actor: *MObj) void {
 
         p_inter.P_DamageMobj(target, actor, actor, damage);
     } else {
-        _ = p_mobj.P_SpawnMissile(actor, target, c.MT_BRUISERSHOT);
+        _ = p_mobj.P_SpawnMissile(actor, target, .BRUISERSHOT);
     }
 }
 
@@ -715,7 +716,7 @@ pub export fn A_SkelMissile(actor: *MObj) void {
     A_FaceTarget(actor);
 
     actor.z += 16 * FRACUNIT; // so missile spawns higher
-    const mo = p_mobj.P_SpawnMissile(actor, target, c.MT_TRACER);
+    const mo = p_mobj.P_SpawnMissile(actor, target, .TRACER);
     actor.z -= 16 * FRACUNIT; // back to normal
 
     mo.x += mo.momx;
@@ -731,7 +732,7 @@ pub export fn A_Tracer(actor: *MObj) void {
     // spawn a puff of smoke behind the rocket
     p_mobj.P_SpawnPuff(actor.x, actor.y, actor.z);
 
-    const th = p_mobj.P_SpawnMobj(actor.x - actor.momx, actor.y - actor.momy, actor.z, c.MT_SMOKE);
+    const th = p_mobj.P_SpawnMobj(actor.x - actor.momx, actor.y - actor.momy, actor.z, .SMOKE);
 
     th.momz = FRACUNIT;
     th.tics -= @mod(P_Random(), 4);
@@ -819,11 +820,11 @@ fn PIT_VileCheck(thing: *MObj) bool {
         return true; // not lying still yet
     }
 
-    if (thing.info.raisestate == c.S_NULL) {
+    if (thing.info.raisestate == .NULL) {
         return true; // monster doesn't have a raise state
     }
 
-    const maxdist = thing.info.radius + c.mobjinfo[c.MT_VILE].radius;
+    const maxdist = thing.info.radius + MObjType.VILE.info().radius;
 
     if (FixedAbs(thing.x - viletryx) > maxdist or
         FixedAbs(thing.y - viletryy) > maxdist)
@@ -871,14 +872,14 @@ pub export fn A_VileChase(actor: *MObj) void {
                     A_FaceTarget(actor);
                     actor.target = temp;
 
-                    _ = p_mobj.P_SetMobjState(actor, @intCast(c.S_VILE_HEAL1));
+                    _ = p_mobj.P_SetMobjState(actor, .VILE_HEAL1);
                     s_sound.S_StartSound_Zig(corpsehit, .slop);
                     const info = corpsehit.info;
 
                     // BUG: crushed corpses (gibs) have height and radius 0,
                     // so they rise as "ghost" monsters that shots and other
                     // monsters pass through.
-                    _ = p_mobj.P_SetMobjState(corpsehit, @intCast(info.raisestate));
+                    _ = p_mobj.P_SetMobjState(corpsehit, info.raisestate);
                     corpsehit.height <<= 2;
                     corpsehit.flags = info.flags;
                     corpsehit.health = info.spawnhealth;
@@ -932,7 +933,7 @@ pub export fn A_VileTarget(actor: *MObj) void {
     A_FaceTarget(actor);
 
     // BUG: x instead of y!?
-    const fog = p_mobj.P_SpawnMobj(target.x, target.x, target.z, c.MT_FIRE);
+    const fog = p_mobj.P_SpawnMobj(target.x, target.x, target.z, .FIRE);
 
     actor.tracer = fog;
     fog.target = actor;
@@ -971,7 +972,7 @@ pub export fn A_FatRaise(actor: *MObj) void {
 
 /// Fire a mancubus missile at target, turned from its aim by spread.
 fn A_FatShot(actor: *MObj, target: *MObj, spread: i32) void {
-    const mo = p_mobj.P_SpawnMissile(actor, target, c.MT_FATSHOT);
+    const mo = p_mobj.P_SpawnMissile(actor, target, .FATSHOT);
 
     // Vanilla leaves an unspread missile alone. Re-aiming it anyway would
     // restore momentum to one that exploded on spawn.
@@ -1021,7 +1022,7 @@ pub export fn A_SkullAttack(actor: *MObj) void {
 
     actor.flags |= MF_SKULLFLY;
 
-    s_sound.S_StartSound_Zig(actor, asSfx(actor.info.attacksound));
+    s_sound.S_StartSound_Zig(actor, actor.info.attacksound);
     A_FaceTarget(actor);
 
     const fine = actor.angle >> ANGLETOFINESHIFT;
@@ -1037,7 +1038,7 @@ fn A_PainShootSkull(actor: *MObj, angle: angle_t) void {
     var count: u32 = 0;
     var it = p_tick.mobj_thinkers();
     while (it.next()) |mo| {
-        if (mo.type == c.MT_SKULL) count += 1;
+        if (mo.type == .SKULL) count += 1;
     }
 
     // if there are already 20 skulls on the level, don't spit another one.
@@ -1048,12 +1049,12 @@ fn A_PainShootSkull(actor: *MObj, angle: angle_t) void {
     // okay, there's playe for another one
     const fine = angle >> ANGLETOFINESHIFT;
 
-    const prestep = 4 * FRACUNIT + @divTrunc(3 * (actor.info.radius + c.mobjinfo[c.MT_SKULL].radius), 2);
+    const prestep = 4 * FRACUNIT + @divTrunc(3 * (actor.info.radius + MObjType.SKULL.info().radius), 2);
     const x = actor.x + FixedMul(prestep, m_angle.finecosine[fine]);
     const y = actor.y + FixedMul(prestep, m_angle.finesine[fine]);
     const z = actor.z + 8 * FRACUNIT;
 
-    const mo = p_mobj.P_SpawnMobj(x, y, z, c.MT_SKULL);
+    const mo = p_mobj.P_SpawnMobj(x, y, z, .SKULL);
 
     // Check for movements.
     if (!p_map.P_TryMove(mo, mo.x, mo.y)) {
@@ -1084,16 +1085,15 @@ pub export fn A_PainDie(actor: *MObj) void {
 }
 
 pub export fn A_Scream(actor: *MObj) void {
-    const deathsound = asSfx(actor.info.deathsound);
-    const sound = switch (deathsound) {
+    const sound = switch (actor.info.deathsound) {
         .None => return,
         .podth1, .podth2, .podth3 => sfxOffset(.podth1, @mod(P_Random(), 3)),
         .bgdth1, .bgdth2 => sfxOffset(.bgdth1, @mod(P_Random(), 2)),
-        else => deathsound,
+        else => actor.info.deathsound,
     };
 
     // Check for bosses.
-    if (actor.type == c.MT_SPIDER or actor.type == c.MT_CYBORG) {
+    if (actor.type == .SPIDER or actor.type == .CYBORG) {
         // full volume
         s_sound.S_StartSound_Zig(null, sound);
     } else {
@@ -1106,8 +1106,8 @@ pub export fn A_XScream(actor: *MObj) void {
 }
 
 pub export fn A_Pain(actor: *MObj) void {
-    if (actor.info.painsound != 0) {
-        s_sound.S_StartSound_Zig(actor, asSfx(actor.info.painsound));
+    if (actor.info.painsound != .None) {
+        s_sound.S_StartSound_Zig(actor, actor.info.painsound);
     }
 }
 
@@ -1125,13 +1125,13 @@ pub export fn A_Explode(actor: *MObj) void {
 /// Possibly trigger special effects if on first boss level
 pub export fn A_BossDeath(actor: *MObj) void {
     const isboss = if (doomstat.gamemode == .Commercial)
-        g_game.gamemap == 7 and (actor.type == c.MT_FATSO or actor.type == c.MT_BABY)
+        g_game.gamemap == 7 and (actor.type == .FATSO or actor.type == .BABY)
     else switch (g_game.gameepisode) {
-        1 => g_game.gamemap == 8 and actor.type == c.MT_BRUISER,
-        2 => g_game.gamemap == 8 and actor.type == c.MT_CYBORG,
-        3 => g_game.gamemap == 8 and actor.type == c.MT_SPIDER,
-        4 => (g_game.gamemap == 6 and actor.type == c.MT_CYBORG) or
-            (g_game.gamemap == 8 and actor.type == c.MT_SPIDER),
+        1 => g_game.gamemap == 8 and actor.type == .BRUISER,
+        2 => g_game.gamemap == 8 and actor.type == .CYBORG,
+        3 => g_game.gamemap == 8 and actor.type == .SPIDER,
+        4 => (g_game.gamemap == 6 and actor.type == .CYBORG) or
+            (g_game.gamemap == 8 and actor.type == .SPIDER),
         else => g_game.gamemap == 8,
     };
     if (!isboss) {
@@ -1158,7 +1158,7 @@ pub export fn A_BossDeath(actor: *MObj) void {
 
     if (doomstat.gamemode == .Commercial) {
         // gamemap is already determined above to be 7, if Commercial
-        if (actor.type == c.MT_FATSO) {
+        if (actor.type == .FATSO) {
             _ = p_floor.EV_DoFloor(&junk, .lowerFloorToLowest);
         } else {
             // type already determined above to be MT_BABY, if not MT_FATSO
@@ -1193,15 +1193,15 @@ pub export fn A_BabyMetal(actor: *MObj) void {
     A_Chase(actor);
 }
 
-pub export fn A_OpenShotgun2(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_OpenShotgun2(player: *Player, _: *PspDef) void {
     s_sound.S_StartSound_Zig(player.mo, .dbopn);
 }
 
-pub export fn A_LoadShotgun2(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_LoadShotgun2(player: *Player, _: *PspDef) void {
     s_sound.S_StartSound_Zig(player.mo, .dbload);
 }
 
-pub export fn A_CloseShotgun2(player: *Player, psp: *c.pspdef_t) void {
+pub export fn A_CloseShotgun2(player: *Player, psp: *PspDef) void {
     s_sound.S_StartSound_Zig(player.mo, .dbcls);
     p_pspr.A_ReFire(player, psp);
 }
@@ -1216,7 +1216,7 @@ pub export fn A_BrainAwake(_: *MObj) void {
 
     var it = p_tick.mobj_thinkers();
     while (it.next()) |mo| {
-        if (mo.type == c.MT_BOSSTARGET) {
+        if (mo.type == .BOSSTARGET) {
             braintargets[numbraintargets] = mo;
             numbraintargets += 1;
         }
@@ -1235,10 +1235,10 @@ pub export fn A_BrainScream(mo: *MObj) void {
         const y = mo.y - 320 * FRACUNIT;
         // BUG: 128 isn't scaled by FRACUNIT, so it adds almost nothing to z.
         const z = 128 + P_Random() * 2 * FRACUNIT;
-        const th = p_mobj.P_SpawnMobj(x, y, z, c.MT_ROCKET);
+        const th = p_mobj.P_SpawnMobj(x, y, z, .ROCKET);
         th.momz = P_Random() * 512;
 
-        _ = p_mobj.P_SetMobjState(th, c.S_BRAINEXPLODE1);
+        _ = p_mobj.P_SetMobjState(th, .BRAINEXPLODE1);
 
         th.tics -= @mod(P_Random(), 8);
         if (th.tics < 1) {
@@ -1253,10 +1253,10 @@ pub export fn A_BrainExplode(mo: *MObj) void {
     const x = mo.x + (P_Random() - P_Random()) * 2048;
     const y = mo.y;
     const z = 128 + P_Random() * 2 * FRACUNIT;
-    const th = p_mobj.P_SpawnMobj(x, y, z, c.MT_ROCKET);
+    const th = p_mobj.P_SpawnMobj(x, y, z, .ROCKET);
     th.momz = P_Random() * 512;
 
-    _ = p_mobj.P_SetMobjState(th, c.S_BRAINEXPLODE1);
+    _ = p_mobj.P_SetMobjState(th, .BRAINEXPLODE1);
 
     th.tics -= @mod(P_Random(), 8);
     if (th.tics < 1) {
@@ -1283,7 +1283,7 @@ pub export fn A_BrainSpit(mo: *MObj) void {
     braintargeton = @mod(braintargeton + 1, numbraintargets);
 
     // spawn brain missile
-    const newmobj = p_mobj.P_SpawnMissile(mo, target, c.MT_SPAWNSHOT);
+    const newmobj = p_mobj.P_SpawnMissile(mo, target, .SPAWNSHOT);
     newmobj.target = target;
     newmobj.reactiontime = @intCast(@divTrunc(@divTrunc(target.y - mo.y, newmobj.momy), newmobj.state.?.tics));
 
@@ -1306,39 +1306,39 @@ pub export fn A_SpawnFly(mo: *MObj) void {
     const target = mo.target orelse mo;
 
     // First spawn teleport fog.
-    const fog = p_mobj.P_SpawnMobj(target.x, target.y, target.z, c.MT_SPAWNFIRE);
+    const fog = p_mobj.P_SpawnMobj(target.x, target.y, target.z, .SPAWNFIRE);
     s_sound.S_StartSound_Zig(fog, .telept);
 
     // Randomly select monster to spawn
     const r = P_Random();
 
     // Probability distribution (kind of :), decreasing likelihood.
-    const mtype = if (r < 50)
-        c.MT_TROOP
+    const mtype: MObjType = if (r < 50)
+        .TROOP
     else if (r < 90)
-        c.MT_SERGEANT
+        .SERGEANT
     else if (r < 120)
-        c.MT_SHADOWS
+        .SHADOWS
     else if (r < 130)
-        c.MT_PAIN
+        .PAIN
     else if (r < 160)
-        c.MT_HEAD
+        .HEAD
     else if (r < 162)
-        c.MT_VILE
+        .VILE
     else if (r < 172)
-        c.MT_UNDEAD
+        .UNDEAD
     else if (r < 192)
-        c.MT_BABY
+        .BABY
     else if (r < 222)
-        c.MT_FATSO
+        .FATSO
     else if (r < 246)
-        c.MT_KNIGHT
+        .KNIGHT
     else
-        c.MT_BRUISER;
+        .BRUISER;
 
-    const newmobj = p_mobj.P_SpawnMobj(target.x, target.y, target.z, @intCast(mtype));
+    const newmobj = p_mobj.P_SpawnMobj(target.x, target.y, target.z, mtype);
     if (P_LookForPlayers(newmobj, true)) {
-        _ = p_mobj.P_SetMobjState(newmobj, @intCast(newmobj.info.seestate));
+        _ = p_mobj.P_SetMobjState(newmobj, newmobj.info.seestate);
     }
 
     // telefrag anything in this spot

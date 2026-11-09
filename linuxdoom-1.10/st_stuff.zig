@@ -788,7 +788,7 @@ fn ST_updateWidgets() void {
     // must redirect the pointer if the ready weapon has changed.
     //  if (w_ready.data != plyr.readyweapon)
     //  {
-    if (d_items.weaponAmmo(plyr.readyweapon) == .NoAmmo) {
+    if (d_items.weaponInfo(plyr.readyweapon).ammo == .NoAmmo) {
         w_ready.num = &S.largeammo;
     } else {
         w_ready.num = plyr.readyAmmo();
@@ -1076,7 +1076,7 @@ fn ST_initData() void {
 
 fn ST_createWidgets() void {
     // ready weapon ammo
-    if (d_items.weaponAmmo(plyr.readyweapon) != .NoAmmo) {
+    if (d_items.weaponInfo(plyr.readyweapon).ammo != .NoAmmo) {
         STlib_initNum(&w_ready,
                       ST_AMMOX,
                       ST_AMMOY,

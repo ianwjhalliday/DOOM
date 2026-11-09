@@ -1,6 +1,9 @@
 const c = @import("c");
 const std = @import("std");
 
+const d_info = @import("d_info.zig");
+const State = d_info.State;
+const StateNum = d_info.StateNum;
 const d_items = @import("d_items.zig");
 const d_player = @import("d_player.zig");
 const Player = d_player.Player;
@@ -37,19 +40,31 @@ const WEAPONTOP = 32 * FRACUNIT;
 // plasma cells for a bfg attack
 const BFGCELLS = 40;
 
-fn P_SetPsprite(player: *Player, position: PSprNum, initial: c.statenum_t) void {
+pub const PspDef = extern struct {
+    state: ?*State, // a null state means not active
+    tics: c_int,
+    sx: fixed_t,
+    sy: fixed_t,
+};
+
+comptime {
+    std.debug.assert(@sizeOf(PspDef) == @sizeOf(c.pspdef_t));
+    std.debug.assert(@sizeOf(State) == @sizeOf(c.state_t));
+}
+
+fn P_SetPsprite(player: *Player, position: PSprNum, initial: StateNum) void {
     const psp = player.psprite(position);
     var stnum = initial;
 
     // an initial state of 0 could cycle through
     while (true) {
-        if (stnum == c.S_NULL) {
+        if (stnum == .NULL) {
             // object removed itself
             psp.state = null;
             return;
         }
 
-        const state = &c.states[@intCast(stnum)];
+        const state = stnum.state();
         psp.state = state;
         psp.tics = @intCast(state.tics); // could be 0
 
@@ -66,7 +81,7 @@ fn P_SetPsprite(player: *Player, position: PSprNum, initial: c.statenum_t) void 
         }
 
         if (psp.tics != 0) return;
-        stnum = psp.state.*.nextstate;
+        stnum = psp.state.?.nextstate;
     }
 }
 
@@ -80,7 +95,7 @@ fn P_BringUpWeapon(player: *Player) void {
         s_sound.S_StartSound_Zig(player.mo, .sawup);
     }
 
-    const newstate = d_items.weaponUpState(player.pendingweapon);
+    const newstate = d_items.weaponInfo(player.pendingweapon).upstate;
 
     player.pendingweapon = .NoChange;
     player.psprite(.Weapon).sy = WEAPONBOTTOM;
@@ -91,7 +106,7 @@ fn P_BringUpWeapon(player: *Player) void {
 /// Returns true if there is enough ammo to shoot. If not, selects the next
 /// weapon to use.
 fn P_CheckAmmo(player: *Player) bool {
-    const ammo = d_items.weaponAmmo(player.readyweapon);
+    const ammo = d_items.weaponInfo(player.readyweapon).ammo;
 
     // Minimal amount for one shot varies.
     const count: c_int = switch (player.readyweapon) {
@@ -124,7 +139,7 @@ fn P_CheckAmmo(player: *Player) bool {
     };
 
     // Now set appropriate weapon overlay.
-    P_SetPsprite(player, .Weapon, d_items.weaponDownState(player.readyweapon));
+    P_SetPsprite(player, .Weapon, d_items.weaponInfo(player.readyweapon).downstate);
 
     return false;
 }
@@ -132,27 +147,27 @@ fn P_CheckAmmo(player: *Player) bool {
 fn P_FireWeapon(player: *Player) void {
     if (!P_CheckAmmo(player)) return;
 
-    _ = p_mobj.P_SetMobjState(player.mo.?, c.S_PLAY_ATK1);
-    P_SetPsprite(player, .Weapon, d_items.weaponAttackState(player.readyweapon));
+    _ = p_mobj.P_SetMobjState(player.mo.?, .PLAY_ATK1);
+    P_SetPsprite(player, .Weapon, d_items.weaponInfo(player.readyweapon).atkstate);
     p_enemy.P_NoiseAlert(player.mo.?, player.mo.?);
 }
 
 /// Player died, so put the weapon away.
 pub fn P_DropWeapon(player: *Player) void {
-    P_SetPsprite(player, .Weapon, d_items.weaponDownState(player.readyweapon));
+    P_SetPsprite(player, .Weapon, d_items.weaponInfo(player.readyweapon).downstate);
 }
 
 /// The player can fire the weapon or change to another weapon at this time.
 /// Follows after getting weapon up, or after previous attack/fire sequence.
-pub export fn A_WeaponReady(player: *Player, psp: *c.pspdef_t) void {
+pub export fn A_WeaponReady(player: *Player, psp: *PspDef) void {
     // get out of attack state
-    if (player.mo.?.state == &c.states[c.S_PLAY_ATK1] or
-        player.mo.?.state == &c.states[c.S_PLAY_ATK2])
+    if (player.mo.?.state == StateNum.PLAY_ATK1.state() or
+        player.mo.?.state == StateNum.PLAY_ATK2.state())
     {
-        _ = p_mobj.P_SetMobjState(player.mo.?, c.S_PLAY);
+        _ = p_mobj.P_SetMobjState(player.mo.?, .PLAY);
     }
 
-    if (player.readyweapon == .Chainsaw and psp.state == &c.states[c.S_SAW]) {
+    if (player.readyweapon == .Chainsaw and psp.state == StateNum.SAW.state()) {
         s_sound.S_StartSound_Zig(player.mo, .sawidl);
     }
 
@@ -161,7 +176,7 @@ pub export fn A_WeaponReady(player: *Player, psp: *c.pspdef_t) void {
     if (player.pendingweapon != .NoChange or player.health == 0) {
         // change weapon
         //  (pending weapon should already be validated)
-        P_SetPsprite(player, .Weapon, d_items.weaponDownState(player.readyweapon));
+        P_SetPsprite(player, .Weapon, d_items.weaponInfo(player.readyweapon).downstate);
         return;
     }
 
@@ -187,7 +202,7 @@ pub export fn A_WeaponReady(player: *Player, psp: *c.pspdef_t) void {
 }
 
 /// The player can re-fire the weapon without lowering it entirely.
-pub export fn A_ReFire(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_ReFire(player: *Player, _: *PspDef) void {
     // check for fire
     //  (if a weaponchange is pending, let it go through instead)
     if (player.cmd.buttons & c.BT_ATTACK != 0 and
@@ -202,12 +217,12 @@ pub export fn A_ReFire(player: *Player, _: *c.pspdef_t) void {
     }
 }
 
-pub export fn A_CheckReload(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_CheckReload(player: *Player, _: *PspDef) void {
     _ = P_CheckAmmo(player);
 }
 
 /// Lowers current weapon and changes weapon at bottom.
-pub export fn A_Lower(player: *Player, psp: *c.pspdef_t) void {
+pub export fn A_Lower(player: *Player, psp: *PspDef) void {
     psp.sy += LOWERSPEED;
 
     // Is already down.
@@ -225,7 +240,7 @@ pub export fn A_Lower(player: *Player, psp: *c.pspdef_t) void {
     // and start raising it
     if (player.health == 0) {
         // Player is dead, so keep the weapon off screen.
-        P_SetPsprite(player, .Weapon, c.S_NULL);
+        P_SetPsprite(player, .Weapon, .NULL);
         return;
     }
 
@@ -234,7 +249,7 @@ pub export fn A_Lower(player: *Player, psp: *c.pspdef_t) void {
     P_BringUpWeapon(player);
 }
 
-pub export fn A_Raise(player: *Player, psp: *c.pspdef_t) void {
+pub export fn A_Raise(player: *Player, psp: *PspDef) void {
     psp.sy -= RAISESPEED;
 
     if (psp.sy > WEAPONTOP) return;
@@ -242,15 +257,15 @@ pub export fn A_Raise(player: *Player, psp: *c.pspdef_t) void {
     psp.sy = WEAPONTOP;
 
     // The weapon has been raised all the way, so change to the ready state.
-    P_SetPsprite(player, .Weapon, d_items.weaponReadyState(player.readyweapon));
+    P_SetPsprite(player, .Weapon, d_items.weaponInfo(player.readyweapon).readystate);
 }
 
-pub export fn A_GunFlash(player: *Player, _: *c.pspdef_t) void {
-    _ = p_mobj.P_SetMobjState(player.mo.?, c.S_PLAY_ATK2);
-    P_SetPsprite(player, .Flash, d_items.weaponFlashState(player.readyweapon));
+pub export fn A_GunFlash(player: *Player, _: *PspDef) void {
+    _ = p_mobj.P_SetMobjState(player.mo.?, .PLAY_ATK2);
+    P_SetPsprite(player, .Flash, d_items.weaponInfo(player.readyweapon).flashstate);
 }
 
-pub export fn A_Punch(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_Punch(player: *Player, _: *PspDef) void {
     const multiplier: c_int = if (player.power(.Strength).* != 0) 10 else 1;
     const damage = 2 * (@mod(P_Random(), 10) + 1) * multiplier;
 
@@ -266,7 +281,7 @@ pub export fn A_Punch(player: *Player, _: *c.pspdef_t) void {
     }
 }
 
-pub export fn A_Saw(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_Saw(player: *Player, _: *PspDef) void {
     const damage = 2 * (@mod(P_Random(), 10) + 1);
 
     const spread = (P_Random() - P_Random()) << 18;
@@ -304,22 +319,21 @@ pub export fn A_Saw(player: *Player, _: *c.pspdef_t) void {
     player.mo.?.flags |= MF_JUSTATTACKED;
 }
 
-pub export fn A_FireMissile(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_FireMissile(player: *Player, _: *PspDef) void {
     player.readyAmmo().* -= 1;
-    p_mobj.P_SpawnPlayerMissile(player.mo.?, c.MT_ROCKET);
+    p_mobj.P_SpawnPlayerMissile(player.mo.?, .ROCKET);
 }
 
-pub export fn A_FireBFG(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_FireBFG(player: *Player, _: *PspDef) void {
     player.readyAmmo().* -= BFGCELLS;
-    p_mobj.P_SpawnPlayerMissile(player.mo.?, c.MT_BFG);
+    p_mobj.P_SpawnPlayerMissile(player.mo.?, .BFG);
 }
 
-pub export fn A_FirePlasma(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_FirePlasma(player: *Player, _: *PspDef) void {
     player.readyAmmo().* -= 1;
-    const flash = d_items.weaponFlashState(player.readyweapon) +
-        @as(c.statenum_t, @intCast(P_Random() & 1));
+    const flash = d_items.weaponInfo(player.readyweapon).flashstate.offset(P_Random() & 1);
     P_SetPsprite(player, .Flash, flash);
-    p_mobj.P_SpawnPlayerMissile(player.mo.?, c.MT_PLASMA);
+    p_mobj.P_SpawnPlayerMissile(player.mo.?, .PLASMA);
 }
 
 var bulletslope: fixed_t = 0;
@@ -353,25 +367,25 @@ fn P_GunShot(mo: *MObj, accurate: bool) void {
     p_map.P_LineAttack(mo, angle, c.MISSILERANGE, bulletslope, damage);
 }
 
-pub export fn A_FirePistol(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_FirePistol(player: *Player, _: *PspDef) void {
     s_sound.S_StartSound_Zig(player.mo, .pistol);
-    _ = p_mobj.P_SetMobjState(player.mo.?, c.S_PLAY_ATK2);
+    _ = p_mobj.P_SetMobjState(player.mo.?, .PLAY_ATK2);
 
     player.readyAmmo().* -= 1;
 
-    P_SetPsprite(player, .Flash, d_items.weaponFlashState(player.readyweapon));
+    P_SetPsprite(player, .Flash, d_items.weaponInfo(player.readyweapon).flashstate);
 
     P_BulletSlope(player.mo.?);
     P_GunShot(player.mo.?, player.refire == c.false);
 }
 
-pub export fn A_FireShotgun(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_FireShotgun(player: *Player, _: *PspDef) void {
     s_sound.S_StartSound_Zig(player.mo, .shotgn);
-    _ = p_mobj.P_SetMobjState(player.mo.?, c.S_PLAY_ATK2);
+    _ = p_mobj.P_SetMobjState(player.mo.?, .PLAY_ATK2);
 
     player.readyAmmo().* -= 1;
 
-    P_SetPsprite(player, .Flash, d_items.weaponFlashState(player.readyweapon));
+    P_SetPsprite(player, .Flash, d_items.weaponInfo(player.readyweapon).flashstate);
 
     P_BulletSlope(player.mo.?);
 
@@ -380,13 +394,13 @@ pub export fn A_FireShotgun(player: *Player, _: *c.pspdef_t) void {
     }
 }
 
-pub export fn A_FireShotgun2(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_FireShotgun2(player: *Player, _: *PspDef) void {
     s_sound.S_StartSound_Zig(player.mo, .dshtgn);
-    _ = p_mobj.P_SetMobjState(player.mo.?, c.S_PLAY_ATK2);
+    _ = p_mobj.P_SetMobjState(player.mo.?, .PLAY_ATK2);
 
     player.readyAmmo().* -= 2;
 
-    P_SetPsprite(player, .Flash, d_items.weaponFlashState(player.readyweapon));
+    P_SetPsprite(player, .Flash, d_items.weaponInfo(player.readyweapon).flashstate);
 
     P_BulletSlope(player.mo.?);
 
@@ -400,34 +414,33 @@ pub export fn A_FireShotgun2(player: *Player, _: *c.pspdef_t) void {
     }
 }
 
-pub export fn A_FireCGun(player: *Player, psp: *c.pspdef_t) void {
+pub export fn A_FireCGun(player: *Player, psp: *PspDef) void {
     s_sound.S_StartSound_Zig(player.mo, .pistol);
 
     if (player.readyAmmo().* == 0) {
         return;
     }
 
-    _ = p_mobj.P_SetMobjState(player.mo.?, c.S_PLAY_ATK2);
+    _ = p_mobj.P_SetMobjState(player.mo.?, .PLAY_ATK2);
 
     player.readyAmmo().* -= 1;
 
-    const newstate: c.statenum_t = @intCast(d_items.weaponFlashState(player.readyweapon) +
-        (psp.state - &c.states[c.S_CHAIN1]));
+    const newstate = d_items.weaponInfo(player.readyweapon).flashstate.offset(@intCast(psp.state.? - StateNum.CHAIN1.state()));
     P_SetPsprite(player, .Flash, newstate);
 
     P_BulletSlope(player.mo.?);
     P_GunShot(player.mo.?, player.refire == 0);
 }
 
-pub export fn A_Light0(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_Light0(player: *Player, _: *PspDef) void {
     player.extralight = 0;
 }
 
-pub export fn A_Light1(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_Light1(player: *Player, _: *PspDef) void {
     player.extralight = 1;
 }
 
-pub export fn A_Light2(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_Light2(player: *Player, _: *PspDef) void {
     player.extralight = 2;
 }
 
@@ -446,7 +459,7 @@ pub export fn A_BFGSpray(mo: *MObj) void {
             linetarget.x,
             linetarget.y,
             linetarget.z + (linetarget.height >> 2),
-            c.MT_EXTRABFG,
+            .EXTRABFG,
         );
 
         var damage: c_int = 0;
@@ -458,7 +471,7 @@ pub export fn A_BFGSpray(mo: *MObj) void {
     }
 }
 
-pub export fn A_BFGsound(player: *Player, _: *c.pspdef_t) void {
+pub export fn A_BFGsound(player: *Player, _: *PspDef) void {
     s_sound.S_StartSound_Zig(player.mo, .bfg);
 }
 

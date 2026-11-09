@@ -1,6 +1,3 @@
-const c = @import("c");
-
-
 //
 // Map level types.
 // The following data structures define the persistent format

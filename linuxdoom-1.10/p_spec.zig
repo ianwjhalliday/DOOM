@@ -268,12 +268,12 @@ pub fn P_CrossSpecialLine(line: *c.line_t, side: c_int, thing: *MObj) void {
     if (thing.player == null) {
         // Things that should not trigger specials
         switch (thing.type) {
-            c.MT_ROCKET,
-            c.MT_PLASMA,
-            c.MT_BFG,
-            c.MT_TROOPSHOT,
-            c.MT_HEADSHOT,
-            c.MT_BRUISERSHOT,
+            .ROCKET,
+            .PLASMA,
+            .BFG,
+            .TROOPSHOT,
+            .HEADSHOT,
+            .BRUISERSHOT,
             => return,
             else => {},
         }

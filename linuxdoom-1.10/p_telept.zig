@@ -35,7 +35,7 @@ pub fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) bool {
         var it = p_tick.mobj_thinkers();
         while (it.next()) |m| {
             // not a teleportman
-            if (m.type != c.MT_TELEPORTMAN) continue;
+            if (m.type != .TELEPORTMAN) continue;
 
             const sector = m.subsector.*.sector;
 
@@ -57,10 +57,10 @@ pub fn EV_Teleport(line: *c.line_t, side: c_int, thing: *MObj) bool {
             }
 
             // spawn teleport fog at source and destination
-            const fog1 = P_SpawnMobj(oldx, oldy, oldz, c.MT_TFOG);
+            const fog1 = P_SpawnMobj(oldx, oldy, oldz, .TFOG);
             S_StartSound(fog1, .telept);
             const an = m.angle >> ANGLETOFINESHIFT;
-            const fog2 = P_SpawnMobj(m.x + 20 * m_angle.finecosine[an], m.y + 20 * m_angle.finesine[an], thing.z, c.MT_TFOG);
+            const fog2 = P_SpawnMobj(m.x + 20 * m_angle.finecosine[an], m.y + 20 * m_angle.finesine[an], thing.z, .TFOG);
 
             // emit sound, where?
             S_StartSound(fog2, .telept);

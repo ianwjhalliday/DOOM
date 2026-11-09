@@ -16,6 +16,7 @@ const doomdef = @import("doomdef.zig");
 const MAXPLAYERS = doomdef.MAXPLAYERS;
 const Skill = doomdef.Skill;
 const doomstat = @import("doomstat.zig");
+const d_info = @import("d_info.zig");
 const m_angle = @import("m_angle.zig");
 const angle_t = m_angle.angle_t;
 const m_bbox = @import("m_bbox.zig");
@@ -585,5 +586,5 @@ pub fn P_SetupLevel(episode: c_int, map: c_int) void {
 pub fn P_Init() void {
     p_switch.P_InitSwitchList();
     p_spec.P_InitPicAnims();
-    c.R_InitSprites(&c.sprnames);
+    c.R_InitSprites(@ptrCast(@constCast(&d_info.sprnames)));
 }

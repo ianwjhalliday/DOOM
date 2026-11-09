@@ -2,6 +2,9 @@ const c = @import("c");
 const std = @import("std");
 
 const doomdef = @import("doomdef.zig");
+const d_info = @import("d_info.zig");
+const State = d_info.State;
+const StateNum = d_info.StateNum;
 const g_game = @import("g_game.zig");
 const i_system = @import("i_system.zig");
 const I_Error = i_system.I_Error;
@@ -44,13 +47,13 @@ fn loadIndex(slot: anytype) usize {
     return @as(*const usize, @ptrCast(slot)).*;
 }
 
-fn stateIndex(state: *const c.state_t) usize {
-    return state - &c.states[0];
+fn stateIndex(state: *const State) usize {
+    return @intCast(@backingInt(state.num()));
 }
 
-fn stateFromIndex(index: usize) !*c.state_t {
-    if (index >= c.NUMSTATES) return error.BadSaveGame;
-    return &c.states[index];
+fn stateFromIndex(index: usize) !*State {
+    if (index >= StateNum.count) return error.BadSaveGame;
+    return &d_info.states[index];
 }
 
 fn sectorIndex(sector: *const c.sector_t) usize {
@@ -66,9 +69,9 @@ pub fn P_ArchivePlayers(writer: *std.Io.Writer) !void {
     for (g_game.playeringame, &g_game.players) |playeringame, *player| if (playeringame != c.false) {
         try padWrite(writer);
         var saved = player.*;
-        for (&saved.psprites) |*psp| {
-            if (psp.state != null) storeIndex(&psp.state, stateIndex(psp.state));
-        }
+        for (&saved.psprites) |*psp| if (psp.state) |st| {
+            storeIndex(&psp.state, stateIndex(st));
+        };
         try writer.writeAll(std.mem.asBytes(&saved));
     };
 }
@@ -81,11 +84,9 @@ pub fn P_UnArchivePlayers(reader: *std.Io.Reader) !void {
         player.mo = null;
         player.message = null;
         player.attacker = null;
-        for (&player.psprites) |*psp| {
-            if (psp.state != null) {
-                psp.state = try stateFromIndex(loadIndex(&psp.state));
-            }
-        }
+        for (&player.psprites) |*psp| if (psp.state != null) {
+            psp.state = try stateFromIndex(loadIndex(&psp.state));
+        };
     };
 }
 
@@ -206,7 +207,7 @@ pub fn P_UnArchiveThinkers(reader: *std.Io.Reader) !void {
                     mo.player.?.mo = mo;
                 }
                 p_maputil.P_SetThingPosition(mo);
-                mo.info = &c.mobjinfo[@intCast(mo.type)];
+                mo.info = mo.type.info();
                 mo.floorz = mo.subsector.sector.*.floorheight;
                 mo.ceilingz = mo.subsector.sector.*.ceilingheight;
                 mo.thinker.function.acp1 = p_mobj.mobj_thinker;

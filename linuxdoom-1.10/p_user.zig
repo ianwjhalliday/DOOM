@@ -6,6 +6,9 @@ const WeaponType = doomdef.WeaponType;
 
 const doomstat = @import("doomstat.zig");
 
+const d_info = @import("d_info.zig");
+const StateNum = d_info.StateNum;
+
 const d_player = @import("d_player.zig");
 const CF_NOCLIP = d_player.CF_NOCLIP;
 const CF_NOMOMENTUM = d_player.CF_NOMOMENTUM;
@@ -27,7 +30,6 @@ const p_map = @import("p_map.zig");
 
 const p_mobj = @import("p_mobj.zig");
 const MF_SHADOW = p_mobj.MF_SHADOW;
-const P_SetMobjState = p_mobj.P_SetMobjState;
 
 const p_pspr = @import("p_pspr.zig");
 
@@ -129,8 +131,8 @@ fn P_MovePlayer(player: *Player) void {
         P_Thrust(player, player.mo.?.angle -% ANG90, @as(c_int, @as(i8, @bitCast(cmd.sidemove))) * 2048);
     }
 
-    if ((cmd.forwardmove != 0 or cmd.sidemove != 0) and player.mo.?.state == &p_mobj.c.states[c.S_PLAY]) {
-        _ = P_SetMobjState(player.mo.?, c.S_PLAY_RUN1);
+    if ((cmd.forwardmove != 0 or cmd.sidemove != 0) and player.mo.?.state == StateNum.PLAY.state()) {
+        _ = p_mobj.P_SetMobjState(player.mo.?, .PLAY_RUN1);
     }
 }
 

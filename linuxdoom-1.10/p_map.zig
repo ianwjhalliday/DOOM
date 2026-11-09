@@ -241,7 +241,7 @@ fn PIT_CheckThing(thing: *MObj) bool {
         tmthing.momy = 0;
         tmthing.momz = 0;
 
-        _ = p_mobj.P_SetMobjState(tmthing, @intCast(tmthing.info.*.spawnstate));
+        _ = p_mobj.P_SetMobjState(tmthing, tmthing.info.spawnstate);
 
         return false; // stop moving
     }
@@ -257,15 +257,15 @@ fn PIT_CheckThing(thing: *MObj) bool {
         }
 
         if (tmthing.target != null and (tmthing.target.?.type == thing.type or
-            (tmthing.target.?.type == c.MT_KNIGHT and thing.type == c.MT_BRUISER) or
-            (tmthing.target.?.type == c.MT_BRUISER and thing.type == c.MT_KNIGHT)))
+            (tmthing.target.?.type == .KNIGHT and thing.type == .BRUISER) or
+            (tmthing.target.?.type == .BRUISER and thing.type == .KNIGHT)))
         {
             // Don't hit some species as originator
             if (thing == tmthing.target) {
                 return true;
             }
 
-            if (thing.type != c.MT_PLAYER) {
+            if (thing.type != .PLAYER) {
                 // Explode, but do no damage.
                 // Let players missile other players.
                 return false;
@@ -930,7 +930,7 @@ fn PIT_RadiusAttack(thing: *MObj) bool {
     }
 
     // Boss spider and cyborg take no damage from concussion.
-    if (thing.type == c.MT_CYBORG or thing.type == c.MT_SPIDER) {
+    if (thing.type == .CYBORG or thing.type == .SPIDER) {
         return true;
     }
 
@@ -987,7 +987,7 @@ fn PIT_ChangeSector(thing: *MObj) bool {
 
     // crunch bodies into giblets
     if (thing.health <= 0) {
-        _ = p_mobj.P_SetMobjState(thing, c.S_GIBS);
+        _ = p_mobj.P_SetMobjState(thing, .GIBS);
 
         thing.flags &= ~MF_SOLID;
         thing.height = 0;
@@ -1016,7 +1016,7 @@ fn PIT_ChangeSector(thing: *MObj) bool {
         p_inter.P_DamageMobj(thing, null, null, 10);
 
         // spray blood in a random direction
-        const mo = p_mobj.P_SpawnMobj(thing.x, thing.y, thing.z + @divTrunc(thing.height, 2), c.MT_BLOOD);
+        const mo = p_mobj.P_SpawnMobj(thing.x, thing.y, thing.z + @divTrunc(thing.height, 2), .BLOOD);
         mo.momx = (m_random.P_Random() - m_random.P_Random()) << 12;
         mo.momy = (m_random.P_Random() - m_random.P_Random()) << 12;
     }

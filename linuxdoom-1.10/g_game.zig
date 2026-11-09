@@ -20,6 +20,10 @@ const AM_Ticker = am_map.AM_Ticker;
 
 const TicCmd = @import("d_ticcmd.zig").TicCmd;
 
+const d_info = @import("d_info.zig");
+const MObjType = d_info.MObjType;
+const StateNum = d_info.StateNum;
+
 const d_main = @import("d_main.zig");
 const Event = d_main.Event;
 const D_AdvanceDemo = d_main.D_AdvanceDemo;
@@ -50,6 +54,7 @@ const M_CheckParm = m_argv.M_CheckParm;
 
 const m_fixed = @import("m_fixed.zig");
 const fixed_t = m_fixed.fixed_t;
+const FRACUNIT = m_fixed.FRACUNIT;
 
 const m_menu = @import("m_menu.zig");
 const M_StartControlPanel = m_menu.M_StartControlPanel;
@@ -830,7 +835,7 @@ fn G_CheckSpot(playernum: usize, mthing: *MapThing) bool {
         x+20*vanillaFineSine(an + m_angle.FINEANGLES / 4), // finecosine[an]
         y+20*vanillaFineSine(an),
         ss[0].sector[0].floorheight,
-        c.MT_TFOG,
+        .TFOG,
     );
 
     if (players[consoleplayer].viewz != 1) {
@@ -1187,7 +1192,7 @@ fn G_DoLoadGame() void {
     if (gamemap == 30 and doomstat.gamemode == .Commercial) {
         var it = p_tick.mobj_thinkers();
         while (it.next()) |m| {
-            if (m.type == c.MT_BOSSBRAIN) {
+            if (m.type == .BOSSBRAIN) {
                 p_enemy.A_BrainAwake(m);
             }
         }
@@ -1306,20 +1311,22 @@ pub fn G_InitNew(skill: Skill, episode: c_int, map: c_int) void {
         respawnmonsters = false;
     }
 
+    // BUG: with -fast this runs on every G_InitNew, so each new game or loaded
+    // save halves the demon tics again until they reach 0 or 1.
     if (c.fastparm != c.false or (skill == .Nightmare and gameskill != .Nightmare)) {
-        for (c.S_SARG_RUN1..c.S_SARG_PAIN2+1) |i| {
-            c.states[i].tics >>= 1;
+        for (@backingInt(StateNum.SARG_RUN1)..@backingInt(StateNum.SARG_PAIN2)+1) |i| {
+            d_info.states[i].tics >>= 1;
         }
-        c.mobjinfo[c.MT_BRUISERSHOT].speed = 20*c.FRACUNIT;
-        c.mobjinfo[c.MT_HEADSHOT].speed = 20*c.FRACUNIT;
-        c.mobjinfo[c.MT_TROOPSHOT].speed = 20*c.FRACUNIT;
+        MObjType.BRUISERSHOT.info().speed = 20*FRACUNIT;
+        MObjType.HEADSHOT.info().speed = 20*FRACUNIT;
+        MObjType.TROOPSHOT.info().speed = 20*FRACUNIT;
     } else if (skill != .Nightmare and gameskill == .Nightmare) {
-        for (c.S_SARG_RUN1..c.S_SARG_PAIN2+1) |i| {
-            c.states[i].tics <<= 1;
+        for (@backingInt(StateNum.SARG_RUN1)..@backingInt(StateNum.SARG_PAIN2)+1) |i| {
+            d_info.states[i].tics <<= 1;
         }
-        c.mobjinfo[c.MT_BRUISERSHOT].speed = 15*c.FRACUNIT;
-        c.mobjinfo[c.MT_HEADSHOT].speed = 10*c.FRACUNIT;
-        c.mobjinfo[c.MT_TROOPSHOT].speed = 10*c.FRACUNIT;
+        MObjType.BRUISERSHOT.info().speed = 15*FRACUNIT;
+        MObjType.HEADSHOT.info().speed = 10*FRACUNIT;
+        MObjType.TROOPSHOT.info().speed = 10*FRACUNIT;
     }
 
 

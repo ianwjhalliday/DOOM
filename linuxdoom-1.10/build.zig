@@ -14,7 +14,6 @@ pub fn build(b: *std.Build) void {
         "r_plane.c",
         "r_segs.c",
         "r_things.c",
-        "info.c",
     };
 
     // Zig passes only clang's default warnings, so ask for more.
