@@ -8,7 +8,6 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "doomtype.h"
-#include "dstrings.h"
 #include "hu_stuff.h"
 #include "i_sound.h"
 #include "info.h"

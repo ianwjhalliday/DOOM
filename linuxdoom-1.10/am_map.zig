@@ -8,6 +8,7 @@ const d_main = @import("d_main.zig");
 const Event = d_main.Event;
 const d_player = @import("d_player.zig");
 const Player = d_player.Player;
+const d_strings = @import("d_strings.zig");
 const g_game = @import("g_game.zig");
 const m_angle = @import("m_angle.zig");
 const angle_t = m_angle.angle_t;
@@ -662,23 +663,23 @@ pub fn AM_Responder(ev: *Event) bool {
             AM_FOLLOWKEY => {
                 followplayer = !followplayer;
                 f_oldloc.x = MAXINT;
-                plr.message = if (followplayer) c.AMSTR_FOLLOWON else c.AMSTR_FOLLOWOFF;
+                plr.message = if (followplayer) d_strings.text.AMSTR_FOLLOWON else d_strings.text.AMSTR_FOLLOWOFF;
             },
 
             AM_GRIDKEY => {
                 grid = !grid;
-                plr.message = if (grid) c.AMSTR_GRIDON else c.AMSTR_GRIDOFF;
+                plr.message = if (grid) d_strings.text.AMSTR_GRIDON else d_strings.text.AMSTR_GRIDOFF;
             },
 
             AM_MARKKEY => {
-                _ = std.fmt.bufPrintSentinel(&S.buffer, "{s} {d}", .{c.AMSTR_MARKEDSPOT, markpointnum}, 0) catch unreachable;
+                _ = std.fmt.bufPrintSentinel(&S.buffer, "{s} {d}", .{d_strings.text.AMSTR_MARKEDSPOT, markpointnum}, 0) catch unreachable;
                 plr.message = &S.buffer;
                 AM_addMark();
             },
 
             AM_CLEARMARKKEY => {
                 AM_clearMarks();
-                plr.message = c.AMSTR_MARKSCLEARED;
+                plr.message = d_strings.text.AMSTR_MARKSCLEARED;
             },
 
             else => {

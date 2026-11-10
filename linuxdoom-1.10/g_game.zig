@@ -35,6 +35,8 @@ const d_player = @import("d_player.zig");
 const Player = d_player.Player;
 const WbStart = d_player.WbStart;
 
+const d_strings = @import("d_strings.zig");
+
 const f_finale = @import("f_finale.zig");
 const F_StartFinale = f_finale.F_StartFinale;
 const F_Responder = f_finale.F_Responder;
@@ -659,7 +661,7 @@ pub export fn G_Ticker() void {
                 const S = struct {
                     var turbomessage: [79:0]u8 = undefined;
                 };
-                _ = fmt.bufPrintSentinel(&S.turbomessage, "{s} is turbo!", .{hu_stuff.player_names[i]}, 0) catch unreachable;
+                _ = fmt.bufPrintSentinel(&S.turbomessage, "{s} is turbo!", .{d_strings.text.player_names[i]}, 0) catch unreachable;
                 players[consoleplayer].message = &S.turbomessage;
             }
 
@@ -1214,7 +1216,7 @@ pub fn G_SaveGame(slot: c_int, description: [*:0]const u8) void {
 fn G_DoSaveGame() void {
     var namebuf: [100]u8 = undefined;
     const dir = if (M_CheckParm("-cdrom") != 0) "c:\\doomdata\\" else "";
-    const name = fmt.bufPrint(&namebuf, "{s}{s}{d}.dsg", .{ dir, c.SAVEGAMENAME, savegameslot }) catch unreachable;
+    const name = fmt.bufPrint(&namebuf, "{s}{s}{d}.dsg", .{ dir, d_strings.SAVEGAMENAME, savegameslot }) catch unreachable;
 
     var aw: std.Io.Writer.Allocating = .init(std.heap.c_allocator);
     defer aw.deinit();
@@ -1224,7 +1226,7 @@ fn G_DoSaveGame() void {
 
     gameaction = .Nothing;
     savedescription = @splat(0);
-    players[consoleplayer].message = c.GGSAVED;
+    players[consoleplayer].message = d_strings.text.GGSAVED;
 }
 
 

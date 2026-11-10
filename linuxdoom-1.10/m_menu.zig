@@ -8,6 +8,7 @@ const d_main = @import("d_main.zig");
 const D_StartTitle = d_main.D_StartTitle;
 const doomdef = @import("doomdef.zig");
 const doomstat = @import("doomstat.zig");
+const d_strings = @import("d_strings.zig");
 const g_game = @import("g_game.zig");
 const G_DeferedInitNew = g_game.G_DeferedInitNew;
 const G_LoadGame = g_game.G_LoadGame;
@@ -74,14 +75,6 @@ var messageNeedsInput = false;
 var messageRoutine: ?*const fn (response: c_int) void = undefined;
 
 const SAVESTRINGSIZE = 24;
-
-var gammamsg = [5][*:0]const u8{
-    c.GAMMALVL0,
-    c.GAMMALVL1,
-    c.GAMMALVL2,
-    c.GAMMALVL3,
-    c.GAMMALVL4
-};
 
 // we are going to be entering a savegame string
 var saveStringEnter: c_int = 0;
@@ -414,12 +407,12 @@ fn M_ReadSaveStrings() void {
     for (0..@backingInt(LoadEnum.LoadCount)) |i| {
         const name =
             if (M_CheckParm("-cdrom") != 0)
-                fmt.bufPrintSentinel(&namebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{i}, 0) catch unreachable
+                fmt.bufPrintSentinel(&namebuf, "c:\\doomdata\\" ++ d_strings.SAVEGAMENAME ++ "{}.dsg", .{i}, 0) catch unreachable
             else
-                fmt.bufPrintSentinel(&namebuf, c.SAVEGAMENAME ++ "{}.dsg", .{i}, 0) catch unreachable;
+                fmt.bufPrintSentinel(&namebuf, d_strings.SAVEGAMENAME ++ "{}.dsg", .{i}, 0) catch unreachable;
 
         const file = std.Io.Dir.cwd().openFile(i_system.io, name, .{}) catch {
-            _ = fmt.bufPrintSentinel(&savegamestrings[i], "{s}", .{c.EMPTYSTRING}, 0) catch unreachable;
+            _ = fmt.bufPrintSentinel(&savegamestrings[i], "{s}", .{d_strings.text.EMPTYSTRING}, 0) catch unreachable;
             LoadMenu[i].status = 0;
             continue;
         };
@@ -467,9 +460,9 @@ fn M_LoadSelect(choice: c_int) void {
 
     const name =
         if (M_CheckParm("-cdrom") != 0)
-            fmt.bufPrintSentinel(&namebuf, "c:\\doomdata\\" ++ c.SAVEGAMENAME ++ "{}.dsg", .{choice}, 0) catch unreachable
+            fmt.bufPrintSentinel(&namebuf, "c:\\doomdata\\" ++ d_strings.SAVEGAMENAME ++ "{}.dsg", .{choice}, 0) catch unreachable
         else
-            fmt.bufPrintSentinel(&namebuf, c.SAVEGAMENAME ++ "{}.dsg", .{choice}, 0) catch unreachable;
+            fmt.bufPrintSentinel(&namebuf, d_strings.SAVEGAMENAME ++ "{}.dsg", .{choice}, 0) catch unreachable;
 
     G_LoadGame(name);
     M_ClearMenus();
@@ -481,7 +474,7 @@ fn M_LoadSelect(choice: c_int) void {
 fn M_LoadGame(choice: c_int) void {
     _ = choice;
     if (g_game.netgame != c.false) {
-        M_StartMessage(c.LOADNET, null, false);
+        M_StartMessage(d_strings.text.LOADNET, null, false);
         return;
     }
 
@@ -530,7 +523,7 @@ fn M_SaveSelect(_choice: c_int) void {
     saveSlot = @intCast(choice);
     saveOldString = savegamestrings[choice];
     var name = std.mem.sliceTo(&savegamestrings[choice], 0);
-    if (std.mem.eql(u8, name, c.EMPTYSTRING)) {
+    if (std.mem.eql(u8, name, d_strings.text.EMPTYSTRING)) {
         savegamestrings[choice][0] = 0;
         name = std.mem.sliceTo(&savegamestrings[choice], 0);
     }
@@ -543,7 +536,7 @@ fn M_SaveSelect(_choice: c_int) void {
 fn M_SaveGame (choice: c_int) void {
     _ = choice;
     if (!g_game.usergame) {
-        M_StartMessage(c.SAVEDEAD, null, false);
+        M_StartMessage(d_strings.text.SAVEDEAD, null, false);
         return;
     }
 
@@ -560,7 +553,7 @@ fn M_SaveGame (choice: c_int) void {
 //
 //      M_QuickSave
 //
-var tempstring: [79:0]u8 = undefined;
+var tempstring: [127:0]u8 = undefined;
 
 fn M_QuickSaveResponse(ch: c_int) void {
     if (ch == 'y') {
@@ -588,7 +581,10 @@ fn M_QuickSave() void {
     }
 
     // TODO: Switch to using the string slice in M_StartMessage()
-    _ = fmt.bufPrintSentinel(&tempstring, c.QSPROMPT, .{savegamestrings[@intCast(quickSaveSlot)]}, 0) catch unreachable;
+    const name = savegamestrings[@intCast(quickSaveSlot)];
+    _ = switch (d_strings.lang) {
+        inline else => |lang| fmt.bufPrintSentinel(&tempstring, d_strings.table(lang).QSPROMPT, .{name}, 0),
+    } catch unreachable;
     M_StartMessage(&tempstring, &M_QuickSaveResponse, true);
 }
 
@@ -607,17 +603,20 @@ fn M_QuickLoadResponse(ch: c_int) void {
 
 fn M_QuickLoad() void {
     if (g_game.netgame != c.false) {
-        M_StartMessage(c.QLOADNET, null, false);
+        M_StartMessage(d_strings.text.QLOADNET, null, false);
         return;
     }
 
     if (quickSaveSlot < 0)
     {
-        M_StartMessage(c.QSAVESPOT, null, false);
+        M_StartMessage(d_strings.text.QSAVESPOT, null, false);
         return;
     }
 
-    _ = fmt.bufPrintSentinel(&tempstring, c.QLPROMPT, .{savegamestrings[@intCast(quickSaveSlot)]}, 0) catch unreachable;
+    const name = savegamestrings[@intCast(quickSaveSlot)];
+    _ = switch (d_strings.lang) {
+        inline else => |lang| fmt.bufPrintSentinel(&tempstring, d_strings.table(lang).QLPROMPT, .{name}, 0),
+    } catch unreachable;
     M_StartMessage(&tempstring, &M_QuickLoadResponse, true);
 }
 
@@ -742,7 +741,7 @@ fn M_DrawNewGame() void {
 fn M_NewGame(choice: c_int) void {
     _ = choice;
     if (g_game.netgame != c.false and g_game.demoplayback == c.false) {
-        M_StartMessage(c.NEWGAME, null, false);
+        M_StartMessage(d_strings.text.NEWGAME, null, false);
         return;
     }
 
@@ -776,7 +775,7 @@ fn M_ChooseSkill(choice: c_int) void {
     const skill: Skill = @fromBackingInt(@intCast(choice));
     if (skill == .Nightmare)
     {
-        M_StartMessage(c.NIGHTMARE, &M_VerifyNightmare, true);
+        M_StartMessage(d_strings.text.NIGHTMARE, &M_VerifyNightmare, true);
         return;
     }
 
@@ -786,7 +785,7 @@ fn M_ChooseSkill(choice: c_int) void {
 
 fn M_Episode(choice: c_int) void {
     if (doomstat.gamemode == .Shareware and choice > 0) {
-        M_StartMessage(c.SWSTRING, null, false);
+        M_StartMessage(d_strings.text.SWSTRING, null, false);
         M_SetupNextMenu(&ReadDef1);
         return;
     }
@@ -847,9 +846,9 @@ fn M_ChangeMessages(choice: c_int) void {
     showMessages = 1 - showMessages;
 
     if (showMessages == 0) {
-        g_game.players[g_game.consoleplayer].message = c.MSGOFF;
+        g_game.players[g_game.consoleplayer].message = d_strings.text.MSGOFF;
     } else {
-        g_game.players[g_game.consoleplayer].message = c.MSGON ;
+        g_game.players[g_game.consoleplayer].message = d_strings.text.MSGON;
     }
 
     hu_stuff.message_dontfuckwithme = true;
@@ -878,11 +877,11 @@ fn M_EndGame(choice: c_int) void {
     }
 
     if (g_game.netgame != c.false) {
-        M_StartMessage(c.NETEND, null, false);
+        M_StartMessage(d_strings.text.NETEND, null, false);
         return;
     }
 
-    M_StartMessage(c.ENDGAME, &M_EndGameResponse, true);
+    M_StartMessage(d_strings.text.ENDGAME, &M_EndGameResponse, true);
 }
 
 
@@ -961,11 +960,13 @@ fn M_QuitDOOM(choice: c_int) void {
     // We pick index 0 which is language sensitive,
     // or one at random, between 1 and maximum number.
 
+    const msg = if (d_strings.lang != .English)
+        d_strings.text.QUITMSG
+    else
+        d_strings.endmsg[@intCast(@mod(g_game.gametic, d_strings.NUM_QUITMESSAGES - 2) + 1)];
+
     const endstr =
-        if (doomstat.language != .English)
-            fmt.bufPrintSentinel(&endstring, "{s}\n\n" ++ c.DOSY, .{c.endmsg[0]}, 0) catch unreachable
-        else
-            fmt.bufPrintSentinel(&endstring, "{s}\n\n" ++ c.DOSY, .{c.endmsg[@intCast(@mod(g_game.gametic, c.NUM_QUITMESSAGES-2)+1)]}, 0) catch unreachable;
+        fmt.bufPrintSentinel(&endstring, "{s}\n\n{s}", .{ msg, d_strings.text.DOSY }, 0) catch unreachable;
 
     M_StartMessage(endstr, &M_QuitResponse, true);
 }
@@ -1403,7 +1404,7 @@ pub fn M_Responder(ev: *Event) bool {
         if (v_video.usegamma > 4) {
             v_video.usegamma = 0;
         }
-        g_game.players[g_game.consoleplayer].message = gammamsg[@intCast(v_video.usegamma)];
+        g_game.players[g_game.consoleplayer].message = d_strings.text.gammamsg[@intCast(v_video.usegamma)];
         I_SetPalette(W_CacheLumpName([*]u8, "PLAYPAL", .Cache));
         return true;
       },

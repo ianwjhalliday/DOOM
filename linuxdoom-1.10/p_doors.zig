@@ -3,6 +3,7 @@ const std = @import("std");
 
 const d_player = @import("d_player.zig");
 const Player = d_player.Player;
+const d_strings = @import("d_strings.zig");
 const doomdef = @import("doomdef.zig");
 const Card = doomdef.Card;
 const m_fixed = @import("m_fixed.zig");
@@ -137,9 +138,9 @@ pub fn EV_DoLockedDoor(line: *c.line_t, doortype: DoorType, thing: *MObj) bool {
     const p = thing.player orelse return false;
 
     const lock: Lock = switch (line.special) {
-        99, 133 => .{ .card = .BlueCard, .skull = .BlueSkull, .message = c.PD_BLUEO },
-        134, 135 => .{ .card = .RedCard, .skull = .RedSkull, .message = c.PD_REDO },
-        136, 137 => .{ .card = .YellowCard, .skull = .YellowSkull, .message = c.PD_YELLOWO },
+        99, 133 => .{ .card = .BlueCard, .skull = .BlueSkull, .message = d_strings.text.PD_BLUEO },
+        134, 135 => .{ .card = .RedCard, .skull = .RedSkull, .message = d_strings.text.PD_REDO },
+        136, 137 => .{ .card = .YellowCard, .skull = .YellowSkull, .message = d_strings.text.PD_YELLOWO },
         else => return EV_DoDoor(line, doortype), // not locked
     };
 
@@ -194,9 +195,9 @@ pub fn EV_DoDoor(line: *c.line_t, doortype: DoorType) bool {
 }
 
 pub fn EV_VerticalDoor(line: *c.line_t, thing: *MObj) void {
-    const blue: Lock = .{ .card = .BlueCard, .skull = .BlueSkull, .message = c.PD_BLUEK };
-    const yellow: Lock = .{ .card = .YellowCard, .skull = .YellowSkull, .message = c.PD_YELLOWK };
-    const red: Lock = .{ .card = .RedCard, .skull = .RedSkull, .message = c.PD_REDK };
+    const blue: Lock = .{ .card = .BlueCard, .skull = .BlueSkull, .message = d_strings.text.PD_BLUEK };
+    const yellow: Lock = .{ .card = .YellowCard, .skull = .YellowSkull, .message = d_strings.text.PD_YELLOWK };
+    const red: Lock = .{ .card = .RedCard, .skull = .RedSkull, .message = d_strings.text.PD_REDK };
 
     // Map the special to its door type and whether or not it needs a key
     const doortype: DoorType, const lock: ?Lock = switch (line.special) {

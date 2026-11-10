@@ -10,6 +10,7 @@ const State = d_info.State;
 const StateNum = d_info.StateNum;
 const d_main = @import("d_main.zig");
 const Event = d_main.Event;
+const d_strings = @import("d_strings.zig");
 const g_game = @import("g_game.zig");
 const hu_stuff = @import("hu_stuff.zig");
 const m_swap = @import("m_swap.zig");
@@ -69,19 +70,19 @@ pub fn F_StartFinale() void {
             switch (g_game.gameepisode) {
                 1 => {
                     finaleflat = "FLOOR4_8";
-                    finaletext = c.E1TEXT;
+                    finaletext = d_strings.text.E1TEXT;
                 },
                 2 => {
                     finaleflat = "SFLR6_1";
-                    finaletext = c.E2TEXT;
+                    finaletext = d_strings.text.E2TEXT;
                 },
                 3 => {
                     finaleflat = "MFLR8_4";
-                    finaletext = c.E3TEXT;
+                    finaletext = d_strings.text.E3TEXT;
                 },
                 4 => {
                     finaleflat = "MFLR8_3";
-                    finaletext = c.E4TEXT;
+                    finaletext = d_strings.text.E4TEXT;
                 },
                 else => {}, // Ouch.
             }
@@ -94,27 +95,27 @@ pub fn F_StartFinale() void {
             switch (g_game.gamemap) {
                 6 => {
                     finaleflat = "SLIME16";
-                    finaletext = c.C1TEXT;
+                    finaletext = d_strings.text.C1TEXT;
                 },
                 11 => {
                     finaleflat = "RROCK14";
-                    finaletext = c.C2TEXT;
+                    finaletext = d_strings.text.C2TEXT;
                 },
                 20 => {
                     finaleflat = "RROCK07";
-                    finaletext = c.C3TEXT;
+                    finaletext = d_strings.text.C3TEXT;
                 },
                 30 => {
                     finaleflat = "RROCK17";
-                    finaletext = c.C4TEXT;
+                    finaletext = d_strings.text.C4TEXT;
                 },
                 15 => {
                     finaleflat = "RROCK13";
-                    finaletext = c.C5TEXT;
+                    finaletext = d_strings.text.C5TEXT;
                 },
                 31 => {
                     finaleflat = "RROCK19";
-                    finaletext = c.C6TEXT;
+                    finaletext = d_strings.text.C6TEXT;
                 },
                 else => {} // Ouch.
             }
@@ -123,7 +124,7 @@ pub fn F_StartFinale() void {
         .Indetermined => {
             S_ChangeMusicEnum(.read_m, true);
             finaleflat = "F_SKY1"; // Not used anywhere else.
-            finaletext = c.C1TEXT;  // FIXME - other text, music?
+            finaletext = d_strings.text.C1TEXT;  // FIXME - other text, music?
         }
     }
 
@@ -238,28 +239,28 @@ fn F_TextWrite() void {
 //   in order of appearance
 //
 const CastInfo = struct {
-    name: []const u8,
+    name: *const fn () []const u8,
     type: MObjType,
 };
 
 const castorder = [_]CastInfo{
-    .{.name = c.CC_ZOMBIE, .type = .POSSESSED},
-    .{.name = c.CC_SHOTGUN, .type = .SHOTGUY},
-    .{.name = c.CC_HEAVY, .type = .CHAINGUY},
-    .{.name = c.CC_IMP, .type = .TROOP},
-    .{.name = c.CC_DEMON, .type = .SERGEANT},
-    .{.name = c.CC_LOST, .type = .SKULL},
-    .{.name = c.CC_CACO, .type = .HEAD},
-    .{.name = c.CC_HELL, .type = .KNIGHT},
-    .{.name = c.CC_BARON, .type = .BRUISER},
-    .{.name = c.CC_ARACH, .type = .BABY},
-    .{.name = c.CC_PAIN, .type = .PAIN},
-    .{.name = c.CC_REVEN, .type = .UNDEAD},
-    .{.name = c.CC_MANCU, .type = .FATSO},
-    .{.name = c.CC_ARCH, .type = .VILE},
-    .{.name = c.CC_SPIDER, .type = .SPIDER},
-    .{.name = c.CC_CYBER, .type = .CYBORG},
-    .{.name = c.CC_HERO, .type = .PLAYER},
+    .{.name = d_strings.getter(.CC_ZOMBIE), .type = .POSSESSED},
+    .{.name = d_strings.getter(.CC_SHOTGUN), .type = .SHOTGUY},
+    .{.name = d_strings.getter(.CC_HEAVY), .type = .CHAINGUY},
+    .{.name = d_strings.getter(.CC_IMP), .type = .TROOP},
+    .{.name = d_strings.getter(.CC_DEMON), .type = .SERGEANT},
+    .{.name = d_strings.getter(.CC_LOST), .type = .SKULL},
+    .{.name = d_strings.getter(.CC_CACO), .type = .HEAD},
+    .{.name = d_strings.getter(.CC_HELL), .type = .KNIGHT},
+    .{.name = d_strings.getter(.CC_BARON), .type = .BRUISER},
+    .{.name = d_strings.getter(.CC_ARACH), .type = .BABY},
+    .{.name = d_strings.getter(.CC_PAIN), .type = .PAIN},
+    .{.name = d_strings.getter(.CC_REVEN), .type = .UNDEAD},
+    .{.name = d_strings.getter(.CC_MANCU), .type = .FATSO},
+    .{.name = d_strings.getter(.CC_ARCH), .type = .VILE},
+    .{.name = d_strings.getter(.CC_SPIDER), .type = .SPIDER},
+    .{.name = d_strings.getter(.CC_CYBER), .type = .CYBORG},
+    .{.name = d_strings.getter(.CC_HERO), .type = .PLAYER},
 };
 
 var castnum: usize = 0;
@@ -475,7 +476,7 @@ fn F_CastPrint(text: []const u8) void {
 fn F_CastDrawer() void {
     V_DrawPatch(0, 0, 0, W_CacheLumpName(*patch_t, "BOSSBACK", .Cache));
 
-    F_CastPrint(castorder[castnum].name);
+    F_CastPrint(castorder[castnum].name());
 
     // draw the current frame in the middle of the screen
     const sprdef = &c.sprites[@intCast(@backingInt(caststate.sprite))];

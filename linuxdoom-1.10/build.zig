@@ -5,7 +5,6 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const c_files = [_][]const u8{
-        "dstrings.c",
         "i_sound.c",
         "r_bsp.c",
         "r_data.c",

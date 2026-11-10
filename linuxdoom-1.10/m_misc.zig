@@ -1,8 +1,8 @@
-const c = @import("c");
-
 const std = @import("std");
-const i_system = @import("i_system.zig");
 const mem = std.mem;
+
+const d_strings = @import("d_strings.zig");
+const i_system = @import("i_system.zig");
 const zone = @import("z_zone.zig");
 const g_game = @import("g_game.zig");
 const hu_stuff = @import("hu_stuff.zig");
@@ -100,7 +100,7 @@ pub const Default = struct {
 
     const DefaultStr = struct {
         location: *[]const u8,
-        defaultvalue: []const u8,
+        defaultvalue: *const fn () []const u8,
     };
 
     pub fn int(name: [*:0]const u8, location: *c_int, defaultvalue: c_int) Default {
@@ -110,13 +110,22 @@ pub const Default = struct {
         };
     }
 
-    pub fn str(name: [*:0]const u8, location: *[]const u8, defaultvalue: []const u8) Default {
+    pub fn str(name: [*:0]const u8, location: *[]const u8, defaultvalue: *const fn () []const u8) Default {
         return Default{
             .name = name,
             .d = .{.str = DefaultStr{.location = location, .defaultvalue = defaultvalue}},
         };
     }
 };
+
+/// Default for chat macro `i` in the current text language.
+fn chatMacro(comptime i: usize) *const fn () []const u8 {
+    return &struct {
+        fn get() []const u8 {
+            return d_strings.text.chat_macros[i];
+        }
+    }.get;
+}
 
 const defaults = [_]Default{
     Default.int("mouse_sensitivity", &m_menu.mouseSensitivity, 5),
@@ -156,16 +165,16 @@ const defaults = [_]Default{
 
     Default.int("usegamma", &v_video.usegamma, 0),
 
-    Default.str("chatmacro0", &hu_stuff.chat_macros[0], c.HUSTR_CHATMACRO0),
-    Default.str("chatmacro1", &hu_stuff.chat_macros[1], c.HUSTR_CHATMACRO1),
-    Default.str("chatmacro2", &hu_stuff.chat_macros[2], c.HUSTR_CHATMACRO2),
-    Default.str("chatmacro3", &hu_stuff.chat_macros[3], c.HUSTR_CHATMACRO3),
-    Default.str("chatmacro4", &hu_stuff.chat_macros[4], c.HUSTR_CHATMACRO4),
-    Default.str("chatmacro5", &hu_stuff.chat_macros[5], c.HUSTR_CHATMACRO5),
-    Default.str("chatmacro6", &hu_stuff.chat_macros[6], c.HUSTR_CHATMACRO6),
-    Default.str("chatmacro7", &hu_stuff.chat_macros[7], c.HUSTR_CHATMACRO7),
-    Default.str("chatmacro8", &hu_stuff.chat_macros[8], c.HUSTR_CHATMACRO8),
-    Default.str("chatmacro9", &hu_stuff.chat_macros[9], c.HUSTR_CHATMACRO9),
+    Default.str("chatmacro0", &hu_stuff.chat_macros[0], chatMacro(0)),
+    Default.str("chatmacro1", &hu_stuff.chat_macros[1], chatMacro(1)),
+    Default.str("chatmacro2", &hu_stuff.chat_macros[2], chatMacro(2)),
+    Default.str("chatmacro3", &hu_stuff.chat_macros[3], chatMacro(3)),
+    Default.str("chatmacro4", &hu_stuff.chat_macros[4], chatMacro(4)),
+    Default.str("chatmacro5", &hu_stuff.chat_macros[5], chatMacro(5)),
+    Default.str("chatmacro6", &hu_stuff.chat_macros[6], chatMacro(6)),
+    Default.str("chatmacro7", &hu_stuff.chat_macros[7], chatMacro(7)),
+    Default.str("chatmacro8", &hu_stuff.chat_macros[8], chatMacro(8)),
+    Default.str("chatmacro9", &hu_stuff.chat_macros[9], chatMacro(9)),
 };
 
 var defaultfile: []const u8 = undefined;
@@ -203,7 +212,7 @@ pub fn M_LoadDefaults() void {
     for (defaults) |default| {
         switch (default.d) {
             .int => |d| d.location.* = d.defaultvalue,
-            .str => |d| d.location.* = d.defaultvalue,
+            .str => |d| d.location.* = d.defaultvalue(),
         }
     }
 

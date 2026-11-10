@@ -14,6 +14,7 @@ const MObjType = d_info.MObjType;
 const d_items = @import("d_items.zig");
 const d_player = @import("d_player.zig");
 const Player = d_player.Player;
+const d_strings = @import("d_strings.zig");
 const g_game = @import("g_game.zig");
 const i_system = @import("i_system.zig");
 const I_Error = i_system.I_Error;
@@ -318,14 +319,14 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GiveArmor(player, 1)) {
                 return;
             }
-            player.message = c.GOTARMOR;
+            player.message = d_strings.text.GOTARMOR;
         },
 
         .ARM2 => {
             if (!P_GiveArmor(player, 2)) {
                 return;
             }
-            player.message = c.GOTMEGA;
+            player.message = d_strings.text.GOTMEGA;
         },
 
         // bonus items
@@ -335,7 +336,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
                 player.health = 200;
             }
             player.mo.?.health = player.health;
-            player.message = c.GOTHTHBONUS;
+            player.message = d_strings.text.GOTHTHBONUS;
         },
 
         .BON2 => {
@@ -346,7 +347,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (player.armortype == 0) {
                 player.armortype = 1;
             }
-            player.message = c.GOTARMBONUS;
+            player.message = d_strings.text.GOTARMBONUS;
         },
 
         .SOUL => {
@@ -355,7 +356,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
                 player.health = 200;
             }
             player.mo.?.health = player.health;
-            player.message = c.GOTSUPER;
+            player.message = d_strings.text.GOTSUPER;
             sound = .getpow;
         },
 
@@ -366,7 +367,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             player.health = 200;
             player.mo.?.health = player.health;
             _ = P_GiveArmor(player, 2);
-            player.message = c.GOTMSPHERE;
+            player.message = d_strings.text.GOTMSPHERE;
             sound = .getpow;
         },
 
@@ -374,7 +375,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
         // leave cards for everyone
         .BKEY => {
             if (player.cards[@backingInt(Card.BlueCard)] == c.false) {
-                player.message = c.GOTBLUECARD;
+                player.message = d_strings.text.GOTBLUECARD;
             }
             P_GiveCard(player, .BlueCard);
             if (g_game.netgame != c.false) {
@@ -384,7 +385,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
 
         .YKEY => {
             if (player.cards[@backingInt(Card.YellowCard)] == c.false) {
-                player.message = c.GOTYELWCARD;
+                player.message = d_strings.text.GOTYELWCARD;
             }
             P_GiveCard(player, .YellowCard);
             if (g_game.netgame != c.false) {
@@ -394,7 +395,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
 
         .RKEY => {
             if (player.cards[@backingInt(Card.RedCard)] == c.false) {
-                player.message = c.GOTREDCARD;
+                player.message = d_strings.text.GOTREDCARD;
             }
             P_GiveCard(player, .RedCard);
             if (g_game.netgame != c.false) {
@@ -404,7 +405,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
 
         .BSKU => {
             if (player.cards[@backingInt(Card.BlueSkull)] == c.false) {
-                player.message = c.GOTBLUESKUL;
+                player.message = d_strings.text.GOTBLUESKUL;
             }
             P_GiveCard(player, Card.BlueSkull);
             if (g_game.netgame != c.false) {
@@ -414,7 +415,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
 
         .YSKU => {
             if (player.cards[@backingInt(Card.YellowSkull)] == c.false) {
-                player.message = c.GOTYELWSKUL;
+                player.message = d_strings.text.GOTYELWSKUL;
             }
             P_GiveCard(player, Card.YellowSkull);
             if (g_game.netgame != c.false) {
@@ -424,7 +425,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
 
         .RSKU => {
             if (player.cards[@backingInt(Card.RedSkull)] == c.false) {
-                player.message = c.GOTREDSKULL;
+                player.message = d_strings.text.GOTREDSKULL;
             }
             P_GiveCard(player, Card.RedSkull);
             if (g_game.netgame != c.false) {
@@ -437,7 +438,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GiveBody(player, 10)) {
                 return;
             }
-            player.message = c.GOTSTIM;
+            player.message = d_strings.text.GOTSTIM;
         },
 
         .MEDI => {
@@ -446,9 +447,9 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             }
 
             if (player.health < 25) {
-                player.message = c.GOTMEDINEED;
+                player.message = d_strings.text.GOTMEDINEED;
             } else {
-                player.message = c.GOTMEDIKIT;
+                player.message = d_strings.text.GOTMEDIKIT;
             }
         },
 
@@ -457,7 +458,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GivePower(player, .Invulnerability)) {
                 return;
             }
-            player.message = c.GOTINVUL;
+            player.message = d_strings.text.GOTINVUL;
             sound = .getpow;
         },
 
@@ -465,7 +466,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GivePower(player, .Strength)) {
                 return;
             }
-            player.message = c.GOTBERSERK;
+            player.message = d_strings.text.GOTBERSERK;
             sound = .getpow;
 
             if (player.readyweapon != .Fist) {
@@ -477,7 +478,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GivePower(player, .Invisibility)) {
                 return;
             }
-            player.message = c.GOTINVIS;
+            player.message = d_strings.text.GOTINVIS;
             sound = .getpow;
         },
 
@@ -485,7 +486,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GivePower(player, .IronFeet)) {
                 return;
             }
-            player.message = c.GOTSUIT;
+            player.message = d_strings.text.GOTSUIT;
             sound = .getpow;
         },
 
@@ -493,7 +494,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GivePower(player, .AllMap)) {
                 return;
             }
-            player.message = c.GOTMAP;
+            player.message = d_strings.text.GOTMAP;
             sound = .getpow;
         },
 
@@ -501,7 +502,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GivePower(player, .Infrared)) {
                 return;
             }
-            player.message = c.GOTVISOR;
+            player.message = d_strings.text.GOTVISOR;
             sound = .getpow;
         },
 
@@ -516,56 +517,56 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
                     return;
                 }
             }
-            player.message = c.GOTCLIP;
+            player.message = d_strings.text.GOTCLIP;
         },
 
         .AMMO => {
             if (!P_GiveAmmo(player, .Clip, 5)) {
                 return;
             }
-            player.message = c.GOTCLIPBOX;
+            player.message = d_strings.text.GOTCLIPBOX;
         },
 
         .ROCK => {
             if (!P_GiveAmmo(player, .Missile, 1)) {
                 return;
             }
-            player.message = c.GOTROCKET;
+            player.message = d_strings.text.GOTROCKET;
         },
 
         .BROK => {
             if (!P_GiveAmmo(player, .Missile, 5)) {
                 return;
             }
-            player.message = c.GOTROCKBOX;
+            player.message = d_strings.text.GOTROCKBOX;
         },
 
         .CELL => {
             if (!P_GiveAmmo(player, .Cell, 1)) {
                 return;
             }
-            player.message = c.GOTCELL;
+            player.message = d_strings.text.GOTCELL;
         },
 
         .CELP => {
             if (!P_GiveAmmo(player, .Cell, 5)) {
                 return;
             }
-            player.message = c.GOTCELLBOX;
+            player.message = d_strings.text.GOTCELLBOX;
         },
 
         .SHEL => {
             if (!P_GiveAmmo(player, .Shell, 1)) {
                 return;
             }
-            player.message = c.GOTSHELLS;
+            player.message = d_strings.text.GOTSHELLS;
         },
 
         .SBOX => {
             if (!P_GiveAmmo(player, .Shell, 5)) {
                 return;
             }
-            player.message = c.GOTSHELLBOX;
+            player.message = d_strings.text.GOTSHELLBOX;
         },
 
         .BPAK => {
@@ -578,7 +579,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             for (0..player.maxammo.len) |i| {
                 _ = P_GiveAmmo(player, @fromBackingInt(@intCast(i)), 1);
             }
-            player.message = c.GOTBACKPACK;
+            player.message = d_strings.text.GOTBACKPACK;
         },
 
         // weapons
@@ -586,7 +587,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GiveWeapon(player, .Bfg, false)) {
                 return;
             }
-            player.message = c.GOTBFG9000;
+            player.message = d_strings.text.GOTBFG9000;
             sound = .wpnup;
         },
 
@@ -594,7 +595,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GiveWeapon(player, .Chaingun, special.flags & MF_DROPPED != 0)) {
                 return;
             }
-            player.message = c.GOTCHAINGUN;
+            player.message = d_strings.text.GOTCHAINGUN;
             sound = .wpnup;
         },
 
@@ -602,7 +603,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GiveWeapon(player, .Chainsaw, false)) {
                 return;
             }
-            player.message = c.GOTCHAINSAW;
+            player.message = d_strings.text.GOTCHAINSAW;
             sound = .wpnup;
         },
 
@@ -610,7 +611,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GiveWeapon(player, .Missile, false)) {
                 return;
             }
-            player.message = c.GOTLAUNCHER;
+            player.message = d_strings.text.GOTLAUNCHER;
             sound = .wpnup;
         },
 
@@ -618,7 +619,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GiveWeapon(player, .Plasma, false)) {
                 return;
             }
-            player.message = c.GOTPLASMA;
+            player.message = d_strings.text.GOTPLASMA;
             sound = .wpnup;
         },
 
@@ -626,7 +627,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GiveWeapon(player, .Shotgun, special.flags & MF_DROPPED != 0)) {
                 return;
             }
-            player.message = c.GOTSHOTGUN;
+            player.message = d_strings.text.GOTSHOTGUN;
             sound = .wpnup;
         },
 
@@ -634,7 +635,7 @@ pub fn P_TouchSpecialThing(special: *MObj, toucher: *MObj) void {
             if (!P_GiveWeapon(player, .SuperShotgun, special.flags & MF_DROPPED != 0)) {
                 return;
             }
-            player.message = c.GOTSHOTGUN2;
+            player.message = d_strings.text.GOTSHOTGUN2;
             sound = .wpnup;
         },
 

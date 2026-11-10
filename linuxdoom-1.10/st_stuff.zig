@@ -12,6 +12,8 @@ const Event = d_main.Event;
 const d_player = @import("d_player.zig");
 const Player = d_player.Player;
 
+const d_strings = @import("d_strings.zig");
+
 const m_angle = @import("m_angle.zig");
 const angle_t = m_angle.angle_t;
 const ANG45 = m_angle.ANG45;
@@ -428,10 +430,10 @@ pub fn ST_Responder(ev: *const Event) bool {
           }
 
           plyr.health = 100;
-          plyr.message = c.STSTR_DQDON;
+          plyr.message = d_strings.text.STSTR_DQDON;
         }
         else {
-          plyr.message = c.STSTR_DQDOFF;
+          plyr.message = d_strings.text.STSTR_DQDOFF;
         }
       }
       // 'fa' cheat for killer fucking arsenal
@@ -447,7 +449,7 @@ pub fn ST_Responder(ev: *const Event) bool {
             a.* = ma;
         }
 
-        plyr.message = c.STSTR_FAADDED;
+        plyr.message = d_strings.text.STSTR_FAADDED;
       }
       // 'kfa' cheat for key full ammo
       else if (cht_CheckCheat(&cheat_ammo, @intCast(ev.data1))) {
@@ -466,13 +468,13 @@ pub fn ST_Responder(ev: *const Event) bool {
           card.* = c.true;
         }
 
-        plyr.message = c.STSTR_KFAADDED;
+        plyr.message = d_strings.text.STSTR_KFAADDED;
       }
       // 'mus' cheat for changing music
       else if (cht_CheckCheat(&cheat_mus, @intCast(ev.data1))) {
         var buf: [3]u8 = @splat(0);
 
-        plyr.message = c.STSTR_MUS;
+        plyr.message = d_strings.text.STSTR_MUS;
         cht_GetParam(&cheat_mus, &buf);
 
         if (doomstat.gamemode == .Commercial)
@@ -480,7 +482,7 @@ pub fn ST_Responder(ev: *const Event) bool {
           const musnum = c.mus_runnin + @as(c_int, buf[0]-'0')*10 + buf[1]-'0' - 1;
 
           if ((@as(c_int, buf[0]-'0')*10 + buf[1]-'0') > 35) {
-            plyr.message = c.STSTR_NOMUS;
+            plyr.message = d_strings.text.STSTR_NOMUS;
           } else {
             c.S_ChangeMusic(musnum, 1);
           }
@@ -490,7 +492,7 @@ pub fn ST_Responder(ev: *const Event) bool {
           const musnum = c.mus_e1m1 + @as(c_int, buf[0]-'1')*9 + (buf[1]-'1');
 
           if ((@as(c_int, buf[0]-'1')*9 + buf[1]-'1') > 31) {
-            plyr.message = c.STSTR_NOMUS;
+            plyr.message = d_strings.text.STSTR_NOMUS;
           } else {
             c.S_ChangeMusic(musnum, 1);
           }
@@ -504,9 +506,9 @@ pub fn ST_Responder(ev: *const Event) bool {
         plyr.cheats ^= c.CF_NOCLIP;
 
         if (plyr.cheats & c.CF_NOCLIP != 0) {
-          plyr.message = c.STSTR_NCON;
+          plyr.message = d_strings.text.STSTR_NCON;
         } else {
-          plyr.message = c.STSTR_NCOFF;
+          plyr.message = d_strings.text.STSTR_NCOFF;
         }
       }
       // 'behold?' power-up cheats
@@ -522,21 +524,21 @@ pub fn ST_Responder(ev: *const Event) bool {
             plyr.powers[i] = 0;
           }
 
-          plyr.message = c.STSTR_BEHOLDX;
+          plyr.message = d_strings.text.STSTR_BEHOLDX;
         }
       }
 
       // 'behold' power-up menu
       if (cht_CheckCheat(&cheat_powerup[6], @intCast(ev.data1)))
       {
-        plyr.message = c.STSTR_BEHOLD;
+        plyr.message = d_strings.text.STSTR_BEHOLD;
       }
       // 'choppers' invulnerability & chainsaw
       else if (cht_CheckCheat(&cheat_choppers, @intCast(ev.data1)))
       {
         plyr.weaponowned[@backingInt(WeaponType.Chainsaw)] = c.true;
         plyr.power(PowerType.Invulnerability).* = c.true;
-        plyr.message = c.STSTR_CHOPPERS;
+        plyr.message = d_strings.text.STSTR_CHOPPERS;
       }
       // 'mypos' for player position
       else if (cht_CheckCheat(&cheat_mypos, @intCast(ev.data1)))
@@ -604,7 +606,7 @@ pub fn ST_Responder(ev: *const Event) bool {
       }
 
       // So be it.
-      plyr.message = c.STSTR_CLEV;
+      plyr.message = d_strings.text.STSTR_CLEV;
       G_DeferedInitNew(g_game.gameskill, epsd, map);
     }
   }

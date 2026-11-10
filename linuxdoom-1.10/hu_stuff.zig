@@ -6,6 +6,7 @@ const doomdef = @import("doomdef.zig");
 const doomstat = @import("doomstat.zig");
 const d_main = @import("d_main.zig");
 const Event = d_main.Event;
+const d_strings = @import("d_strings.zig");
 const g_game = @import("g_game.zig");
 const hu_lib = @import("hu_lib.zig");
 const m_menu = @import("m_menu.zig");
@@ -39,10 +40,10 @@ const HU_MSGHEIGHT = 1;     // in lines
 
 const HU_MSGTIMEOUT = 4 * doomdef.TICRATE;
 
-fn HU_TITLE() []const u8 { return mapnames[@intCast((g_game.gameepisode-1)*9+g_game.gamemap-1)]; }
-fn HU_TITLE2() []const u8 { return mapnames2[@intCast(g_game.gamemap-1)]; }
-fn HU_TITLEP() []const u8 { return mapnamesp[@intCast(g_game.gamemap-1)]; }
-fn HU_TITLET() []const u8 { return mapnamest[@intCast(g_game.gamemap-1)]; }
+fn HU_TITLE() []const u8 { return d_strings.text.mapnames[@intCast((g_game.gameepisode-1)*9+g_game.gamemap-1)]; }
+fn HU_TITLE2() []const u8 { return d_strings.text.mapnames2[@intCast(g_game.gamemap-1)]; }
+fn HU_TITLEP() []const u8 { return d_strings.text.mapnamesp[@intCast(g_game.gamemap-1)]; }
+fn HU_TITLET() []const u8 { return d_strings.text.mapnamest[@intCast(g_game.gamemap-1)]; }
 const HU_TITLEHEIGHT = 1;
 const HU_TITLEX = 0;
 fn HU_TITLEY() c_short { return 167 - SHORT(hu_font[0].height); }
@@ -53,25 +54,8 @@ fn HU_INPUTY() c_short { return HU_MSGY + HU_MSGHEIGHT*(SHORT(hu_font[0].height)
 const HU_INPUTWIDTH = 64;
 const HU_INPUTHEIGHT = 1;
 
-pub var chat_macros = [_][]const u8{
-    c.HUSTR_CHATMACRO0,
-    c.HUSTR_CHATMACRO1,
-    c.HUSTR_CHATMACRO2,
-    c.HUSTR_CHATMACRO3,
-    c.HUSTR_CHATMACRO4,
-    c.HUSTR_CHATMACRO5,
-    c.HUSTR_CHATMACRO6,
-    c.HUSTR_CHATMACRO7,
-    c.HUSTR_CHATMACRO8,
-    c.HUSTR_CHATMACRO9,
-};
-
-pub const player_names = [_][]const u8{
-    c.HUSTR_PLRGREEN,
-    c.HUSTR_PLRINDIGO,
-    c.HUSTR_PLRBROWN,
-    c.HUSTR_PLRRED,
-};
+// Initialized by M_LoadDefaults
+pub var chat_macros:[10][]const u8 = undefined;
 
 
 const patch_t = v_video.c.patch_t;
@@ -93,182 +77,6 @@ var w_message: hu_lib.HudSText = undefined;
 var message_counter: c_int = 0;
 
 var headsupactive = false;
-
-//
-// Builtin map names.
-// The actual names can be found in DStrings.h.
-//
-
-const mapnames = [_][]const u8{
-    // DOOM shareware/registered/retail (Ultimate) names.
-
-    c.HUSTR_E1M1,
-    c.HUSTR_E1M2,
-    c.HUSTR_E1M3,
-    c.HUSTR_E1M4,
-    c.HUSTR_E1M5,
-    c.HUSTR_E1M6,
-    c.HUSTR_E1M7,
-    c.HUSTR_E1M8,
-    c.HUSTR_E1M9,
-
-    c.HUSTR_E2M1,
-    c.HUSTR_E2M2,
-    c.HUSTR_E2M3,
-    c.HUSTR_E2M4,
-    c.HUSTR_E2M5,
-    c.HUSTR_E2M6,
-    c.HUSTR_E2M7,
-    c.HUSTR_E2M8,
-    c.HUSTR_E2M9,
-
-    c.HUSTR_E3M1,
-    c.HUSTR_E3M2,
-    c.HUSTR_E3M3,
-    c.HUSTR_E3M4,
-    c.HUSTR_E3M5,
-    c.HUSTR_E3M6,
-    c.HUSTR_E3M7,
-    c.HUSTR_E3M8,
-    c.HUSTR_E3M9,
-
-    c.HUSTR_E4M1,
-    c.HUSTR_E4M2,
-    c.HUSTR_E4M3,
-    c.HUSTR_E4M4,
-    c.HUSTR_E4M5,
-    c.HUSTR_E4M6,
-    c.HUSTR_E4M7,
-    c.HUSTR_E4M8,
-    c.HUSTR_E4M9,
-
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL"
-};
-
-const mapnames2 = [_][]const u8 {
-    // DOOM 2 map names.
-
-    c.HUSTR_1,
-    c.HUSTR_2,
-    c.HUSTR_3,
-    c.HUSTR_4,
-    c.HUSTR_5,
-    c.HUSTR_6,
-    c.HUSTR_7,
-    c.HUSTR_8,
-    c.HUSTR_9,
-    c.HUSTR_10,
-    c.HUSTR_11,
-
-    c.HUSTR_12,
-    c.HUSTR_13,
-    c.HUSTR_14,
-    c.HUSTR_15,
-    c.HUSTR_16,
-    c.HUSTR_17,
-    c.HUSTR_18,
-    c.HUSTR_19,
-    c.HUSTR_20,
-
-    c.HUSTR_21,
-    c.HUSTR_22,
-    c.HUSTR_23,
-    c.HUSTR_24,
-    c.HUSTR_25,
-    c.HUSTR_26,
-    c.HUSTR_27,
-    c.HUSTR_28,
-    c.HUSTR_29,
-    c.HUSTR_30,
-    c.HUSTR_31,
-    c.HUSTR_32,
-};
-
-const mapnamesp = [_][]const u8{
-    // Plutonia WAD map names.
-
-    c.PHUSTR_1,
-    c.PHUSTR_2,
-    c.PHUSTR_3,
-    c.PHUSTR_4,
-    c.PHUSTR_5,
-    c.PHUSTR_6,
-    c.PHUSTR_7,
-    c.PHUSTR_8,
-    c.PHUSTR_9,
-    c.PHUSTR_10,
-    c.PHUSTR_11,
-
-    c.PHUSTR_12,
-    c.PHUSTR_13,
-    c.PHUSTR_14,
-    c.PHUSTR_15,
-    c.PHUSTR_16,
-    c.PHUSTR_17,
-    c.PHUSTR_18,
-    c.PHUSTR_19,
-    c.PHUSTR_20,
-
-    c.PHUSTR_21,
-    c.PHUSTR_22,
-    c.PHUSTR_23,
-    c.PHUSTR_24,
-    c.PHUSTR_25,
-    c.PHUSTR_26,
-    c.PHUSTR_27,
-    c.PHUSTR_28,
-    c.PHUSTR_29,
-    c.PHUSTR_30,
-    c.PHUSTR_31,
-    c.PHUSTR_32,
-};
-
-const mapnamest = [_][]const u8{
-    // TNT WAD map names.
-
-    c.THUSTR_1,
-    c.THUSTR_2,
-    c.THUSTR_3,
-    c.THUSTR_4,
-    c.THUSTR_5,
-    c.THUSTR_6,
-    c.THUSTR_7,
-    c.THUSTR_8,
-    c.THUSTR_9,
-    c.THUSTR_10,
-    c.THUSTR_11,
-
-    c.THUSTR_12,
-    c.THUSTR_13,
-    c.THUSTR_14,
-    c.THUSTR_15,
-    c.THUSTR_16,
-    c.THUSTR_17,
-    c.THUSTR_18,
-    c.THUSTR_19,
-    c.THUSTR_20,
-
-    c.THUSTR_21,
-    c.THUSTR_22,
-    c.THUSTR_23,
-    c.THUSTR_24,
-    c.THUSTR_25,
-    c.THUSTR_26,
-    c.THUSTR_27,
-    c.THUSTR_28,
-    c.THUSTR_29,
-    c.THUSTR_30,
-    c.THUSTR_31,
-    c.THUSTR_32,
-};
 
 var shiftxform: []const u8 = undefined;
 
@@ -507,7 +315,7 @@ pub fn HU_Ticker() void {
                         if (w_inputbuffer[i].l.len != 0
                             and (chat_dest[i] == g_game.consoleplayer + 1
                                 or chat_dest[i] == HU_BROADCAST)) {
-                            hu_lib.HUlib_addMessageToSText(&w_message, player_names[i], w_inputbuffer[i].l.l[0..w_inputbuffer[i].l.len:0]);
+                            hu_lib.HUlib_addMessageToSText(&w_message, d_strings.text.player_names[i], w_inputbuffer[i].l.l[0..w_inputbuffer[i].l.len:0]);
                             message_nottobefuckedwith = true;
                             message_on = true;
                             message_counter = HU_MSGTIMEOUT;
@@ -535,7 +343,7 @@ var tail: usize = 0;
 fn HU_queueChatChar(ch: u8) void {
     if ((head + 1) % QUEUESIZE == tail) {
     //if (((head + 1) & (QUEUESIZE - 1)) == tail) {
-        plr.message = c.HUSTR_MSGU;
+        plr.message = d_strings.text.HUSTR_MSGU;
     } else {
         chatchars[head] = ch;
         head = (head + 1) % QUEUESIZE;
@@ -558,12 +366,6 @@ pub fn HU_Responder(ev: *Event) bool {
         var lastmessage: [hu_lib.HU_MAXLINELENGTH:0]u8 = undefined;
         var shiftdown = false;
         var altdown = false;
-        var destination_keys = [_]u8{
-            c.HUSTR_KEYGREEN,
-            c.HUSTR_KEYINDIGO,
-            c.HUSTR_KEYBROWN,
-            c.HUSTR_KEYRED,
-        };
         var num_nobrainers: c_int = 0;
     };
 
@@ -599,7 +401,7 @@ pub fn HU_Responder(ev: *Event) bool {
             HU_queueChatChar(HU_BROADCAST);
         } else if (g_game.netgame != c.false and numplayers > 2) {
             for (0..doomdef.MAXPLAYERS) |i| {
-                if (ev.data1 == S.destination_keys[i]) {
+                if (ev.data1 == d_strings.text.destination_keys[i]) {
                     if (g_game.playeringame[i] != c.false and i != g_game.consoleplayer) {
                         chat_on = true;
                         eatkey = true;
@@ -609,17 +411,16 @@ pub fn HU_Responder(ev: *Event) bool {
                     } else if (i == g_game.consoleplayer) {
                         S.num_nobrainers += 1;
 
-                        if (S.num_nobrainers < 3) {
-                            plr.message = c.HUSTR_TALKTOSELF1;
-                        } else if (S.num_nobrainers < 6) {
-                            plr.message = c.HUSTR_TALKTOSELF2;
-                        } else if (S.num_nobrainers < 9) {
-                            plr.message = c.HUSTR_TALKTOSELF3;
-                        } else if (S.num_nobrainers < 32) {
-                            plr.message = c.HUSTR_TALKTOSELF4;
-                        } else {
-                            plr.message = c.HUSTR_TALKTOSELF5;
-                        }
+                        plr.message = if (S.num_nobrainers < 3)
+                            d_strings.text.HUSTR_TALKTOSELF1
+                        else if (S.num_nobrainers < 6)
+                            d_strings.text.HUSTR_TALKTOSELF2
+                        else if (S.num_nobrainers < 9)
+                            d_strings.text.HUSTR_TALKTOSELF3
+                        else if (S.num_nobrainers < 32)
+                            d_strings.text.HUSTR_TALKTOSELF4
+                        else
+                            d_strings.text.HUSTR_TALKTOSELF5;
                     }
                 }
             }

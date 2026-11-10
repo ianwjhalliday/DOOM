@@ -27,6 +27,8 @@ const d_net = @import("d_net.zig");
 const D_CheckNetGame = d_net.D_CheckNetGame;
 const TryRunTics = d_net.TryRunTics;
 
+const d_strings = @import("d_strings.zig");
+
 const f_finale = @import("f_finale.zig");
 const F_Drawer = f_finale.F_Drawer;
 
@@ -96,6 +98,9 @@ const GameState = doomdef.GameState;
 const Skill = doomdef.Skill;
 
 const doomstat = @import("doomstat.zig");
+
+const DEVMAPS = "devmaps";
+const DEVDATA = "devdata";
 
 const MAXWADFILES = 20;
 
@@ -523,32 +528,32 @@ fn IdentifyVersion() void {
     if (M_CheckParm("-shdev") != 0) {
         doomstat.gamemode = .Shareware;
         devparm = true;
-        D_AddFile(c.DEVDATA ++ "doom1.wad");
-        D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
-        D_AddFile(c.DEVMAPS ++ "data_se/pnames.lmp");
-        _ = fmt.bufPrintSentinel(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}, 0) catch unreachable;
+        D_AddFile(DEVDATA ++ "doom1.wad");
+        D_AddFile(DEVMAPS ++ "data_se/texture1.lmp");
+        D_AddFile(DEVMAPS ++ "data_se/pnames.lmp");
+        _ = fmt.bufPrintSentinel(&basedefault, "{s}", .{DEVDATA ++ "default.cfg"}, 0) catch unreachable;
         return;
     }
 
     if (M_CheckParm("-regdev") != 0) {
         doomstat.gamemode = .Registered;
         devparm = true;
-        D_AddFile(c.DEVDATA ++ "doom.wad");
-        D_AddFile(c.DEVMAPS ++ "data_se/texture1.lmp");
-        D_AddFile(c.DEVMAPS ++ "data_se/texture2.lmp");
-        D_AddFile(c.DEVMAPS ++ "data_se/pnames.lmp");
-        _ = fmt.bufPrintSentinel(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}, 0) catch unreachable;
+        D_AddFile(DEVDATA ++ "doom.wad");
+        D_AddFile(DEVMAPS ++ "data_se/texture1.lmp");
+        D_AddFile(DEVMAPS ++ "data_se/texture2.lmp");
+        D_AddFile(DEVMAPS ++ "data_se/pnames.lmp");
+        _ = fmt.bufPrintSentinel(&basedefault, "{s}", .{DEVDATA ++ "default.cfg"}, 0) catch unreachable;
         return;
     }
 
     if (M_CheckParm("-comdev") != 0) {
         doomstat.gamemode = .Commercial;
         devparm = true;
-        D_AddFile(c.DEVDATA ++ "doom2.wad");
+        D_AddFile(DEVDATA ++ "doom2.wad");
 
-        D_AddFile(c.DEVMAPS ++ "cdata/texture1.lmp");
-        D_AddFile(c.DEVMAPS ++ "cdata/pnames.lmp");
-        _ = fmt.bufPrintSentinel(&basedefault, "{s}", .{c.DEVDATA ++ "default.cfg"}, 0) catch unreachable;
+        D_AddFile(DEVMAPS ++ "cdata/texture1.lmp");
+        D_AddFile(DEVMAPS ++ "cdata/pnames.lmp");
+        _ = fmt.bufPrintSentinel(&basedefault, "{s}", .{DEVDATA ++ "default.cfg"}, 0) catch unreachable;
         return;
     }
 
@@ -734,11 +739,11 @@ pub fn D_DoomMain() noreturn {
     stdout.print("{s}\n", .{title}) catch unreachable;
 
     if (devparm) {
-        stdout.print("{s}", .{c.D_DEVSTR}) catch unreachable;
+        stdout.print("{s}", .{d_strings.text.D_DEVSTR}) catch unreachable;
     }
 
     if (M_CheckParm("-cdrom") != 0) {
-        stdout.print("{s}", .{c.D_CDROM}) catch unreachable;
+        stdout.print("{s}", .{d_strings.text.D_CDROM}) catch unreachable;
         std.Io.Dir.createDirAbsolute(i_system.io, "c:\\doomdata", .default_dir) catch unreachable;
         _ = fmt.bufPrintSentinel(&basedefault, "{s}", .{"c:/doomdata/default.cfg"}, 0) catch unreachable;
     }
@@ -779,16 +784,16 @@ pub fn D_DoomMain() noreturn {
         // Map name handling.
         switch (doomstat.gamemode) {
             .Shareware, .Retail, .Registered => {
-                file = fmt.bufPrint(&filebuf, "~" ++ c.DEVMAPS ++ "E{}M{}.wad", .{myargv[p + 1][0], myargv[p + 2][0]}) catch unreachable;
+                file = fmt.bufPrint(&filebuf, "~" ++ DEVMAPS ++ "E{}M{}.wad", .{myargv[p + 1][0], myargv[p + 2][0]}) catch unreachable;
                 stdout.print("Warping to Episode {s}, Map {s}.\n", .{myargv[p + 1], myargv[p + 2]}) catch unreachable;
             },
 
             .Commercial, .Indetermined => {
                 const num = fmt.parseInt(usize, std.mem.span(myargv[p + 1]), 10) catch 0;
                 if (num < 10) {
-                    file = fmt.bufPrint(&filebuf, "~" ++ c.DEVMAPS ++ "cdata/map0{}.wad", .{num}) catch unreachable;
+                    file = fmt.bufPrint(&filebuf, "~" ++ DEVMAPS ++ "cdata/map0{}.wad", .{num}) catch unreachable;
                 } else {
-                    file = fmt.bufPrint(&filebuf, "~" ++ c.DEVMAPS ++ "cdata/map{}.wad", .{num}) catch unreachable;
+                    file = fmt.bufPrint(&filebuf, "~" ++ DEVMAPS ++ "cdata/map{}.wad", .{num}) catch unreachable;
                 }
             },
         }
@@ -978,7 +983,7 @@ pub fn D_DoomMain() noreturn {
     p = @intCast(M_CheckParm("-loadgame"));
     if (p != 0 and p < myargc - 1) {
         const dir = if (M_CheckParm("-cdrom") != 0) "c:\\doomdata\\" else "";
-        const file = fmt.bufPrintSentinel(&filebuf, "{s}{s}{c}.dsg", .{ dir, c.SAVEGAMENAME, myargv[p + 1][0] }, 0) catch unreachable;
+        const file = fmt.bufPrintSentinel(&filebuf, "{s}{s}{c}.dsg", .{ dir, d_strings.SAVEGAMENAME, myargv[p + 1][0] }, 0) catch unreachable;
         G_LoadGame(file);
     }
 
