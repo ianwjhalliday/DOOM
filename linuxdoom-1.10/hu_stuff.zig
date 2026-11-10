@@ -533,7 +533,7 @@ var head: usize = 0;
 var tail: usize = 0;
 
 fn HU_queueChatChar(ch: u8) void {
-    if (head + 1 % QUEUESIZE == tail) {
+    if ((head + 1) % QUEUESIZE == tail) {
     //if (((head + 1) & (QUEUESIZE - 1)) == tail) {
         plr.message = c.HUSTR_MSGU;
     } else {
