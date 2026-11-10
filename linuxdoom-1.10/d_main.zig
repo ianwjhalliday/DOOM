@@ -705,6 +705,9 @@ pub fn D_DoomMain() noreturn {
 
     IdentifyVersion();
 
+    if (doomstat.language == .French or M_CheckParm("-french") != 0)
+        d_strings.setLanguage(.French);
+
     doomstat.modifiedgame = c.false;
 
     nomonsters = M_CheckParm("-nomonsters") != 0;
